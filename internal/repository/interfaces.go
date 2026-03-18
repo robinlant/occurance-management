@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/robinlant/occurance-management/internal/domain"
 )
@@ -35,6 +36,8 @@ type ParticipationRepository interface {
 	FindByOccurrence(ctx context.Context, occurrenceID int64) ([]domain.Participation, error)
 	FindByUser(ctx context.Context, userID int64) ([]domain.Participation, error)
 	CountByUser(ctx context.Context, userID int64) (int, error)
+	CountByUserInRange(ctx context.Context, userID int64, from, to time.Time) (int, error)
+	ExistsForUserInDateRange(ctx context.Context, userID int64, from, to time.Time) (bool, error)
 	Save(ctx context.Context, p domain.Participation) (domain.Participation, error)
 	Delete(ctx context.Context, id int64) error
 	DeleteByOccurrenceAndUser(ctx context.Context, occurrenceID, userID int64) error

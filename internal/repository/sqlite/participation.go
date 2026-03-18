@@ -3,6 +3,7 @@ package sqlite
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/robinlant/occurance-management/internal/domain"
 )
@@ -49,6 +50,30 @@ func (r *ParticipationRepository) CountByUser(ctx context.Context, userID int64)
 		`SELECT COUNT(*) FROM participations WHERE user_id = ?`, userID,
 	).Scan(&count)
 	return count, err
+}
+
+func (r *ParticipationRepository) CountByUserInRange(ctx context.Context, userID int64, from, to time.Time) (int, error) {
+	var count int
+	err := r.db.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM participations p
+		JOIN occurrences o ON o.id = p.occurrence_id
+		WHERE p.user_id = ? AND o.date >= ? AND o.date <= ?`,
+		userID, from, to,
+	).Scan(&count)
+	return count, err
+}
+
+func (r *ParticipationRepository) ExistsForUserInDateRange(ctx context.Context, userID int64, from, to time.Time) (bool, error) {
+	var count int
+	err := r.db.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM participations p
+		JOIN occurrences o ON o.id = p.occurrence_id
+		WHERE p.user_id = ? AND o.date >= ? AND o.date <= ?`,
+		userID, from, to,
+	).Scan(&count)
+	return count > 0, err
 }
 
 func (r *ParticipationRepository) Save(ctx context.Context, p domain.Participation) (domain.Participation, error) {
