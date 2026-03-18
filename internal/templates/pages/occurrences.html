@@ -1,0 +1,42 @@
+{{define "content"}}
+{{if or (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
+  {{block "topbar-actions" .}}
+    <a href="/occurrences/new" class="btn btn-primary btn-sm">+ New occurrence</a>
+  {{end}}
+{{end}}
+
+{{if .GroupList}}
+<div class="filter-bar">
+  <a href="/occurrences" class="chip {{if not .ActiveGroup}}active{{end}}">All</a>
+  {{range .GroupList}}
+    <a href="/occurrences?group={{.ID}}" class="chip {{if eq $.ActiveGroup .ID}}active{{end}}">{{.Name}}</a>
+  {{end}}
+</div>
+{{end}}
+
+<div class="card">
+  {{if not .Occurrences}}
+    <p style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px">No occurrences{{if .ActiveGroup}} in this group{{end}}.</p>
+  {{else}}
+    {{range .Occurrences}}
+      {{$group := index $.Groups .GroupID}}
+      <a href="/occurrences/{{.ID}}" style="display:block">
+        <div class="occ-item">
+          <div class="occ-info">
+            <div class="occ-title">
+              {{.Title}}
+              {{if $group.ID}}<span class="badge badge-purple">{{$group.Name}}</span>{{end}}
+              {{if isPast .Date}}<span class="badge badge-gray">past</span>{{end}}
+            </div>
+            {{if .Description}}<div class="occ-desc">{{.Description}}</div>{{end}}
+          </div>
+          <div class="occ-meta">
+            <div class="occ-date">{{formatDate .Date}}</div>
+            <div class="occ-slots">{{.MinParticipants}}&#8211;{{.MaxParticipants}} people</div>
+          </div>
+        </div>
+      </a>
+    {{end}}
+  {{end}}
+</div>
+{{end}}

@@ -1,0 +1,18 @@
+{{define "leaderboard_table"}}
+<div id="leaderboard-table">
+  {{if not .Entries}}
+    <p style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px">No data.</p>
+  {{else}}
+    {{range $i, $e := .Entries}}
+      <div class="lb-row">
+        {{if eq $i 0}}<span class="lb-rank gold">&#9312;</span>
+        {{else if eq $i 1}}<span class="lb-rank silver">&#9313;</span>
+        {{else if eq $i 2}}<span class="lb-rank bronze">&#9314;</span>
+        {{else}}<span class="lb-rank">{{add $i 1}}</span>{{end}}
+        <span class="lb-name">{{$e.User.Name}}</span>
+        <span class="lb-count">{{$e.Count}}</span>
+      </div>
+    {{end}}
+  {{end}}
+</div>
+{{end}}

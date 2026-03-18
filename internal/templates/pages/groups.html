@@ -1,0 +1,29 @@
+{{define "content"}}
+{{if or (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
+{{block "topbar-actions" .}}
+<form method="POST" action="/groups" class="row">
+  <input type="text" name="name" placeholder="New group name" required style="width:200px">
+  <button type="submit" class="btn btn-primary btn-sm">Create</button>
+</form>
+{{end}}
+{{end}}
+
+<div class="card">
+  {{if not .Groups}}
+    <p style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px">No groups yet.</p>
+  {{else}}
+    {{range .Groups}}
+      <div class="occ-item">
+        <div class="occ-info">
+          <div class="occ-title">{{.Name}}</div>
+        </div>
+        {{if or (eq $.CurrentUser.Role "organizer") (eq $.CurrentUser.Role "admin")}}
+          <form method="POST" action="/groups/{{.ID}}/delete">
+            <button class="btn btn-danger btn-sm">Delete</button>
+          </form>
+        {{end}}
+      </div>
+    {{end}}
+  {{end}}
+</div>
+{{end}}

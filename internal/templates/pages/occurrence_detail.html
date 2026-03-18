@@ -1,0 +1,47 @@
+{{define "content"}}
+<div style="display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start">
+
+  <div class="stack">
+    <div class="card">
+      <div class="row-between" style="margin-bottom:12px">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <h2 style="font-size:16px;font-weight:600">{{.Occurrence.Title}}</h2>
+            {{if .Group}}<span class="badge badge-purple">{{.Group.Name}}</span>{{end}}
+            {{if isPast .Occurrence.Date}}<span class="badge badge-gray">past</span>{{end}}
+          </div>
+          <div style="font-size:13px;color:var(--text-muted)">{{formatDateTime .Occurrence.Date}}</div>
+          {{if .Occurrence.Description}}
+            <p style="font-size:13px;color:var(--text-muted);margin-top:8px">{{.Occurrence.Description}}</p>
+          {{end}}
+        </div>
+        {{if or (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
+          <div class="row">
+            <a href="/occurrences/{{.Occurrence.ID}}/edit" class="btn btn-ghost btn-sm">Edit</a>
+            <form method="POST" action="/occurrences/{{.Occurrence.ID}}/delete">
+              <button class="btn btn-danger btn-sm">Delete</button>
+            </form>
+          </div>
+        {{end}}
+      </div>
+    </div>
+
+    <div id="participant-section">
+      {{template "participant_list" .}}
+    </div>
+  </div>
+
+  {{if or (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
+    <div class="card">
+      <div class="card-title">Assign participant</div>
+      <div id="available-users"
+        hx-get="/occurrences/{{.Occurrence.ID}}/available"
+        hx-trigger="load"
+        hx-swap="innerHTML">
+        <p style="color:var(--text-muted);font-size:12px">Loading&#8230;</p>
+      </div>
+    </div>
+  {{end}}
+
+</div>
+{{end}}

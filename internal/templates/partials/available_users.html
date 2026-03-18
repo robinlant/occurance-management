@@ -1,0 +1,17 @@
+{{define "available_users"}}
+{{if not .Users}}
+  <p style="color:var(--text-muted);font-size:13px">No available users for this date.</p>
+{{else}}
+  <form hx-post="/occurrences/{{.OccurrenceID}}/assign"
+        hx-target="#participant-section"
+        hx-swap="outerHTML"
+        class="row">
+    <select name="user_id" style="flex:1">
+      {{range .Users}}
+        <option value="{{.User.ID}}">{{.User.Name}} ({{.Count}} done)</option>
+      {{end}}
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">Assign</button>
+  </form>
+{{end}}
+{{end}}

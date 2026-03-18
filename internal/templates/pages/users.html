@@ -1,0 +1,54 @@
+{{define "content"}}
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">All users</div>
+    {{range .Users}}
+      <div class="occ-item">
+        <div class="occ-info">
+          <div class="occ-title" style="display:flex;align-items:center;gap:8px">
+            {{.Name}}
+            <span class="badge {{if eq .Role "admin"}}badge-red{{else if eq .Role "organizer"}}badge-purple{{else}}badge-gray{{end}}">{{.Role}}</span>
+          </div>
+          <div class="occ-desc">{{.Email}}</div>
+        </div>
+        <div class="row">
+          <form method="POST" action="/users/{{.ID}}/delete">
+            <button class="btn btn-danger btn-sm">Delete</button>
+          </form>
+        </div>
+      </div>
+      <form method="POST" action="/users/{{.ID}}/set-password" class="row" style="margin-bottom:12px">
+        <input type="password" name="password" placeholder="Set new password" required style="flex:1">
+        <button type="submit" class="btn btn-ghost btn-sm">Set</button>
+      </form>
+    {{end}}
+  </div>
+
+  <div class="card">
+    <div class="card-title">Create user</div>
+    <form method="POST" action="/users" class="stack">
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" name="name" required placeholder="Full name">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" name="email" required placeholder="email@company.com">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" name="password" required placeholder="Minimum 8 characters" minlength="8">
+      </div>
+      <div class="form-group">
+        <label>Role</label>
+        <select name="role">
+          <option value="participant">Participant</option>
+          <option value="organizer">Organizer</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">Create user</button>
+    </form>
+  </div>
+</div>
+{{end}}

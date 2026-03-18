@@ -25,7 +25,7 @@ type Group struct {
 
 type Occurrence struct {
 	ID              int64
-	GroupID         *int64
+	GroupID         int64
 	Title           string
 	Description     string
 	Date            time.Time

@@ -10,6 +10,7 @@ import (
 type UserRepository interface {
 	FindByID(ctx context.Context, id int64) (domain.User, error)
 	FindByName(ctx context.Context, name string) (domain.User, error)
+	FindByEmail(ctx context.Context, email string) (domain.User, error)
 	FindAll(ctx context.Context) ([]domain.User, error)
 	Save(ctx context.Context, user domain.User) (domain.User, error)
 	Delete(ctx context.Context, id int64) error
@@ -37,6 +38,7 @@ type ParticipationRepository interface {
 	FindByUser(ctx context.Context, userID int64) ([]domain.Participation, error)
 	CountByUser(ctx context.Context, userID int64) (int, error)
 	CountByUserInRange(ctx context.Context, userID int64, from, to time.Time) (int, error)
+	CountAllByOccurrence(ctx context.Context) (map[int64]int, error)
 	ExistsForUserInDateRange(ctx context.Context, userID int64, from, to time.Time) (bool, error)
 	Save(ctx context.Context, p domain.Participation) (domain.Participation, error)
 	Delete(ctx context.Context, id int64) error

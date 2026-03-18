@@ -62,10 +62,14 @@ func (r *OccurrenceRepository) FindOpenSpots(ctx context.Context) ([]domain.Occu
 }
 
 func (r *OccurrenceRepository) Save(ctx context.Context, o domain.Occurrence) (domain.Occurrence, error) {
+	var groupID sql.NullInt64
+	if o.GroupID != 0 {
+		groupID = sql.NullInt64{Int64: o.GroupID, Valid: true}
+	}
 	if o.ID == 0 {
 		res, err := r.db.ExecContext(ctx,
 			`INSERT INTO occurrences (group_id, title, description, date, min_participants, max_participants) VALUES (?, ?, ?, ?, ?, ?)`,
-			o.GroupID, o.Title, o.Description, o.Date, o.MinParticipants, o.MaxParticipants,
+			groupID, o.Title, o.Description, o.Date, o.MinParticipants, o.MaxParticipants,
 		)
 		if err != nil {
 			return o, err
@@ -75,7 +79,7 @@ func (r *OccurrenceRepository) Save(ctx context.Context, o domain.Occurrence) (d
 	}
 	_, err := r.db.ExecContext(ctx,
 		`UPDATE occurrences SET group_id = ?, title = ?, description = ?, date = ?, min_participants = ?, max_participants = ? WHERE id = ?`,
-		o.GroupID, o.Title, o.Description, o.Date, o.MinParticipants, o.MaxParticipants, o.ID,
+		groupID, o.Title, o.Description, o.Date, o.MinParticipants, o.MaxParticipants, o.ID,
 	)
 	return o, err
 }
@@ -91,7 +95,11 @@ type rowScanner interface {
 
 func scanOccurrence(row rowScanner) (domain.Occurrence, error) {
 	var o domain.Occurrence
-	err := row.Scan(&o.ID, &o.GroupID, &o.Title, &o.Description, &o.Date, &o.MinParticipants, &o.MaxParticipants)
+	var groupID sql.NullInt64
+	err := row.Scan(&o.ID, &groupID, &o.Title, &o.Description, &o.Date, &o.MinParticipants, &o.MaxParticipants)
+	if groupID.Valid {
+		o.GroupID = groupID.Int64
+	}
 	return o, err
 }
 

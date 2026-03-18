@@ -112,6 +112,10 @@ func (s *OccurrenceService) ListOccurrences(ctx context.Context) ([]domain.Occur
 	return s.occurrences.FindAll(ctx)
 }
 
+func (s *OccurrenceService) GetParticipantCountsByOccurrence(ctx context.Context) (map[int64]int, error) {
+	return s.participations.CountAllByOccurrence(ctx)
+}
+
 func (s *OccurrenceService) ListOccurrencesByGroup(ctx context.Context, groupID int64) ([]domain.Occurrence, error) {
 	return s.occurrences.FindByGroup(ctx, groupID)
 }

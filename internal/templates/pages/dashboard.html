@@ -1,0 +1,41 @@
+{{define "content"}}
+<div class="grid-2" style="margin-bottom:20px">
+  <div class="card">
+    <div class="card-title">Open spots</div>
+    {{if not .OpenOccurrences}}
+      <p style="color:var(--text-muted);font-size:13px">All filled up.</p>
+    {{else}}
+      <div class="stack-sm">
+        {{range .OpenOccurrences}}
+          <a href="/occurrences/{{.ID}}" class="occ-item" style="padding:8px 0;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)">
+            <div>
+              <div class="occ-title" style="font-size:13px">{{.Title}}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:12px;color:var(--text-muted)">{{formatDate .Date}}</div>
+            </div>
+          </a>
+        {{end}}
+      </div>
+    {{end}}
+  </div>
+
+  <div class="card">
+    <div class="card-title">Top performers</div>
+    {{if not .Leaderboard}}
+      <p style="color:var(--text-muted);font-size:13px">No data yet.</p>
+    {{else}}
+      {{range $i, $e := .Leaderboard}}
+        <div class="lb-row">
+          {{if eq $i 0}}<span class="lb-rank gold">&#9312;</span>
+          {{else if eq $i 1}}<span class="lb-rank silver">&#9313;</span>
+          {{else if eq $i 2}}<span class="lb-rank bronze">&#9314;</span>
+          {{else}}<span class="lb-rank">{{add $i 1}}</span>{{end}}
+          <span class="lb-name">{{$e.User.Name}}</span>
+          <span class="lb-count">{{$e.Count}}</span>
+        </div>
+      {{end}}
+    {{end}}
+  </div>
+</div>
+{{end}}

@@ -1,0 +1,43 @@
+{{define "content"}}
+<div class="card">
+  <form id="lb-form"
+    style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:20px"
+    hx-get="/leaderboard"
+    hx-target="#leaderboard-table"
+    hx-swap="outerHTML"
+    hx-push-url="true">
+
+    <div class="form-group" style="flex:none">
+      <label>From</label>
+      <input type="date" name="from" id="lb-from" value="{{.From}}">
+    </div>
+    <div class="form-group" style="flex:none">
+      <label>To</label>
+      <input type="date" name="to" id="lb-to" value="{{.To}}">
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+    <a href="/leaderboard" class="btn btn-ghost btn-sm">Reset</a>
+    <button type="button" onclick="setThisYear()" class="btn btn-ghost btn-sm">This year</button>
+    <button type="button" onclick="setStudentYear()" class="btn btn-ghost btn-sm">Student year</button>
+  </form>
+
+  {{template "leaderboard_table" .}}
+</div>
+
+<script>
+function setThisYear(){
+  var y=new Date().getFullYear();
+  document.getElementById('lb-from').value=y+'-01-01';
+  document.getElementById('lb-to').value=y+'-12-31';
+  htmx.trigger('#lb-form','submit');
+}
+function setStudentYear(){
+  var now=new Date(), m=now.getMonth(), y=now.getFullYear();
+  var s=m>=8?y:y-1;
+  document.getElementById('lb-from').value=s+'-09-01';
+  document.getElementById('lb-to').value=(s+1)+'-08-31';
+  htmx.trigger('#lb-form','submit');
+}
+</script>
+{{end}}
