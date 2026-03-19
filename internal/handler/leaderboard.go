@@ -25,8 +25,22 @@ func (h *LeaderboardHandler) Show(c *gin.Context) {
 		return
 	}
 
+	var maxCount, totalCount int
+	for _, e := range entries {
+		totalCount += e.Count
+		if e.Count > maxCount {
+			maxCount = e.Count
+		}
+	}
+	var average float64
+	if len(entries) > 0 {
+		average = float64(totalCount) / float64(len(entries))
+	}
+
 	data := gin.H{
 		"Entries":    entries,
+		"MaxCount":   maxCount,
+		"Average":    average,
 		"From":       formatDateInput(from),
 		"To":         formatDateInput(to),
 		"ActivePage": "leaderboard",

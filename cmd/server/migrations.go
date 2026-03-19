@@ -6,10 +6,18 @@ import (
 )
 
 func runMigrations(db *sql.DB) error {
-	migration, err := os.ReadFile("migrations/001_init.sql")
-	if err != nil {
-		return err
+	files := []string{
+		"migrations/001_init.sql",
+		"migrations/002_email_notifications.sql",
 	}
-	_, err = db.Exec(string(migration))
-	return err
+	for _, f := range files {
+		migration, err := os.ReadFile(f)
+		if err != nil {
+			return err
+		}
+		if _, err := db.Exec(string(migration)); err != nil {
+			return err
+		}
+	}
+	return nil
 }

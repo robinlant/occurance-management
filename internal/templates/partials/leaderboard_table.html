@@ -3,15 +3,28 @@
   {{if not .Entries}}
     <p style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px">No data.</p>
   {{else}}
+    <div class="lb-stats">
+      <span class="lb-stat-label">Average</span>
+      <span class="lb-stat-value">{{formatFloat .Average}}</span>
+    </div>
     {{range $i, $e := .Entries}}
-      <div class="lb-row">
-        {{if eq $i 0}}<span class="lb-rank gold">&#9312;</span>
-        {{else if eq $i 1}}<span class="lb-rank silver">&#9313;</span>
-        {{else if eq $i 2}}<span class="lb-rank bronze">&#9314;</span>
-        {{else}}<span class="lb-rank">{{add $i 1}}</span>{{end}}
-        <span class="lb-name">{{$e.User.Name}}</span>
+      <a href="/profile/{{$e.User.ID}}" class="lb-row lb-animate" style="animation-delay:{{multiply $i 60}}ms">
+        <div class="lb-rank-cell">
+          {{if eq $i 0}}<span class="lb-rank gold">1</span>
+          {{else if eq $i 1}}<span class="lb-rank silver">2</span>
+          {{else if eq $i 2}}<span class="lb-rank bronze">3</span>
+          {{else}}<span class="lb-rank">{{add $i 1}}</span>{{end}}
+        </div>
+        <div class="user-avatar lb-avatar {{if eq $i 0}}gold{{else if eq $i 1}}silver{{else if eq $i 2}}bronze{{end}}">{{initial $e.User.Name}}</div>
+        <div class="lb-info">
+          <div class="lb-name">{{$e.User.Name}}</div>
+          <div class="lb-username">{{username $e.User.Email}}</div>
+        </div>
+        <div class="lb-bar-wrap">
+          <div class="lb-bar {{if eq $i 0}}gold{{else if eq $i 1}}silver{{else if eq $i 2}}bronze{{end}}" style="width:{{percent $e.Count $.MaxCount}}%"></div>
+        </div>
         <span class="lb-count">{{$e.Count}}</span>
-      </div>
+      </a>
     {{end}}
   {{end}}
 </div>

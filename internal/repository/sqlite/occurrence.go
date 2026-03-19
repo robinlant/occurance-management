@@ -61,6 +61,17 @@ func (r *OccurrenceRepository) FindOpenSpots(ctx context.Context) ([]domain.Occu
 	return scanOccurrences(rows)
 }
 
+func (r *OccurrenceRepository) FindByTitleLike(ctx context.Context, query string, limit int) ([]domain.Occurrence, error) {
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT id, group_id, title, description, date, min_participants, max_participants FROM occurrences WHERE title LIKE ? ORDER BY date DESC LIMIT ?`,
+		"%"+query+"%", limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanOccurrences(rows)
+}
+
 func (r *OccurrenceRepository) Save(ctx context.Context, o domain.Occurrence) (domain.Occurrence, error) {
 	var groupID sql.NullInt64
 	if o.GroupID != 0 {

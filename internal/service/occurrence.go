@@ -205,6 +205,21 @@ func (s *OccurrenceService) GetLeaderboard(ctx context.Context, from, to time.Ti
 	return entries, nil
 }
 
+// GetParticipationCount returns the total participation count for a user.
+func (s *OccurrenceService) GetParticipationCount(ctx context.Context, userID int64) (int, error) {
+	return s.participations.CountByUser(ctx, userID)
+}
+
+// SearchOccurrences finds occurrences by title substring.
+func (s *OccurrenceService) SearchOccurrences(ctx context.Context, query string, limit int) ([]domain.Occurrence, error) {
+	return s.occurrences.FindByTitleLike(ctx, query, limit)
+}
+
+// GetActivityHeatmap returns participation counts grouped by date for a user.
+func (s *OccurrenceService) GetActivityHeatmap(ctx context.Context, userID int64, from, to time.Time) (map[string]int, error) {
+	return s.participations.CountByUserGroupedByDate(ctx, userID, from, to)
+}
+
 // --- Helpers ---
 
 func (s *OccurrenceService) checkOOO(ctx context.Context, userID int64, date time.Time) error {

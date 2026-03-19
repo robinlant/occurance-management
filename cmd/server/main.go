@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -36,11 +37,19 @@ func main() {
 	occRepo := sqlite.NewOccurrenceRepository(db)
 	partRepo := sqlite.NewParticipationRepository(db)
 	oooRepo := sqlite.NewOutOfOfficeRepository(db)
+	settingsRepo := sqlite.NewSettingsRepository(db)
+	emailLogRepo := sqlite.NewEmailLogRepository(db)
 
 	// Services
 	userSvc := service.NewUserService(userRepo, oooRepo, partRepo)
 	groupSvc := service.NewGroupService(groupRepo)
 	occSvc := service.NewOccurrenceService(occRepo, partRepo, userRepo, oooRepo)
+	settingsSvc := service.NewSettingsService(settingsRepo)
+	emailSvc := service.NewEmailService(settingsSvc, emailLogRepo, userRepo, occRepo, partRepo)
+
+	// Start background email notification job (runs every hour)
+	emailSvc.StartBackgroundJob(1 * time.Hour)
+	defer emailSvc.Stop()
 
 	// Handlers
 	authH := handler.NewAuthHandler(userRepo)
@@ -48,9 +57,11 @@ func main() {
 	occH := handler.NewOccurrenceHandler(occSvc, groupSvc)
 	grpH := handler.NewGroupHandler(groupSvc)
 	usrH := handler.NewUserAdminHandler(userSvc)
-	profH := handler.NewProfileHandler(userSvc)
+	profH := handler.NewProfileHandler(userSvc, occSvc)
 	lbH := handler.NewLeaderboardHandler(occSvc)
 	calH := handler.NewCalendarHandler(occSvc, groupSvc)
+	searchH := handler.NewSearchHandler(occSvc, userSvc)
+	settingsH := handler.NewSettingsHandler(settingsSvc, emailSvc)
 	errH := handler.NewErrorHandler()
 
 	// Router
@@ -87,6 +98,8 @@ func main() {
 	protected.POST("/profile/ooo/:id/delete", profH.DeleteOOO)
 	protected.GET("/calendar", calH.Show)
 	protected.GET("/calendar/day", calH.DayOccurrences)
+	protected.GET("/search", searchH.Search)
+	protected.GET("/profile/:id", profH.ShowPublic)
 
 	// Organizer + Admin only
 	staff := protected.Group("/", handler.RoleRequired(domain.RoleOrganizer, domain.RoleAdmin))
@@ -103,11 +116,16 @@ func main() {
 	staff.POST("/groups/:id/delete", grpH.Delete)
 
 	// Admin only
-	admin := protected.Group("/users", handler.RoleRequired(domain.RoleAdmin))
-	admin.GET("", usrH.List)
-	admin.POST("", usrH.Create)
-	admin.POST("/:id/set-password", usrH.SetPassword)
-	admin.POST("/:id/delete", usrH.Delete)
+	adminUsers := protected.Group("/users", handler.RoleRequired(domain.RoleAdmin))
+	adminUsers.GET("", usrH.List)
+	adminUsers.POST("", usrH.Create)
+	adminUsers.POST("/:id/set-password", usrH.SetPassword)
+	adminUsers.POST("/:id/delete", usrH.Delete)
+
+	adminSettings := protected.Group("/settings", handler.RoleRequired(domain.RoleAdmin))
+	adminSettings.GET("", settingsH.Show)
+	adminSettings.POST("", settingsH.Save)
+	adminSettings.POST("/test-email", settingsH.SendTestEmail)
 
 	port := os.Getenv("PORT")
 	if port == "" {

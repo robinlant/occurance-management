@@ -21,6 +21,12 @@ func NewOccurrenceHandler(occ *service.OccurrenceService, grp *service.GroupServ
 	return &OccurrenceHandler{occurrences: occ, groups: grp}
 }
 
+type OccurrenceListItem struct {
+	domain.Occurrence
+	ParticipantCount int
+	Status           string // "under" | "good" | "over"
+}
+
 func (h *OccurrenceHandler) List(c *gin.Context) {
 	groups, _ := h.groups.List(c.Request.Context())
 	groupMap := make(map[int64]domain.Group, len(groups))
@@ -47,8 +53,26 @@ func (h *OccurrenceHandler) List(c *gin.Context) {
 		return
 	}
 
+	counts, _ := h.occurrences.GetParticipantCountsByOccurrence(c.Request.Context())
+
+	items := make([]OccurrenceListItem, 0, len(occs))
+	for _, o := range occs {
+		count := counts[o.ID]
+		status := "good"
+		if count < o.MinParticipants {
+			status = "under"
+		} else if count > o.MaxParticipants {
+			status = "over"
+		}
+		items = append(items, OccurrenceListItem{
+			Occurrence:       o,
+			ParticipantCount: count,
+			Status:           status,
+		})
+	}
+
 	Page(c, "occurrences.html", pageData(c, gin.H{
-		"Occurrences": occs,
+		"Occurrences": items,
 		"Groups":      groupMap,
 		"GroupList":   groups,
 		"ActiveGroup": activeGroup,
@@ -59,12 +83,15 @@ func (h *OccurrenceHandler) List(c *gin.Context) {
 
 func (h *OccurrenceHandler) ShowCreate(c *gin.Context) {
 	groups, _ := h.groups.List(c.Request.Context())
+	now := time.Now()
+	defaultDate := time.Date(now.Year(), now.Month(), now.Day(), 8, 0, 0, 0, now.Location())
 	Page(c, "occurrence_form.html", pageData(c, gin.H{
-		"Groups":          groups,
-		"Occurrence":      nil,
-		"GroupID":         int64(0),
-		"ActivePage":      "occurrences",
-		"PageTitle":       "New Occurrence",
+		"Groups":      groups,
+		"Occurrence":  nil,
+		"GroupID":     int64(0),
+		"DefaultDate": defaultDate.Format("2006-01-02T15:04"),
+		"ActivePage":  "occurrences",
+		"PageTitle":   "New Occurrence",
 	}))
 }
 

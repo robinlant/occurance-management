@@ -1,0 +1,110 @@
+{{define "content"}}
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">Email Configuration</div>
+    <form method="POST" action="/settings" class="stack">
+
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" name="email_enabled" {{if eq (index .Settings "email_enabled") "true"}}checked{{end}}
+                 style="width:auto;accent-color:var(--accent);">
+          <span style="font-size:13px;font-weight:500;color:var(--text);">Enable email notifications</span>
+        </label>
+      </div>
+
+      <hr class="divider">
+
+      <div class="card-title" style="margin-bottom:0;">SMTP Server</div>
+
+      <div class="row" style="gap:12px;">
+        <div class="form-group" style="flex:3;">
+          <label>SMTP Host</label>
+          <input type="text" name="smtp_host" value="{{index .Settings "smtp_host"}}" placeholder="smtp.example.com">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label>Port</label>
+          <input type="number" name="smtp_port" value="{{index .Settings "smtp_port"}}" placeholder="587">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>SMTP Username</label>
+        <input type="text" name="smtp_username" value="{{index .Settings "smtp_username"}}" placeholder="user@example.com">
+      </div>
+
+      <div class="form-group">
+        <label>SMTP Password</label>
+        <input type="password" name="smtp_password" value="{{index .Settings "smtp_password"}}" placeholder="Enter SMTP password">
+      </div>
+
+      <hr class="divider">
+
+      <div class="card-title" style="margin-bottom:0;">Sender</div>
+
+      <div class="row" style="gap:12px;">
+        <div class="form-group" style="flex:1;">
+          <label>Sender Name</label>
+          <input type="text" name="sender_name" value="{{index .Settings "sender_name"}}" placeholder="DutyRound">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label>Sender Email</label>
+          <input type="email" name="sender_email" value="{{index .Settings "sender_email"}}" placeholder="noreply@example.com">
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="card-title" style="margin-bottom:0;">Notification Limits</div>
+
+      <div class="row" style="gap:12px;">
+        <div class="form-group" style="flex:1;">
+          <label>Max Emails Per Day (per user)</label>
+          <input type="number" name="max_emails_per_day" value="{{index .Settings "max_emails_per_day"}}" min="1" max="10" placeholder="1">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label>Upcoming Reminder Days</label>
+          <input type="number" name="upcoming_reminder_days" value="{{index .Settings "upcoming_reminder_days"}}" min="1" max="30" placeholder="3">
+        </div>
+      </div>
+
+      <div class="row" style="gap:8px;margin-top:4px;">
+        <button type="submit" class="btn btn-primary">Save settings</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="stack" style="gap:20px;">
+    <div class="card">
+      <div class="card-title">Test Email</div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+        Send a test email to your own address to verify the SMTP configuration works correctly.
+      </p>
+      <form method="POST" action="/settings/test-email">
+        <button type="submit" class="btn btn-ghost">Send test email</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-title">How It Works</div>
+      <div class="stack-sm" style="font-size:13px;color:var(--text-muted);">
+        <p>DutyRound sends email notifications automatically in the background.</p>
+        <div style="border-left:2px solid var(--accent);padding-left:12px;margin:4px 0;">
+          <strong style="color:var(--text);font-size:12px;">New Occurrence</strong>
+          <p style="margin-top:2px;">Participants receive a digest of available occurrences with open spots.</p>
+        </div>
+        <div style="border-left:2px solid var(--danger);padding-left:12px;margin:4px 0;">
+          <strong style="color:var(--text);font-size:12px;">Unfilled Spots (Participants)</strong>
+          <p style="margin-top:2px;">Participants are notified about upcoming occurrences that still need people.</p>
+        </div>
+        <div style="border-left:2px solid var(--warning);padding-left:12px;margin:4px 0;">
+          <strong style="color:var(--text);font-size:12px;">Unfilled Spots (Organizers)</strong>
+          <p style="margin-top:2px;">Organizers receive a heads-up about upcoming occurrences with free places.</p>
+        </div>
+        <p style="margin-top:8px;">
+          <strong style="color:var(--text);">Note:</strong> Admins do not receive any notification emails. The "Max Emails Per Day" setting prevents spamming users.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}

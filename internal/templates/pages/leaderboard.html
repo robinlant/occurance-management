@@ -18,18 +18,26 @@
 
     <button type="submit" class="btn btn-primary btn-sm">Filter</button>
     <a href="/leaderboard" class="btn btn-ghost btn-sm">Reset</a>
-    <button type="button" onclick="setThisYear()" class="btn btn-ghost btn-sm">This year</button>
-    <button type="button" onclick="setStudentYear()" class="btn btn-ghost btn-sm">Student year</button>
+    <button type="button" onclick="setThisYear()" class="btn btn-ghost btn-sm" id="btn-this-year">This year</button>
+    <button type="button" onclick="setStudentYear()" class="btn btn-ghost btn-sm" id="btn-student-year">Student year</button>
+    <span id="lb-range-label" style="font-size:12px;color:var(--text-muted);margin-left:4px"></span>
   </form>
 
   {{template "leaderboard_table" .}}
 </div>
 
 <script>
+function fmtD(d){var p=d.split('-');return p[2]+'.'+p[1]+'.'+p[0];}
+function showRange(){
+  var f=document.getElementById('lb-from').value, t=document.getElementById('lb-to').value;
+  var el=document.getElementById('lb-range-label');
+  if(f&&t){el.textContent=fmtD(f)+' \u2013 '+fmtD(t);}else{el.textContent='';}
+}
 function setThisYear(){
   var y=new Date().getFullYear();
   document.getElementById('lb-from').value=y+'-01-01';
   document.getElementById('lb-to').value=y+'-12-31';
+  showRange();
   htmx.trigger('#lb-form','submit');
 }
 function setStudentYear(){
@@ -37,7 +45,9 @@ function setStudentYear(){
   var s=m>=8?y:y-1;
   document.getElementById('lb-from').value=s+'-09-01';
   document.getElementById('lb-to').value=(s+1)+'-08-31';
+  showRange();
   htmx.trigger('#lb-form','submit');
 }
+document.addEventListener('DOMContentLoaded',showRange);
 </script>
 {{end}}

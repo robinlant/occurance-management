@@ -1,0 +1,69 @@
+package handler
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+
+	"github.com/robinlant/occurance-management/internal/service"
+)
+
+type SettingsHandler struct {
+	settings *service.SettingsService
+	email    *service.EmailService
+}
+
+func NewSettingsHandler(settings *service.SettingsService, email *service.EmailService) *SettingsHandler {
+	return &SettingsHandler{settings: settings, email: email}
+}
+
+func (h *SettingsHandler) Show(c *gin.Context) {
+	all, err := h.settings.GetAll(c.Request.Context())
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	Page(c, "settings.html", pageData(c, gin.H{
+		"Settings":   all,
+		"ActivePage": "settings",
+		"PageTitle":  "Email Settings",
+	}))
+}
+
+func (h *SettingsHandler) Save(c *gin.Context) {
+	settings := map[string]string{
+		"smtp_host":              c.PostForm("smtp_host"),
+		"smtp_port":              c.PostForm("smtp_port"),
+		"smtp_username":          c.PostForm("smtp_username"),
+		"smtp_password":          c.PostForm("smtp_password"),
+		"sender_email":           c.PostForm("sender_email"),
+		"sender_name":            c.PostForm("sender_name"),
+		"max_emails_per_day":     c.PostForm("max_emails_per_day"),
+		"upcoming_reminder_days": c.PostForm("upcoming_reminder_days"),
+	}
+
+	// Toggle: checkbox sends "on" when checked, absent when unchecked
+	if c.PostForm("email_enabled") == "on" {
+		settings["email_enabled"] = "true"
+	} else {
+		settings["email_enabled"] = "false"
+	}
+
+	if err := h.settings.SaveAll(c.Request.Context(), settings); err != nil {
+		SetFlash(c, "error", "Failed to save settings.")
+		c.Redirect(http.StatusFound, "/settings")
+		return
+	}
+	SetFlash(c, "success", "Email settings saved.")
+	c.Redirect(http.StatusFound, "/settings")
+}
+
+func (h *SettingsHandler) SendTestEmail(c *gin.Context) {
+	user, _ := CurrentUser(c)
+	if err := h.email.SendTestEmail(c.Request.Context(), user.Email); err != nil {
+		SetFlash(c, "error", "Failed to send test email: "+err.Error())
+	} else {
+		SetFlash(c, "success", "Test email sent to "+user.Email)
+	}
+	c.Redirect(http.StatusFound, "/settings")
+}

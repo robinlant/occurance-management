@@ -1,0 +1,53 @@
+{{define "content"}}
+<div class="grid-3" style="margin-bottom:20px">
+  <div class="stat-card">
+    <div class="stat-value">{{.Stats.Total}}</div>
+    <div class="stat-label">Total participations</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{.Stats.CurrentStreak}}</div>
+    <div class="stat-label">Current streak (months)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{.Stats.LongestStreak}}</div>
+    <div class="stat-label">Longest streak (months)</div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:20px">
+  <div class="card-title">Activity — last 12 months</div>
+  <div class="heatmap-meta">
+    <span class="heatmap-avg">{{.Stats.Average}} per month</span>
+  </div>
+  <div class="heatmap-scroll">
+    <div class="heatmap-grid" style="grid-template-columns:repeat({{.WeekCount}},14px)">
+      {{range .Heatmap}}
+        <div class="heatmap-cell level-{{.Level}}" title="{{.Date}}: {{.Count}} participation{{if ne .Count 1}}s{{end}}"></div>
+      {{end}}
+    </div>
+  </div>
+  <div class="heatmap-legend">
+    <span class="heatmap-legend-label">Less</span>
+    <div class="heatmap-cell level-0"></div>
+    <div class="heatmap-cell level-1"></div>
+    <div class="heatmap-cell level-2"></div>
+    <div class="heatmap-cell level-3"></div>
+    <div class="heatmap-cell level-4"></div>
+    <span class="heatmap-legend-label">More</span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">User info</div>
+  <div style="display:flex;align-items:center;gap:14px">
+    <div class="user-avatar" style="width:48px;height:48px;font-size:20px">
+      {{initial .ProfileUser.Name}}
+    </div>
+    <div>
+      <div style="font-size:15px;font-weight:600">{{.ProfileUser.Name}}</div>
+      <div style="font-size:12px;color:var(--text-muted)">{{username .ProfileUser.Email}}</div>
+      <span class="badge {{if eq .ProfileUser.Role "admin"}}badge-red{{else if eq .ProfileUser.Role "organizer"}}badge-purple{{else}}badge-gray{{end}}" style="margin-top:4px;display:inline-block">{{.ProfileUser.Role}}</span>
+    </div>
+  </div>
+</div>
+{{end}}

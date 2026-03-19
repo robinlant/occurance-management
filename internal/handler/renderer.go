@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -45,6 +46,31 @@ var funcMap = template.FuncMap{
 	},
 	"isPast": func(t time.Time) bool {
 		return t.Before(time.Now())
+	},
+	"username": func(email string) string {
+		if i := strings.Index(email, "@"); i > 0 {
+			return "@" + email[:i]
+		}
+		return "@" + email
+	},
+	"multiply": func(a, b int) int { return a * b },
+	"percent": func(value, max int) int {
+		if max == 0 {
+			return 0
+		}
+		return value * 100 / max
+	},
+	"formatFloat": func(f float64) string {
+		return fmt.Sprintf("%.1f", f)
+	},
+	"daysUntil": func(t time.Time) int {
+		now := time.Now().Truncate(24 * time.Hour)
+		target := t.Truncate(24 * time.Hour)
+		days := int(target.Sub(now).Hours() / 24)
+		return days
+	},
+	"weekday": func(t time.Time) string {
+		return t.Weekday().String()
 	},
 }
 

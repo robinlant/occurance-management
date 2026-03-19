@@ -2,26 +2,32 @@
 <div class="grid-2">
   <div class="card">
     <div class="card-title">All users</div>
+    <input type="text" id="user-search" placeholder="Search users..." style="margin-bottom:12px"
+           oninput="filterUsers(this.value)">
+    <div id="user-list">
     {{range .Users}}
-      <div class="occ-item">
-        <div class="occ-info">
-          <div class="occ-title" style="display:flex;align-items:center;gap:8px">
-            {{.Name}}
-            <span class="badge {{if eq .Role "admin"}}badge-red{{else if eq .Role "organizer"}}badge-purple{{else}}badge-gray{{end}}">{{.Role}}</span>
+      <div class="user-list-item" data-name="{{.Name}}" data-email="{{.Email}}">
+        <div class="occ-item">
+          <div class="occ-info">
+            <div class="occ-title" style="display:flex;align-items:center;gap:8px">
+              {{.Name}}
+              <span class="badge {{if eq .Role "admin"}}badge-red{{else if eq .Role "organizer"}}badge-purple{{else}}badge-gray{{end}}">{{.Role}}</span>
+            </div>
+            <div class="occ-desc">{{.Email}}</div>
           </div>
-          <div class="occ-desc">{{.Email}}</div>
+          <div class="row">
+            <form method="POST" action="/users/{{.ID}}/delete">
+              <button class="btn btn-danger btn-sm">Delete</button>
+            </form>
+          </div>
         </div>
-        <div class="row">
-          <form method="POST" action="/users/{{.ID}}/delete">
-            <button class="btn btn-danger btn-sm">Delete</button>
-          </form>
-        </div>
+        <form method="POST" action="/users/{{.ID}}/set-password" class="row" style="margin-bottom:12px">
+          <input type="password" name="password" placeholder="Set new password" required style="flex:1">
+          <button type="submit" class="btn btn-ghost btn-sm">Set</button>
+        </form>
       </div>
-      <form method="POST" action="/users/{{.ID}}/set-password" class="row" style="margin-bottom:12px">
-        <input type="password" name="password" placeholder="Set new password" required style="flex:1">
-        <button type="submit" class="btn btn-ghost btn-sm">Set</button>
-      </form>
     {{end}}
+    </div>
   </div>
 
   <div class="card">
@@ -41,14 +47,47 @@
       </div>
       <div class="form-group">
         <label>Role</label>
-        <select name="role">
-          <option value="participant">Participant</option>
-          <option value="organizer">Organizer</option>
-          <option value="admin">Admin</option>
-        </select>
+        <input type="hidden" name="role" id="role-input" value="participant">
+        <div class="custom-select-wrap">
+          <input type="text" class="custom-select-input" id="role-search"
+                 value="Participant" readonly
+                 onfocus="document.getElementById('role-dropdown').classList.add('open')"
+                 autocomplete="off">
+          <div class="custom-select-dropdown" id="role-dropdown">
+            <div class="custom-select-option" data-value="participant" data-name="Participant"
+                 onclick="selectRole(this)"><span>Participant</span></div>
+            <div class="custom-select-option" data-value="organizer" data-name="Organizer"
+                 onclick="selectRole(this)"><span>Organizer</span></div>
+            <div class="custom-select-option" data-value="admin" data-name="Admin"
+                 onclick="selectRole(this)"><span>Admin</span></div>
+          </div>
+        </div>
       </div>
       <button type="submit" class="btn btn-primary">Create user</button>
     </form>
   </div>
 </div>
+
+<script>
+function filterUsers(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('.user-list-item').forEach(function(el) {
+    var name = (el.getAttribute('data-name') || '').toLowerCase();
+    var email = (el.getAttribute('data-email') || '').toLowerCase();
+    el.style.display = (name.indexOf(q) >= 0 || email.indexOf(q) >= 0) ? '' : 'none';
+  });
+}
+function selectRole(el) {
+  document.getElementById('role-input').value = el.getAttribute('data-value');
+  document.getElementById('role-search').value = el.getAttribute('data-name');
+  document.getElementById('role-dropdown').classList.remove('open');
+}
+document.addEventListener('click', function(e) {
+  var dd = document.getElementById('role-dropdown');
+  var wrap = dd ? dd.closest('.custom-select-wrap') : null;
+  if (wrap && !wrap.contains(e.target)) {
+    dd.classList.remove('open');
+  }
+});
+</script>
 {{end}}

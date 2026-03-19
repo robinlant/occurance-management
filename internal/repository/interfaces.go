@@ -28,6 +28,7 @@ type OccurrenceRepository interface {
 	FindAll(ctx context.Context) ([]domain.Occurrence, error)
 	FindByGroup(ctx context.Context, groupID int64) ([]domain.Occurrence, error)
 	FindOpenSpots(ctx context.Context) ([]domain.Occurrence, error)
+	FindByTitleLike(ctx context.Context, query string, limit int) ([]domain.Occurrence, error)
 	Save(ctx context.Context, occurrence domain.Occurrence) (domain.Occurrence, error)
 	Delete(ctx context.Context, id int64) error
 }
@@ -39,6 +40,7 @@ type ParticipationRepository interface {
 	CountByUser(ctx context.Context, userID int64) (int, error)
 	CountByUserInRange(ctx context.Context, userID int64, from, to time.Time) (int, error)
 	CountAllByOccurrence(ctx context.Context) (map[int64]int, error)
+	CountByUserGroupedByDate(ctx context.Context, userID int64, from, to time.Time) (map[string]int, error)
 	ExistsForUserInDateRange(ctx context.Context, userID int64, from, to time.Time) (bool, error)
 	Save(ctx context.Context, p domain.Participation) (domain.Participation, error)
 	Delete(ctx context.Context, id int64) error
@@ -49,4 +51,17 @@ type OutOfOfficeRepository interface {
 	FindByUser(ctx context.Context, userID int64) ([]domain.OutOfOffice, error)
 	Save(ctx context.Context, ooo domain.OutOfOffice) (domain.OutOfOffice, error)
 	Delete(ctx context.Context, id int64) error
+}
+
+type SettingsRepository interface {
+	Get(ctx context.Context, key string) (string, error)
+	Set(ctx context.Context, key, value string) error
+	GetAll(ctx context.Context) (map[string]string, error)
+	SetMultiple(ctx context.Context, settings map[string]string) error
+}
+
+type EmailLogRepository interface {
+	LogSent(ctx context.Context, userID int64, emailType string) error
+	LastSentAt(ctx context.Context, userID int64) (time.Time, error)
+	CountSentToday(ctx context.Context, userID int64) (int, error)
 }

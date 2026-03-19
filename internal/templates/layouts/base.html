@@ -26,6 +26,7 @@
     {{end}}
     {{if eq .CurrentUser.Role "admin"}}
     <a href="/users"       class="nav-link {{if eq .ActivePage "users"}}active{{end}}"><span class="nav-icon">&#9678;</span> Users</a>
+    <a href="/settings"    class="nav-link {{if eq .ActivePage "settings"}}active{{end}}"><span class="nav-icon">&#9881;</span> Settings</a>
     {{end}}
   </nav>
 </div>
@@ -46,11 +47,26 @@ function updateThemeBtn(){
   btn.title=t==='dark'?'Switch to light':'Switch to dark';
 }
 document.addEventListener('DOMContentLoaded',updateThemeBtn);
+document.addEventListener('click',function(e){
+  var wrap=document.querySelector('.search-wrap');
+  if(wrap && !wrap.contains(e.target)){
+    var dd=document.getElementById('search-results');
+    if(dd)dd.innerHTML='';
+  }
+});
 </script>
 
 <div class="main-wrap">
   <div class="topbar">
     <span class="topbar-title">{{.PageTitle}}</span>
+    <div class="search-wrap">
+      <input type="search" name="q" placeholder="Search people &amp; occurrences..."
+             class="search-input"
+             hx-get="/search" hx-trigger="keyup changed delay:300ms"
+             hx-target="#search-results" hx-swap="outerHTML"
+             autocomplete="off">
+      <div id="search-results"></div>
+    </div>
     <div class="topbar-right">
       <div style="display:flex;align-items:center;gap:6px">
         {{block "topbar-actions" .}}{{end}}

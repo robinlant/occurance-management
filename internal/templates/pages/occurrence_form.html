@@ -8,7 +8,7 @@
       <label>Title</label>
       <input type="text" name="title" required
         value="{{if .Occurrence}}{{.Occurrence.Title}}{{end}}"
-        placeholder="e.g. Versandaktion März">
+        placeholder="e.g. Versandaktion M&#228;rz">
     </div>
 
     <div class="form-group">
@@ -18,21 +18,34 @@
 
     <div class="form-group">
       <label>Group (optional)</label>
-      <select name="group_id">
-        <option value="">&#8212; none &#8212;</option>
-        {{range .Groups}}
-          <option value="{{.ID}}"
-            {{if eq .ID $.GroupID}}selected{{end}}>
-            {{.Name}}
-          </option>
-        {{end}}
-      </select>
+      <input type="hidden" name="group_id" id="group-id-input"
+        value="{{if .Occurrence}}{{if .GroupID}}{{.GroupID}}{{end}}{{end}}">
+      <div class="custom-select-wrap">
+        <input type="text" class="custom-select-input" id="group-search"
+               placeholder="Select group..."
+               autocomplete="off"
+               value="{{if .Occurrence}}{{range .Groups}}{{if eq .ID $.GroupID}}{{.Name}}{{end}}{{end}}{{end}}"
+               onfocus="openGroupDropdown()"
+               oninput="filterGroupDropdown(this.value)">
+        <div class="custom-select-dropdown" id="group-dropdown">
+          <div class="custom-select-option" data-value="" data-name=""
+               onclick="selectGroup(this)">
+            <span style="color:var(--text-muted)">&#8212; none &#8212;</span>
+          </div>
+          {{range .Groups}}
+            <div class="custom-select-option" data-value="{{.ID}}" data-name="{{.Name}}"
+                 onclick="selectGroup(this)">
+              <span>{{.Name}}</span>
+            </div>
+          {{end}}
+        </div>
+      </div>
     </div>
 
     <div class="form-group">
       <label>Date &amp; Time</label>
       <input type="datetime-local" name="date" required
-        value="{{if .Occurrence}}{{.Occurrence.Date.Format "2006-01-02T15:04"}}{{end}}">
+        value="{{if .Occurrence}}{{.Occurrence.Date.Format "2006-01-02T15:04"}}{{else}}{{.DefaultDate}}{{end}}">
     </div>
 
     <div class="grid-2">
@@ -54,4 +67,31 @@
     </div>
   </form>
 </div>
+
+<script>
+function openGroupDropdown() {
+  document.getElementById('group-dropdown').classList.add('open');
+}
+function filterGroupDropdown(q) {
+  q = q.toLowerCase();
+  var dd = document.getElementById('group-dropdown');
+  dd.classList.add('open');
+  dd.querySelectorAll('.custom-select-option').forEach(function(el) {
+    var name = (el.getAttribute('data-name') || '').toLowerCase();
+    if (!el.getAttribute('data-value')) { el.style.display = ''; return; }
+    el.style.display = name.indexOf(q) >= 0 ? '' : 'none';
+  });
+}
+function selectGroup(el) {
+  document.getElementById('group-id-input').value = el.getAttribute('data-value');
+  document.getElementById('group-search').value = el.getAttribute('data-name');
+  document.getElementById('group-dropdown').classList.remove('open');
+}
+document.addEventListener('click', function(e) {
+  var wrap = document.querySelector('.custom-select-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('group-dropdown').classList.remove('open');
+  }
+});
+</script>
 {{end}}

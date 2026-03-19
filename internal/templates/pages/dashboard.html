@@ -5,18 +5,29 @@
     {{if not .OpenOccurrences}}
       <p style="color:var(--text-muted);font-size:13px">All filled up.</p>
     {{else}}
-      <div class="stack-sm">
-        {{range .OpenOccurrences}}
-          <a href="/occurrences/{{.ID}}" class="occ-item" style="padding:8px 0;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)">
-            <div>
-              <div class="occ-title" style="font-size:13px">{{.Title}}</div>
+      {{range .OpenOccurrences}}
+        <a href="/occurrences/{{.ID}}" class="dash-occ-item">
+          <div style="min-width:0;flex:1">
+            <div class="dash-occ-title">
+              <span class="occ-status-dot {{.Status}}"></span>
+              {{.Title}}
+              {{if eq .Status "under"}}<span class="badge badge-red" style="font-size:10px;margin-left:4px">needs {{.Needed}} more</span>{{end}}
             </div>
-            <div style="text-align:right">
-              <div style="font-size:12px;color:var(--text-muted)">{{formatDate .Date}}</div>
+            <div class="dash-occ-sub">{{.ParticipantCount}}/{{.MinParticipants}}&#8211;{{.MaxParticipants}} people</div>
+          </div>
+          <div class="dash-occ-meta">
+            <div class="dash-occ-date">{{weekday .Date}}, {{formatDate .Date}}</div>
+            <div class="dash-occ-days">
+              {{$days := daysUntil .Date}}
+              {{if eq $days 0}}Today
+              {{else if eq $days 1}}Tomorrow
+              {{else if isPast .Date}}{{sub 0 $days}} days ago
+              {{else}}in {{$days}} days
+              {{end}}
             </div>
-          </a>
-        {{end}}
-      </div>
+          </div>
+        </a>
+      {{end}}
     {{end}}
   </div>
 
@@ -26,14 +37,22 @@
       <p style="color:var(--text-muted);font-size:13px">No data yet.</p>
     {{else}}
       {{range $i, $e := .Leaderboard}}
-        <div class="lb-row">
-          {{if eq $i 0}}<span class="lb-rank gold">&#9312;</span>
-          {{else if eq $i 1}}<span class="lb-rank silver">&#9313;</span>
-          {{else if eq $i 2}}<span class="lb-rank bronze">&#9314;</span>
-          {{else}}<span class="lb-rank">{{add $i 1}}</span>{{end}}
-          <span class="lb-name">{{$e.User.Name}}</span>
+        <a href="/profile/{{$e.User.ID}}" class="lb-row">
+          <div class="lb-rank-cell">
+            {{if eq $i 0}}<span class="lb-rank gold">1</span>
+            {{else if eq $i 1}}<span class="lb-rank silver">2</span>
+            {{else if eq $i 2}}<span class="lb-rank bronze">3</span>
+            {{else}}<span class="lb-rank">{{add $i 1}}</span>{{end}}
+          </div>
+          <div class="user-avatar lb-avatar {{if eq $i 0}}gold{{else if eq $i 1}}silver{{else if eq $i 2}}bronze{{end}}" style="width:24px;height:24px;font-size:10px">{{initial $e.User.Name}}</div>
+          <div class="lb-info">
+            <div class="lb-name">{{$e.User.Name}}</div>
+          </div>
+          <div class="lb-bar-wrap">
+            <div class="lb-bar {{if eq $i 0}}gold{{else if eq $i 1}}silver{{else if eq $i 2}}bronze{{end}}" style="width:{{percent $e.Count $.MaxCount}}%"></div>
+          </div>
           <span class="lb-count">{{$e.Count}}</span>
-        </div>
+        </a>
       {{end}}
     {{end}}
   </div>

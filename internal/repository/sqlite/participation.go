@@ -83,6 +83,29 @@ func (r *ParticipationRepository) CountAllByOccurrence(ctx context.Context) (map
 	return m, rows.Err()
 }
 
+func (r *ParticipationRepository) CountByUserGroupedByDate(ctx context.Context, userID int64, from, to time.Time) (map[string]int, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT DATE(o.date) AS d, COUNT(*)
+		FROM participations p
+		JOIN occurrences o ON o.id = p.occurrence_id
+		WHERE p.user_id = ? AND o.date >= ? AND o.date <= ?
+		GROUP BY d`, userID, from, to)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	m := make(map[string]int)
+	for rows.Next() {
+		var d string
+		var cnt int
+		if err := rows.Scan(&d, &cnt); err != nil {
+			return nil, err
+		}
+		m[d] = cnt
+	}
+	return m, rows.Err()
+}
+
 func (r *ParticipationRepository) ExistsForUserInDateRange(ctx context.Context, userID int64, from, to time.Time) (bool, error) {
 	var count int
 	err := r.db.QueryRowContext(ctx, `

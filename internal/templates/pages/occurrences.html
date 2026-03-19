@@ -1,9 +1,9 @@
-{{define "content"}}
-{{if or (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
-  {{block "topbar-actions" .}}
+{{define "topbar-actions"}}
+  {{if or (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
     <a href="/occurrences/new" class="btn btn-primary btn-sm">+ New occurrence</a>
   {{end}}
 {{end}}
+{{define "content"}}
 
 {{if .GroupList}}
 <div class="filter-bar">
@@ -24,15 +24,19 @@
         <div class="occ-item">
           <div class="occ-info">
             <div class="occ-title">
+              <span class="occ-status-dot {{.Status}}"></span>
               {{.Title}}
               {{if $group.ID}}<span class="badge badge-purple">{{$group.Name}}</span>{{end}}
               {{if isPast .Date}}<span class="badge badge-gray">past</span>{{end}}
+              {{if eq .Status "under"}}<span class="badge badge-red">needs people</span>
+              {{else if eq .Status "good"}}<span class="badge badge-green">filled</span>
+              {{else if eq .Status "over"}}<span class="badge badge-yellow">over-staffed</span>{{end}}
             </div>
             {{if .Description}}<div class="occ-desc">{{.Description}}</div>{{end}}
           </div>
           <div class="occ-meta">
             <div class="occ-date">{{formatDate .Date}}</div>
-            <div class="occ-slots">{{.MinParticipants}}&#8211;{{.MaxParticipants}} people</div>
+            <div class="occ-slots">{{.ParticipantCount}}/{{.MinParticipants}}&#8211;{{.MaxParticipants}} people</div>
           </div>
         </div>
       </a>

@@ -1,11 +1,13 @@
 {{define "content"}}
+
 {{if or (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
-{{block "topbar-actions" .}}
-<form method="POST" action="/groups" class="row">
-  <input type="text" name="name" placeholder="New group name" required style="width:200px">
-  <button type="submit" class="btn btn-primary btn-sm">Create</button>
-</form>
-{{end}}
+<div class="card" style="margin-bottom:20px">
+  <div class="card-title">Create group</div>
+  <form method="POST" action="/groups" class="row">
+    <input type="text" name="name" placeholder="New group name" required style="flex:1">
+    <button type="submit" class="btn btn-primary btn-sm">Create</button>
+  </form>
+</div>
 {{end}}
 
 <div class="card">
@@ -18,7 +20,7 @@
           <div class="occ-title">{{.Name}}</div>
         </div>
         {{if or (eq $.CurrentUser.Role "organizer") (eq $.CurrentUser.Role "admin")}}
-          <form method="POST" action="/groups/{{.ID}}/delete">
+          <form method="POST" action="/groups/{{.ID}}/delete" onsubmit="return confirm('Are you sure you want to delete the group &#34;{{.Name}}&#34;? This cannot be undone.')">
             <button class="btn btn-danger btn-sm">Delete</button>
           </form>
         {{end}}
