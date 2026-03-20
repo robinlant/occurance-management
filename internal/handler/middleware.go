@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"net/http"
 
@@ -11,6 +13,46 @@ import (
 	"github.com/robinlant/occurance-management/internal/domain"
 	"github.com/robinlant/occurance-management/internal/repository"
 )
+
+const sessionCSRFToken = "csrf_token"
+
+// CSRFMiddleware validates CSRF tokens on POST requests and generates tokens for GET requests.
+func CSRFMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		s := sessions.Default(c)
+
+		// Ensure a CSRF token exists in the session
+		token, _ := s.Get(sessionCSRFToken).(string)
+		if token == "" {
+			token = generateCSRFToken()
+			s.Set(sessionCSRFToken, token)
+			s.Save()
+		}
+
+		// Store token in context for templates
+		c.Set("csrf_token", token)
+
+		// Validate on POST requests (skip login which has no prior token)
+		if c.Request.Method == "POST" {
+			// Skip CSRF check for login (no session yet) and HTMX requests (same-origin enforced by browser)
+			if c.Request.URL.Path != "/login" && c.GetHeader("HX-Request") != "true" {
+				formToken := c.PostForm("_csrf")
+				if formToken == "" || formToken != token {
+					c.AbortWithStatus(http.StatusForbidden)
+					return
+				}
+			}
+		}
+
+		c.Next()
+	}
+}
+
+func generateCSRFToken() string {
+	b := make([]byte, 32)
+	rand.Read(b)
+	return hex.EncodeToString(b)
+}
 
 // AuthRequired loads the session user into context. Redirects to /login if not authenticated.
 func AuthRequired(users repository.UserRepository) gin.HandlerFunc {

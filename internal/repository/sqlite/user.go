@@ -52,6 +52,26 @@ func (r *UserRepository) FindAll(ctx context.Context) ([]domain.User, error) {
 	return users, rows.Err()
 }
 
+func (r *UserRepository) SearchByNameOrEmail(ctx context.Context, query string, limit int) ([]domain.User, error) {
+	pattern := "%" + query + "%"
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT id, name, email, role, password_hash FROM users WHERE name LIKE ? OR email LIKE ? LIMIT ?`,
+		pattern, pattern, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var users []domain.User
+	for rows.Next() {
+		u, err := scanUser(rows)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+	return users, rows.Err()
+}
+
 func (r *UserRepository) Save(ctx context.Context, u domain.User) (domain.User, error) {
 	if u.ID == 0 {
 		res, err := r.db.ExecContext(ctx,

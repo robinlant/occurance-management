@@ -11,18 +11,20 @@
           <div class="occ-info">
             <div class="occ-title" style="display:flex;align-items:center;gap:8px">
               {{.Name}}
-              <span class="badge {{if eq .Role "admin"}}badge-red{{else if eq .Role "organizer"}}badge-purple{{else}}badge-gray{{end}}">{{.Role}}</span>
+              <span class="badge {{if eq .Role "admin"}}badge-red{{else if eq .Role "organizer"}}badge-accent{{else}}badge-gray{{end}}">{{.Role}}</span>
             </div>
             <div class="occ-desc">{{.Email}}</div>
           </div>
           <div class="row">
-            <form method="POST" action="/users/{{.ID}}/delete">
+            <form method="POST" action="/users/{{.ID}}/delete" onsubmit="return confirm('Are you sure you want to delete this user?')">
+              <input type="hidden" name="_csrf" value="{{$.CSRFToken}}">
               <button class="btn btn-danger btn-sm">Delete</button>
             </form>
           </div>
         </div>
         <form method="POST" action="/users/{{.ID}}/set-password" class="row" style="margin-bottom:12px">
-          <input type="password" name="password" placeholder="Set new password" required style="flex:1">
+          <input type="hidden" name="_csrf" value="{{$.CSRFToken}}">
+          <input type="password" name="password" placeholder="Set new password" required minlength="8" style="flex:1">
           <button type="submit" class="btn btn-ghost btn-sm">Set</button>
         </form>
       </div>
@@ -33,20 +35,21 @@
   <div class="card">
     <div class="card-title">Create user</div>
     <form method="POST" action="/users" class="stack">
+      <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
       <div class="form-group">
-        <label>Name</label>
-        <input type="text" name="name" required placeholder="Full name">
+        <label for="create-name">Name</label>
+        <input type="text" name="name" id="create-name" required placeholder="Full name">
       </div>
       <div class="form-group">
-        <label>Email</label>
-        <input type="email" name="email" required placeholder="email@company.com">
+        <label for="create-email">Email</label>
+        <input type="email" name="email" id="create-email" required placeholder="email@company.com">
       </div>
       <div class="form-group">
-        <label>Password</label>
-        <input type="password" name="password" required placeholder="Minimum 8 characters" minlength="8">
+        <label for="create-password">Password</label>
+        <input type="password" name="password" id="create-password" required placeholder="Minimum 8 characters" minlength="8">
       </div>
       <div class="form-group">
-        <label>Role</label>
+        <label for="role-search">Role</label>
         <input type="hidden" name="role" id="role-input" value="participant">
         <div class="custom-select-wrap">
           <input type="text" class="custom-select-input" id="role-search"

@@ -6,7 +6,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/robinlant/occurance-management/internal/domain"
 	"github.com/robinlant/occurance-management/internal/service"
 )
 
@@ -20,7 +19,8 @@ func NewSearchHandler(occ *service.OccurrenceService, users *service.UserService
 }
 
 type SearchResultOccurrence struct {
-	domain.Occurrence
+	ID               int64
+	Title            string
 	ParticipantCount int
 	Status           string
 }
@@ -38,34 +38,27 @@ func (h *SearchHandler) Search(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	counts, _ := h.occurrences.GetParticipantCountsByOccurrence(c.Request.Context())
+	counts, err := h.occurrences.GetParticipantCountsByOccurrence(c.Request.Context())
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
 	occResults := make([]SearchResultOccurrence, 0, len(occs))
 	for _, o := range occs {
 		count := counts[o.ID]
-		status := "good"
-		if count < o.MinParticipants {
-			status = "under"
-		} else if count > o.MaxParticipants {
-			status = "over"
-		}
 		occResults = append(occResults, SearchResultOccurrence{
-			Occurrence:       o,
+			ID:               o.ID,
+			Title:            o.Title,
 			ParticipantCount: count,
-			Status:           status,
+			Status:           service.ComputeOccStatus(o, count),
 		})
 	}
 
-	// Search users
-	allUsers, _ := h.users.ListUsers(c.Request.Context())
-	qLower := strings.ToLower(q)
-	var userResults []domain.User
-	for _, u := range allUsers {
-		if strings.Contains(strings.ToLower(u.Name), qLower) || strings.Contains(strings.ToLower(u.Email), qLower) {
-			userResults = append(userResults, u)
-			if len(userResults) >= 4 {
-				break
-			}
-		}
+	// Search users via SQL LIKE (no N+1)
+	userResults, err := h.users.SearchUsers(c.Request.Context(), q, 4)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
 	}
 
 	Partial(c, "search_results.html", gin.H{

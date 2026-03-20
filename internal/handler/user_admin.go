@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -37,7 +38,13 @@ func (h *UserAdminHandler) Create(c *gin.Context) {
 	role := domain.Role(c.PostForm("role"))
 
 	if _, err := h.users.CreateUser(c.Request.Context(), name, email, password, role); err != nil {
-		SetFlash(c, "error", "Failed to create user: "+err.Error())
+		msg := "Failed to create user."
+		if errors.Is(err, service.ErrPasswordTooShort) {
+			msg = "Password must be at least 8 characters."
+		} else if errors.Is(err, service.ErrInvalidRole) {
+			msg = "Invalid role selected."
+		}
+		SetFlash(c, "error", msg)
 	} else {
 		SetFlash(c, "success", "User created.")
 	}
@@ -52,7 +59,11 @@ func (h *UserAdminHandler) SetPassword(c *gin.Context) {
 	}
 	password := c.PostForm("password")
 	if err := h.users.SetPassword(c.Request.Context(), id, password); err != nil {
-		SetFlash(c, "error", "Failed to set password.")
+		if errors.Is(err, service.ErrPasswordTooShort) {
+			SetFlash(c, "error", "Password must be at least 8 characters.")
+		} else {
+			SetFlash(c, "error", "Failed to set password.")
+		}
 	} else {
 		SetFlash(c, "success", "Password updated.")
 	}

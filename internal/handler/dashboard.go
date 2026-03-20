@@ -31,18 +31,19 @@ func (h *DashboardHandler) Show(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	counts, _ := h.occurrences.GetParticipantCountsByOccurrence(c.Request.Context())
+	counts, err := h.occurrences.GetParticipantCountsByOccurrence(c.Request.Context())
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
 
 	dashOccs := make([]DashboardOccurrence, 0, len(open))
 	for _, o := range open {
 		count := counts[o.ID]
-		status := "good"
+		status := service.ComputeOccStatus(o, count)
 		needed := 0
 		if count < o.MinParticipants {
-			status = "under"
 			needed = o.MinParticipants - count
-		} else if count > o.MaxParticipants {
-			status = "over"
 		}
 		dashOccs = append(dashOccs, DashboardOccurrence{
 			Occurrence:       o,
@@ -52,7 +53,11 @@ func (h *DashboardHandler) Show(c *gin.Context) {
 		})
 	}
 
-	top, _ := h.occurrences.GetLeaderboard(c.Request.Context(), time.Time{}, time.Time{})
+	top, err := h.occurrences.GetLeaderboard(c.Request.Context(), time.Time{}, time.Time{})
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
 	if len(top) > 5 {
 		top = top[:5]
 	}

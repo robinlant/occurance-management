@@ -12,14 +12,17 @@ import (
 )
 
 var (
-	ErrUserNotFound          = errors.New("user not found")
-	ErrEmailTaken            = errors.New("email already taken")
-	ErrOOOConflict           = errors.New("user has participations assigned in the requested out-of-office period")
+	ErrUserNotFound = errors.New("user not found")
+	ErrEmailTaken   = errors.New("email already taken")
+	ErrOOOConflict  = errors.New("user has participations assigned in the requested out-of-office period")
+	ErrOOONotOwner  = errors.New("out-of-office record does not belong to user")
+	ErrPasswordTooShort = errors.New("password must be at least 8 characters")
+	ErrInvalidRole  = errors.New("invalid role")
 )
 
 type UserService struct {
-	users         repository.UserRepository
-	ooo           repository.OutOfOfficeRepository
+	users          repository.UserRepository
+	ooo            repository.OutOfOfficeRepository
 	participations repository.ParticipationRepository
 }
 
@@ -31,7 +34,23 @@ func NewUserService(
 	return &UserService{users: users, ooo: ooo, participations: participations}
 }
 
+// ValidateRole checks that the role is one of the allowed values.
+func ValidateRole(role domain.Role) error {
+	switch role {
+	case domain.RoleAdmin, domain.RoleOrganizer, domain.RoleParticipant:
+		return nil
+	default:
+		return ErrInvalidRole
+	}
+}
+
 func (s *UserService) CreateUser(ctx context.Context, name, email, password string, role domain.Role) (domain.User, error) {
+	if len(password) < 8 {
+		return domain.User{}, ErrPasswordTooShort
+	}
+	if err := ValidateRole(role); err != nil {
+		return domain.User{}, err
+	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return domain.User{}, err
@@ -45,6 +64,9 @@ func (s *UserService) CreateUser(ctx context.Context, name, email, password stri
 }
 
 func (s *UserService) ChangePassword(ctx context.Context, userID int64, newPassword string) error {
+	if len(newPassword) < 8 {
+		return ErrPasswordTooShort
+	}
 	user, err := s.users.FindByID(ctx, userID)
 	if err != nil {
 		return ErrUserNotFound
@@ -78,8 +100,16 @@ func (s *UserService) AddOutOfOffice(ctx context.Context, userID int64, from, to
 	})
 }
 
-func (s *UserService) RemoveOutOfOffice(ctx context.Context, id int64) error {
-	return s.ooo.Delete(ctx, id)
+// RemoveOutOfOffice deletes an OOO record, verifying ownership.
+func (s *UserService) RemoveOutOfOffice(ctx context.Context, oooID, userID int64) error {
+	ooo, err := s.ooo.FindByID(ctx, oooID)
+	if err != nil {
+		return err
+	}
+	if ooo.UserID != userID {
+		return ErrOOONotOwner
+	}
+	return s.ooo.Delete(ctx, oooID)
 }
 
 func (s *UserService) GetOutOfOffice(ctx context.Context, userID int64) ([]domain.OutOfOffice, error) {
@@ -96,4 +126,9 @@ func (s *UserService) ListUsers(ctx context.Context) ([]domain.User, error) {
 
 func (s *UserService) DeleteUser(ctx context.Context, userID int64) error {
 	return s.users.Delete(ctx, userID)
+}
+
+// SearchUsers searches users by name or email using SQL LIKE.
+func (s *UserService) SearchUsers(ctx context.Context, query string, limit int) ([]domain.User, error) {
+	return s.users.SearchByNameOrEmail(ctx, query, limit)
 }

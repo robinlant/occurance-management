@@ -3,6 +3,7 @@ package sqlite
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/robinlant/occurance-management/internal/domain"
 )
@@ -35,6 +36,18 @@ func (r *OccurrenceRepository) FindByGroup(ctx context.Context, groupID int64) (
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT id, group_id, title, description, date, min_participants, max_participants FROM occurrences WHERE group_id = ? ORDER BY date`,
 		groupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanOccurrences(rows)
+}
+
+func (r *OccurrenceRepository) FindByDate(ctx context.Context, date time.Time) ([]domain.Occurrence, error) {
+	dateStr := date.Format("2006-01-02")
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT id, group_id, title, description, date, min_participants, max_participants FROM occurrences WHERE DATE(date) = ? ORDER BY date`,
+		dateStr)
 	if err != nil {
 		return nil, err
 	}

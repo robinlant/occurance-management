@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 
 	"github.com/robinlant/occurance-management/internal/service"
@@ -92,8 +93,17 @@ func (h *ProfileHandler) ShowPublic(c *gin.Context) {
 func (h *ProfileHandler) ChangePassword(c *gin.Context) {
 	user, _ := CurrentUser(c)
 	if err := h.users.ChangePassword(c.Request.Context(), user.ID, c.PostForm("password")); err != nil {
-		SetFlash(c, "error", "Failed to update password.")
+		if errors.Is(err, service.ErrPasswordTooShort) {
+			SetFlash(c, "error", "Password must be at least 8 characters.")
+		} else {
+			SetFlash(c, "error", "Failed to update password.")
+		}
 	} else {
+		// Regenerate session to invalidate old sessions
+		s := sessions.Default(c)
+		s.Clear()
+		s.Set(sessionUserID, user.ID)
+		s.Save()
 		SetFlash(c, "success", "Password updated.")
 	}
 	c.Redirect(http.StatusFound, "/profile")
@@ -139,11 +149,15 @@ func (h *ProfileHandler) DeleteOOO(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-	if err := h.users.RemoveOutOfOffice(c.Request.Context(), id); err != nil {
+	user, _ := CurrentUser(c)
+	if err := h.users.RemoveOutOfOffice(c.Request.Context(), id, user.ID); err != nil {
+		if errors.Is(err, service.ErrOOONotOwner) {
+			c.Status(http.StatusForbidden)
+			return
+		}
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	user, _ := CurrentUser(c)
 	h.renderOOOList(c, user.ID)
 }
 

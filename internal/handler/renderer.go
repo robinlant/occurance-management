@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -74,6 +75,31 @@ var funcMap = template.FuncMap{
 	},
 }
 
+// templateCache caches parsed templates to avoid re-parsing on every request.
+var (
+	templateCache   = make(map[string]*template.Template)
+	templateCacheMu sync.RWMutex
+)
+
+func getCachedTemplate(key string, patterns []string) (*template.Template, error) {
+	templateCacheMu.RLock()
+	t, ok := templateCache[key]
+	templateCacheMu.RUnlock()
+	if ok {
+		return t, nil
+	}
+
+	t, err := template.New("").Funcs(funcMap).ParseFS(apptmpl.FS, patterns...)
+	if err != nil {
+		return nil, err
+	}
+
+	templateCacheMu.Lock()
+	templateCache[key] = t
+	templateCacheMu.Unlock()
+	return t, nil
+}
+
 // Page renders a full page (base layout + page template).
 // data must include "CurrentUser" and optionally "Flash".
 // Extra partial filenames can be passed to include their definitions (e.g. for inline partials).
@@ -82,7 +108,8 @@ func Page(c *gin.Context, page string, data gin.H, extraPartials ...string) {
 	for _, p := range extraPartials {
 		patterns = append(patterns, "partials/"+p)
 	}
-	t, err := template.New("").Funcs(funcMap).ParseFS(apptmpl.FS, patterns...)
+	cacheKey := strings.Join(patterns, "|")
+	t, err := getCachedTemplate(cacheKey, patterns)
 	if err != nil {
 		log.Printf("template parse error (%s): %v", page, err)
 		c.Status(http.StatusInternalServerError)
@@ -92,20 +119,18 @@ func Page(c *gin.Context, page string, data gin.H, extraPartials ...string) {
 	c.Header("Content-Type", "text/html; charset=utf-8")
 	if err := t.ExecuteTemplate(c.Writer, "base", data); err != nil {
 		log.Printf("template execute error (%s): %v", page, err)
-		// Write visible error — headers already sent so we append to body
-		fmt.Fprintf(c.Writer, "<pre style='color:red;padding:1rem'>template error: %v</pre>", err)
 	}
 }
 
 // Partial renders an HTMX partial (no layout).
 // The partial file must contain {{define "partialName"}}...{{end}}.
 func Partial(c *gin.Context, partial string, data any) {
-	t, err := template.New("").Funcs(funcMap).ParseFS(apptmpl.FS,
-		"partials/"+partial,
-	)
+	patterns := []string{"partials/" + partial}
+	cacheKey := "partial:" + partial
+	t, err := getCachedTemplate(cacheKey, patterns)
 	if err != nil {
 		log.Printf("partial parse error (%s): %v", partial, err)
-		c.String(http.StatusInternalServerError, "template error: %v", err)
+		c.Status(http.StatusInternalServerError)
 		return
 	}
 	c.Status(http.StatusOK)
@@ -114,6 +139,5 @@ func Partial(c *gin.Context, partial string, data any) {
 	name := partial[:len(partial)-5]
 	if err := t.ExecuteTemplate(c.Writer, name, data); err != nil {
 		log.Printf("partial execute error (%s): %v", partial, err)
-		fmt.Fprintf(c.Writer, "<pre style='color:red'>partial error: %v</pre>", err)
 	}
 }

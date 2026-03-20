@@ -54,12 +54,14 @@ func popFlash(c *gin.Context) *Flash {
 	return &f
 }
 
-// pageData builds the base gin.H with CurrentUser and Flash, ready for Page().
+// pageData builds the base gin.H with CurrentUser, Flash, and CSRFToken, ready for Page().
 func pageData(c *gin.Context, extra gin.H) gin.H {
 	user, _ := CurrentUser(c)
+	csrfToken, _ := c.Get("csrf_token")
 	data := gin.H{
 		"CurrentUser": user,
 		"Flash":       popFlash(c),
+		"CSRFToken":   csrfToken,
 	}
 	for k, v := range extra {
 		data[k] = v

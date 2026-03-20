@@ -1,8 +1,12 @@
 package main
 
 import (
+	"context"
 	"log"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/gin-contrib/sessions"
@@ -67,13 +71,34 @@ func main() {
 	// Router
 	r := gin.Default()
 
+	// Session secret
 	sessionSecret := os.Getenv("SESSION_SECRET")
 	if sessionSecret == "" {
+		if os.Getenv("GIN_MODE") == "release" {
+			log.Fatal("SESSION_SECRET must be set in production (GIN_MODE=release)")
+		}
+		log.Println("WARNING: Using default session secret. Set SESSION_SECRET for production.")
 		sessionSecret = "dev-secret-change-in-production"
 	}
 	store := cookie.NewStore([]byte(sessionSecret))
-	store.Options(sessions.Options{HttpOnly: true, MaxAge: 86400 * 7})
+	store.Options(sessions.Options{
+		HttpOnly: true,
+		MaxAge:   86400 * 7,
+		SameSite: http.SameSiteLaxMode,
+		Secure:   os.Getenv("GIN_MODE") == "release",
+	})
 	r.Use(sessions.Sessions("dutyround", store))
+
+	// Security headers middleware
+	r.Use(func(c *gin.Context) {
+		c.Header("X-Content-Type-Options", "nosniff")
+		c.Header("X-Frame-Options", "DENY")
+		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
+		c.Next()
+	})
+
+	// CSRF middleware for POST requests
+	r.Use(handler.CSRFMiddleware())
 
 	r.Static("/static", "./static")
 
@@ -131,8 +156,30 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	log.Printf("DutyRound listening on :%s", port)
-	if err := r.Run(":" + port); err != nil {
-		log.Fatalf("server error: %v", err)
+
+	// Graceful shutdown
+	srv := &http.Server{
+		Addr:    ":" + port,
+		Handler: r,
 	}
+
+	go func() {
+		log.Printf("DutyRound listening on :%s", port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("server error: %v", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("server forced to shutdown: %v", err)
+	}
+	log.Println("Server exited")
 }
+

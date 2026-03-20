@@ -13,6 +13,8 @@ A duty and occurrence management platform for teams. DutyRound helps organizatio
 - **User administration** -- admins create accounts, reset passwords, and assign roles
 - **Search** -- find occurrences and users quickly
 - **Profile pages** -- view personal participation history and manage account settings
+- **Email notifications** -- automated digest emails for new occurrences and unfilled spots, with configurable SMTP and daily limits
+- **Responsive design** -- mobile-friendly layout with collapsible sidebar and adaptive grids
 
 ## Tech Stack
 
@@ -58,14 +60,14 @@ The server starts on `http://localhost:8080` by default.
 ### Pull and Run
 
 ```bash
-docker pull ghcr.io/OWNER/dutyround:latest
+docker pull ghcr.io/robinlant/dutyround:latest
 
 docker run -d \
   --name dutyround \
   -p 8080:8080 \
   -v dutyround-data:/data \
   -e SESSION_SECRET="your-secure-secret-here" \
-  ghcr.io/OWNER/dutyround:latest
+  ghcr.io/robinlant/dutyround:latest
 ```
 
 The container stores the SQLite database at `/data/dutyround.db` by default. Mount a volume to `/data` to persist data across container restarts.
@@ -75,7 +77,7 @@ The container stores the SQLite database at `/data/dutyround.db` by default. Mou
 ```yaml
 services:
   dutyround:
-    image: ghcr.io/OWNER/dutyround:latest
+    image: ghcr.io/robinlant/dutyround:latest
     ports:
       - "8080:8080"
     volumes:
@@ -146,15 +148,28 @@ migrations/          -- SQL migration files
 static/              -- CSS and other static assets
 ```
 
-**Request flow:** HTTP request --> Gin router --> Auth middleware --> Handler --> Service --> Repository --> SQLite
+**Request flow:** HTTP request --> Gin router --> Security headers --> CSRF middleware --> Auth middleware --> Handler --> Service --> Repository --> SQLite
 
-The application uses server-side HTML rendering with Go's `html/template` package. HTMX provides dynamic partial-page updates without a JavaScript framework. Sessions are stored in signed cookies with a 7-day expiry.
+The application uses server-side HTML rendering with Go's `html/template` package. Templates are parsed once and cached for performance. HTMX provides dynamic partial-page updates without a JavaScript framework. Sessions are stored in signed cookies with a 7-day expiry.
+
+### Security
+
+- **CSRF protection** -- per-session tokens validated on all POST requests (HTMX requests are exempt as they enforce same-origin)
+- **Session security** -- `HttpOnly`, `SameSite=Lax`, and `Secure` (in production) cookie flags; session regeneration on password change
+- **Security headers** -- `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`
+- **Input validation** -- password minimum length enforcement, role validation against allowed values, email header injection prevention
+- **Authorization** -- role-based access control at the route level; OOO deletion verified against record ownership
+- **SQLite** -- WAL mode with busy timeout to prevent "database is locked" under concurrent access; atomic transactions for race-condition-prone operations (e.g. signup count check)
+
+### Database Migrations
+
+Migrations are tracked in a `schema_migrations` table. On startup the server reads `migrations/*.sql`, sorts alphabetically, and applies any that haven't been applied yet. To add a migration, create a new `.sql` file with the next sequence number (e.g. `004_my_change.sql`).
 
 ## Configuration Reference
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `DB_PATH` | No | `dutyround.db` | File path for the SQLite database |
-| `SESSION_SECRET` | Yes (production) | `dev-secret-change-in-production` | Secret for cookie-based session signing. Must be changed in production. |
+| `SESSION_SECRET` | **Yes** (production) | `dev-secret-change-in-production` | Secret for cookie-based session signing. The server will **exit** if this is unset when `GIN_MODE=release`. |
 | `PORT` | No | `8080` | TCP port the HTTP server listens on |
-| `GIN_MODE` | No | `debug` | Set to `release` for production to disable debug logging |
+| `GIN_MODE` | No | `debug` | Set to `release` for production (enables secure cookies, enforces `SESSION_SECRET`) |

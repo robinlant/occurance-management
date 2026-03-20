@@ -3,9 +3,11 @@ package service
 import (
 	"context"
 	"fmt"
+	"html"
 	"log"
 	"net/smtp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/robinlant/occurance-management/internal/domain"
@@ -19,6 +21,7 @@ type EmailService struct {
 	occurrences    repository.OccurrenceRepository
 	participations repository.ParticipationRepository
 	stopCh         chan struct{}
+	stopOnce       sync.Once
 }
 
 func NewEmailService(
@@ -41,17 +44,23 @@ func NewEmailService(
 // StartBackgroundJob starts a ticker that runs the notification logic periodically.
 func (s *EmailService) StartBackgroundJob(interval time.Duration) {
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("[email] background job panicked: %v", r)
+			}
+		}()
+
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 
 		// Run once at startup after a short delay
 		time.Sleep(10 * time.Second)
-		s.runNotificationCycle()
+		s.safeRunCycle()
 
 		for {
 			select {
 			case <-ticker.C:
-				s.runNotificationCycle()
+				s.safeRunCycle()
 			case <-s.stopCh:
 				log.Println("[email] background job stopped")
 				return
@@ -61,9 +70,21 @@ func (s *EmailService) StartBackgroundJob(interval time.Duration) {
 	log.Printf("[email] background job started (interval: %v)", interval)
 }
 
-// Stop stops the background job.
+// safeRunCycle runs the notification cycle with panic recovery.
+func (s *EmailService) safeRunCycle() {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[email] notification cycle panicked: %v", r)
+		}
+	}()
+	s.runNotificationCycle()
+}
+
+// Stop stops the background job. Safe to call multiple times.
 func (s *EmailService) Stop() {
-	close(s.stopCh)
+	s.stopOnce.Do(func() {
+		close(s.stopCh)
+	})
 }
 
 func (s *EmailService) runNotificationCycle() {
@@ -204,21 +225,23 @@ func (s *EmailService) sendUnfilledOrganizerNotification(config EmailConfig, use
 	return s.sendEmail(config, user.Email, subject, body)
 }
 
+// sanitizeHeader removes CR/LF characters to prevent email header injection.
+func sanitizeHeader(s string) string {
+	s = strings.ReplaceAll(s, "\r", "")
+	s = strings.ReplaceAll(s, "\n", "")
+	return s
+}
+
 func (s *EmailService) sendEmail(config EmailConfig, to, subject, htmlBody string) error {
 	from := config.SenderEmail
 	addr := fmt.Sprintf("%s:%d", config.SMTPHost, config.SMTPPort)
 
-	headers := make(map[string]string)
-	headers["From"] = fmt.Sprintf("%s <%s>", config.SenderName, from)
-	headers["To"] = to
-	headers["Subject"] = subject
-	headers["MIME-Version"] = "1.0"
-	headers["Content-Type"] = "text/html; charset=UTF-8"
-
 	var msg strings.Builder
-	for k, v := range headers {
-		fmt.Fprintf(&msg, "%s: %s\r\n", k, v)
-	}
+	fmt.Fprintf(&msg, "From: %s <%s>\r\n", sanitizeHeader(config.SenderName), sanitizeHeader(from))
+	fmt.Fprintf(&msg, "To: %s\r\n", sanitizeHeader(to))
+	fmt.Fprintf(&msg, "Subject: %s\r\n", sanitizeHeader(subject))
+	msg.WriteString("MIME-Version: 1.0\r\n")
+	msg.WriteString("Content-Type: text/html; charset=UTF-8\r\n")
 	msg.WriteString("\r\n")
 	msg.WriteString(htmlBody)
 
@@ -241,7 +264,7 @@ func (s *EmailService) SendTestEmail(ctx context.Context, toEmail string) error 
 	return s.sendEmail(config, toEmail, subject, body)
 }
 
-// --- Email templates ---
+// --- Email templates (all user content is HTML-escaped) ---
 
 func emailWrapper(content string) string {
 	return fmt.Sprintf(`<!DOCTYPE html>
@@ -290,7 +313,7 @@ func buildNewOccurrenceEmail(userName string, occs []domain.Occurrence, counts m
           <span style="color:%s;font-weight:600;">%d left</span>
         </td>
       </tr>`,
-			o.Title,
+			html.EscapeString(o.Title),
 			o.Date.Format("02.01.2006 15:04"),
 			count, o.MaxParticipants,
 			spotColor(spotsLeft, o.MinParticipants-count),
@@ -309,7 +332,7 @@ func buildNewOccurrenceEmail(userName string, occs []domain.Occurrence, counts m
           <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">Spots</th>
         </tr>
         %s
-      </table>`, userName, rows.String())
+      </table>`, html.EscapeString(userName), rows.String())
 
 	return emailWrapper(content)
 }
@@ -329,7 +352,7 @@ func buildUnfilledParticipantEmail(userName string, occs []domain.Occurrence, co
         </td>
         <td style="padding:10px 12px;border-bottom:1px solid #30363d;color:#d29922;font-size:13px;text-align:center;font-weight:600;">%d days</td>
       </tr>`,
-			o.Title,
+			html.EscapeString(o.Title),
 			o.Date.Format("02.01.2006 15:04"),
 			needed,
 			daysUntil,
@@ -347,7 +370,7 @@ func buildUnfilledParticipantEmail(userName string, occs []domain.Occurrence, co
           <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">Days Until</th>
         </tr>
         %s
-      </table>`, userName, rows.String())
+      </table>`, html.EscapeString(userName), rows.String())
 
 	return emailWrapper(content)
 }
@@ -368,7 +391,7 @@ func buildUnfilledOrganizerEmail(userName string, occs []domain.Occurrence, coun
         </td>
         <td style="padding:10px 12px;border-bottom:1px solid #30363d;color:#d29922;font-size:13px;text-align:center;font-weight:600;">%d days</td>
       </tr>`,
-			o.Title,
+			html.EscapeString(o.Title),
 			o.Date.Format("02.01.2006 15:04"),
 			count, o.MinParticipants,
 			needed,
@@ -388,7 +411,7 @@ func buildUnfilledOrganizerEmail(userName string, occs []domain.Occurrence, coun
           <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">Days Until</th>
         </tr>
         %s
-      </table>`, userName, rows.String())
+      </table>`, html.EscapeString(userName), rows.String())
 
 	return emailWrapper(content)
 }

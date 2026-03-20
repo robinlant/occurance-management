@@ -15,6 +15,14 @@ func NewOutOfOfficeRepository(db *sql.DB) *OutOfOfficeRepository {
 	return &OutOfOfficeRepository{db: db}
 }
 
+func (r *OutOfOfficeRepository) FindByID(ctx context.Context, id int64) (domain.OutOfOffice, error) {
+	row := r.db.QueryRowContext(ctx,
+		`SELECT id, user_id, from_date, to_date FROM out_of_office WHERE id = ?`, id)
+	var o domain.OutOfOffice
+	err := row.Scan(&o.ID, &o.UserID, &o.From, &o.To)
+	return o, err
+}
+
 func (r *OutOfOfficeRepository) FindByUser(ctx context.Context, userID int64) ([]domain.OutOfOffice, error) {
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT id, user_id, from_date, to_date FROM out_of_office WHERE user_id = ?`, userID)

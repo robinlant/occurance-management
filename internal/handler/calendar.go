@@ -57,7 +57,7 @@ func (h *CalendarHandler) Show(c *gin.Context) {
 			continue
 		}
 		count := counts[o.ID]
-		status := computeOccStatus(o, count)
+		status := service.ComputeOccStatus(o, count)
 		if statusFilter != "" && status != statusFilter {
 			continue
 		}
@@ -94,34 +94,30 @@ func (h *CalendarHandler) DayOccurrences(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-	allOccs, _ := h.occurrences.ListOccurrences(c.Request.Context())
-	counts, _ := h.occurrences.GetParticipantCountsByOccurrence(c.Request.Context())
+	dayOccsList, err := h.occurrences.ListOccurrencesByDate(c.Request.Context(), date)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	counts, err := h.occurrences.GetParticipantCountsByOccurrence(c.Request.Context())
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
 
 	var dayOccs []CalendarOccurrence
-	for _, o := range allOccs {
-		if o.Date.Format("2006-01-02") == date.Format("2006-01-02") {
-			count := counts[o.ID]
-			dayOccs = append(dayOccs, CalendarOccurrence{
-				Occurrence:       o,
-				ParticipantCount: count,
-				Status:           computeOccStatus(o, count),
-			})
-		}
+	for _, o := range dayOccsList {
+		count := counts[o.ID]
+		dayOccs = append(dayOccs, CalendarOccurrence{
+			Occurrence:       o,
+			ParticipantCount: count,
+			Status:           service.ComputeOccStatus(o, count),
+		})
 	}
 	Partial(c, "day_occurrences.html", gin.H{
 		"Date":        date,
 		"Occurrences": dayOccs,
 	})
-}
-
-func computeOccStatus(o domain.Occurrence, count int) string {
-	if count < o.MinParticipants {
-		return "under"
-	}
-	if count > o.MaxParticipants {
-		return "over"
-	}
-	return "good"
 }
 
 func parseMonth(s string) time.Time {

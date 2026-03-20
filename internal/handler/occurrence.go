@@ -53,21 +53,19 @@ func (h *OccurrenceHandler) List(c *gin.Context) {
 		return
 	}
 
-	counts, _ := h.occurrences.GetParticipantCountsByOccurrence(c.Request.Context())
+	counts, err := h.occurrences.GetParticipantCountsByOccurrence(c.Request.Context())
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
 
 	items := make([]OccurrenceListItem, 0, len(occs))
 	for _, o := range occs {
 		count := counts[o.ID]
-		status := "good"
-		if count < o.MinParticipants {
-			status = "under"
-		} else if count > o.MaxParticipants {
-			status = "over"
-		}
 		items = append(items, OccurrenceListItem{
 			Occurrence:       o,
 			ParticipantCount: count,
-			Status:           status,
+			Status:           service.ComputeOccStatus(o, count),
 		})
 	}
 

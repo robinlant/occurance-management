@@ -10,23 +10,25 @@
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 </head>
 <body>
+<a href="#main-content" class="skip-to-content">Skip to content</a>
 {{if .CurrentUser.ID}}
+<button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')" aria-label="Toggle navigation">&#9776;</button>
 <div class="sidebar">
   <div class="sidebar-logo">
     <div class="logo-icon">&#9889;</div>
     DutyRound
   </div>
-  <nav class="sidebar-nav">
-    <a href="/"            class="nav-link {{if eq .ActivePage "dashboard"}}active{{end}}"><span class="nav-icon">&#9638;</span> Dashboard</a>
-    <a href="/occurrences" class="nav-link {{if eq .ActivePage "occurrences"}}active{{end}}"><span class="nav-icon">&#10022;</span> Occurrences</a>
-    <a href="/calendar"    class="nav-link {{if eq .ActivePage "calendar"}}active{{end}}"><span class="nav-icon">&#9643;</span> Calendar</a>
-    <a href="/leaderboard" class="nav-link {{if eq .ActivePage "leaderboard"}}active{{end}}"><span class="nav-icon">&#9672;</span> Leaderboard</a>
+  <nav class="sidebar-nav" aria-label="Main navigation">
+    <a href="/"            class="nav-link {{if eq .ActivePage "dashboard"}}active{{end}}"{{if eq .ActivePage "dashboard"}} aria-current="page"{{end}}><span class="nav-icon">&#9638;</span> Dashboard</a>
+    <a href="/occurrences" class="nav-link {{if eq .ActivePage "occurrences"}}active{{end}}"{{if eq .ActivePage "occurrences"}} aria-current="page"{{end}}><span class="nav-icon">&#10022;</span> Occurrences</a>
+    <a href="/calendar"    class="nav-link {{if eq .ActivePage "calendar"}}active{{end}}"{{if eq .ActivePage "calendar"}} aria-current="page"{{end}}><span class="nav-icon">&#9643;</span> Calendar</a>
+    <a href="/leaderboard" class="nav-link {{if eq .ActivePage "leaderboard"}}active{{end}}"{{if eq .ActivePage "leaderboard"}} aria-current="page"{{end}}><span class="nav-icon">&#9672;</span> Leaderboard</a>
     {{if or (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
-    <a href="/groups"      class="nav-link {{if eq .ActivePage "groups"}}active{{end}}"><span class="nav-icon">&#9673;</span> Groups</a>
+    <a href="/groups"      class="nav-link {{if eq .ActivePage "groups"}}active{{end}}"{{if eq .ActivePage "groups"}} aria-current="page"{{end}}><span class="nav-icon">&#9673;</span> Groups</a>
     {{end}}
     {{if eq .CurrentUser.Role "admin"}}
-    <a href="/users"       class="nav-link {{if eq .ActivePage "users"}}active{{end}}"><span class="nav-icon">&#9678;</span> Users</a>
-    <a href="/settings"    class="nav-link {{if eq .ActivePage "settings"}}active{{end}}"><span class="nav-icon">&#9881;</span> Settings</a>
+    <a href="/users"       class="nav-link {{if eq .ActivePage "users"}}active{{end}}"{{if eq .ActivePage "users"}} aria-current="page"{{end}}><span class="nav-icon">&#9678;</span> Users</a>
+    <a href="/settings"    class="nav-link {{if eq .ActivePage "settings"}}active{{end}}"{{if eq .ActivePage "settings"}} aria-current="page"{{end}}><span class="nav-icon">&#9881;</span> Settings</a>
     {{end}}
   </nav>
 </div>
@@ -61,7 +63,7 @@ document.addEventListener('click',function(e){
     <span class="topbar-title">{{.PageTitle}}</span>
     <div class="search-wrap">
       <input type="search" name="q" placeholder="Search people &amp; occurrences..."
-             class="search-input"
+             class="search-input" aria-label="Search people and occurrences"
              hx-get="/search" hx-trigger="keyup changed delay:300ms"
              hx-target="#search-results" hx-swap="outerHTML"
              autocomplete="off">
@@ -72,7 +74,7 @@ document.addEventListener('click',function(e){
         {{block "topbar-actions" .}}{{end}}
       </div>
       <div class="topbar-sep"></div>
-      <button onclick="toggleTheme()" id="theme-btn" class="btn btn-ghost btn-sm" title="Toggle theme">&#9790;</button>
+      <button onclick="toggleTheme()" id="theme-btn" class="btn btn-ghost btn-sm" aria-label="Toggle theme" title="Toggle theme">&#9790;</button>
       <a href="/profile" class="topbar-user">
         <div class="user-avatar">{{initial .CurrentUser.Name}}</div>
         <div class="topbar-user-info">
@@ -81,15 +83,16 @@ document.addEventListener('click',function(e){
         </div>
       </a>
       <form method="POST" action="/logout" style="margin:0">
+        <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
         <button class="btn btn-ghost btn-sm">Logout</button>
       </form>
     </div>
   </div>
-  <div class="content">
+  <div class="content" id="main-content">
     {{if .Flash}}
-      {{if eq .Flash.Type "success"}}<div class="flash flash-success">&#10003; {{.Flash.Message}}</div>
-      {{else if eq .Flash.Type "error"}}<div class="flash flash-error">&#10005; {{.Flash.Message}}</div>
-      {{else if eq .Flash.Type "warning"}}<div class="flash flash-warning">&#9888; {{.Flash.Message}}</div>
+      {{if eq .Flash.Type "success"}}<div class="flash flash-success" role="alert">&#10003; {{.Flash.Message}}<button class="flash-dismiss" onclick="this.parentElement.remove()" aria-label="Dismiss">&times;</button></div>
+      {{else if eq .Flash.Type "error"}}<div class="flash flash-error" role="alert">&#10005; {{.Flash.Message}}<button class="flash-dismiss" onclick="this.parentElement.remove()" aria-label="Dismiss">&times;</button></div>
+      {{else if eq .Flash.Type "warning"}}<div class="flash flash-warning" role="alert">&#9888; {{.Flash.Message}}<button class="flash-dismiss" onclick="this.parentElement.remove()" aria-label="Dismiss">&times;</button></div>
       {{end}}
     {{end}}
     {{template "content" .}}
@@ -99,6 +102,11 @@ document.addEventListener('click',function(e){
 {{else}}
 {{template "content" .}}
 {{end}}
+<script>
+document.body.addEventListener('htmx:sendError', function() {
+  alert('Network error. Please check your connection and try again.');
+});
+</script>
 </body>
 </html>
 {{end}}

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/robinlant/occurance-management/internal/domain"
+	"github.com/robinlant/occurance-management/internal/repository"
 )
 
 type ParticipationRepository struct {
@@ -116,6 +117,94 @@ func (r *ParticipationRepository) ExistsForUserInDateRange(ctx context.Context, 
 		userID, from, to,
 	).Scan(&count)
 	return count > 0, err
+}
+
+func (r *ParticipationRepository) FindUsersByOccurrence(ctx context.Context, occurrenceID int64) ([]domain.User, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT u.id, u.name, u.email, u.role, u.password_hash
+		FROM participations p
+		JOIN users u ON u.id = p.user_id
+		WHERE p.occurrence_id = ?`, occurrenceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var users []domain.User
+	for rows.Next() {
+		u, err := scanUser(rows)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+	return users, rows.Err()
+}
+
+func (r *ParticipationRepository) LeaderboardAll(ctx context.Context) ([]repository.LeaderboardRow, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT u.id, u.name, u.email, u.role, COUNT(p.id) as cnt
+		FROM users u
+		LEFT JOIN participations p ON p.user_id = u.id
+		WHERE u.role NOT IN ('admin', 'organizer')
+		GROUP BY u.id
+		ORDER BY cnt DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanLeaderboardRows(rows)
+}
+
+func (r *ParticipationRepository) LeaderboardInRange(ctx context.Context, from, to time.Time) ([]repository.LeaderboardRow, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT u.id, u.name, u.email, u.role, COUNT(p.id) as cnt
+		FROM users u
+		LEFT JOIN participations p ON p.user_id = u.id
+		LEFT JOIN occurrences o ON o.id = p.occurrence_id AND o.date >= ? AND o.date <= ?
+		WHERE u.role NOT IN ('admin', 'organizer')
+		GROUP BY u.id
+		ORDER BY cnt DESC`, from, to)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanLeaderboardRows(rows)
+}
+
+// CountAndInsert atomically checks the participation count and inserts if not already signed up.
+// This fixes the TOCTOU race condition in signup.
+func (r *ParticipationRepository) CountAndInsert(ctx context.Context, occurrenceID, userID int64, maxParticipants int) (isOverMax bool, err error) {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback()
+
+	var count int
+	if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM participations WHERE occurrence_id = ?`, occurrenceID).Scan(&count); err != nil {
+		return false, err
+	}
+
+	isOverMax = count >= maxParticipants
+
+	_, err = tx.ExecContext(ctx, `INSERT INTO participations (user_id, occurrence_id) VALUES (?, ?)`, userID, occurrenceID)
+	if err != nil {
+		return false, err
+	}
+
+	return isOverMax, tx.Commit()
+}
+
+func scanLeaderboardRows(rows *sql.Rows) ([]repository.LeaderboardRow, error) {
+	var list []repository.LeaderboardRow
+	for rows.Next() {
+		var r repository.LeaderboardRow
+		if err := rows.Scan(&r.UserID, &r.Name, &r.Email, &r.Role, &r.Count); err != nil {
+			return nil, err
+		}
+		list = append(list, r)
+	}
+	return list, rows.Err()
 }
 
 func (r *ParticipationRepository) Save(ctx context.Context, p domain.Participation) (domain.Participation, error) {

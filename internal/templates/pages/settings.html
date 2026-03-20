@@ -3,6 +3,7 @@
   <div class="card">
     <div class="card-title">Email Configuration</div>
     <form method="POST" action="/settings" class="stack">
+      <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
 
       <div class="form-group">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
@@ -18,23 +19,23 @@
 
       <div class="row" style="gap:12px;">
         <div class="form-group" style="flex:3;">
-          <label>SMTP Host</label>
-          <input type="text" name="smtp_host" value="{{index .Settings "smtp_host"}}" placeholder="smtp.example.com">
+          <label for="smtp-host">SMTP Host</label>
+          <input type="text" name="smtp_host" id="smtp-host" value="{{index .Settings "smtp_host"}}" placeholder="smtp.example.com">
         </div>
         <div class="form-group" style="flex:1;">
-          <label>Port</label>
-          <input type="number" name="smtp_port" value="{{index .Settings "smtp_port"}}" placeholder="587">
+          <label for="smtp-port">Port</label>
+          <input type="number" name="smtp_port" id="smtp-port" value="{{index .Settings "smtp_port"}}" placeholder="587">
         </div>
       </div>
 
       <div class="form-group">
-        <label>SMTP Username</label>
-        <input type="text" name="smtp_username" value="{{index .Settings "smtp_username"}}" placeholder="user@example.com">
+        <label for="smtp-username">SMTP Username</label>
+        <input type="text" name="smtp_username" id="smtp-username" value="{{index .Settings "smtp_username"}}" placeholder="user@example.com">
       </div>
 
       <div class="form-group">
-        <label>SMTP Password</label>
-        <input type="password" name="smtp_password" value="{{index .Settings "smtp_password"}}" placeholder="Enter SMTP password">
+        <label for="smtp-password">SMTP Password</label>
+        <input type="password" name="smtp_password" id="smtp-password" value="{{index .Settings "smtp_password"}}" placeholder="Enter SMTP password">
       </div>
 
       <hr class="divider">
@@ -43,12 +44,12 @@
 
       <div class="row" style="gap:12px;">
         <div class="form-group" style="flex:1;">
-          <label>Sender Name</label>
-          <input type="text" name="sender_name" value="{{index .Settings "sender_name"}}" placeholder="DutyRound">
+          <label for="sender-name">Sender Name</label>
+          <input type="text" name="sender_name" id="sender-name" value="{{index .Settings "sender_name"}}" placeholder="DutyRound">
         </div>
         <div class="form-group" style="flex:1;">
-          <label>Sender Email</label>
-          <input type="email" name="sender_email" value="{{index .Settings "sender_email"}}" placeholder="noreply@example.com">
+          <label for="sender-email">Sender Email</label>
+          <input type="email" name="sender_email" id="sender-email" value="{{index .Settings "sender_email"}}" placeholder="noreply@example.com">
         </div>
       </div>
 
@@ -58,12 +59,12 @@
 
       <div class="row" style="gap:12px;">
         <div class="form-group" style="flex:1;">
-          <label>Max Emails Per Day (per user)</label>
-          <input type="number" name="max_emails_per_day" value="{{index .Settings "max_emails_per_day"}}" min="1" max="10" placeholder="1">
+          <label for="max-emails">Max Emails Per Day (per user)</label>
+          <input type="number" name="max_emails_per_day" id="max-emails" value="{{index .Settings "max_emails_per_day"}}" min="1" max="10" placeholder="1">
         </div>
         <div class="form-group" style="flex:1;">
-          <label>Upcoming Reminder Days</label>
-          <input type="number" name="upcoming_reminder_days" value="{{index .Settings "upcoming_reminder_days"}}" min="1" max="30" placeholder="3">
+          <label for="reminder-days">Upcoming Reminder Days</label>
+          <input type="number" name="upcoming_reminder_days" id="reminder-days" value="{{index .Settings "upcoming_reminder_days"}}" min="1" max="30" placeholder="3">
         </div>
       </div>
 

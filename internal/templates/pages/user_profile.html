@@ -46,7 +46,7 @@
     <div>
       <div style="font-size:15px;font-weight:600">{{.ProfileUser.Name}}</div>
       <div style="font-size:12px;color:var(--text-muted)">{{username .ProfileUser.Email}}</div>
-      <span class="badge {{if eq .ProfileUser.Role "admin"}}badge-red{{else if eq .ProfileUser.Role "organizer"}}badge-purple{{else}}badge-gray{{end}}" style="margin-top:4px;display:inline-block">{{.ProfileUser.Role}}</span>
+      <span class="badge {{if eq .ProfileUser.Role "admin"}}badge-red{{else if eq .ProfileUser.Role "organizer"}}badge-accent{{else}}badge-gray{{end}}" style="margin-top:4px;display:inline-block">{{.ProfileUser.Role}}</span>
     </div>
   </div>
 </div>
