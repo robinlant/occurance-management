@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/robinlant/occurance-management/internal/domain"
 	"github.com/robinlant/occurance-management/internal/repository/sqlite"
@@ -13,7 +15,12 @@ import (
 )
 
 func main() {
-	dbPath := flag.String("db", "dutyround.db", "path to SQLite database")
+	defaultDb := os.Getenv("DB_PATH")
+	if defaultDb == "" {
+		defaultDb = "dutyround.db"
+	}
+
+	dbPath := flag.String("db", defaultDb, "path to SQLite database")
 	name := flag.String("name", "", "admin name (required)")
 	email := flag.String("email", "", "admin email (required)")
 	password := flag.String("password", "", "admin password (required)")
@@ -22,6 +29,13 @@ func main() {
 	if *name == "" || *email == "" || *password == "" {
 		fmt.Fprintln(os.Stderr, "Usage: seed -name=Admin -email=admin@example.com -password=secret")
 		os.Exit(1)
+	}
+
+	dbDir := filepath.Dir(*dbPath)
+	if dbDir != "." {
+		if err := os.MkdirAll(dbDir, 0755); err != nil {
+			log.Fatalf("could not create database directory: %v", err)
+		}
 	}
 
 	db, err := sqlite.Open(*dbPath)
@@ -37,7 +51,14 @@ func main() {
 
 	user, err := svc.CreateUser(context.Background(), *name, *email, *password, domain.RoleAdmin)
 	if err != nil {
-		log.Fatalf("create user: %v", err)
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "UNIQUE") || strings.Contains(errMsg, "already exists") {
+			fmt.Printf("Notice: Admin with email %s already exists. No changes made.\n", *email)
+			os.Exit(0)
+		}
+
+		log.Fatalf("create user error: %v", err)
 	}
+
 	fmt.Printf("Admin created: id=%d  name=%s  email=%s\n", user.ID, user.Name, user.Email)
 }
