@@ -178,15 +178,8 @@ func buildHeatmap(activityMap map[string]int, from, to time.Time) ([]HeatmapCell
 		key := d.Format("2006-01-02")
 		count := activityMap[key]
 		level := 0
-		switch {
-		case count >= 4:
+		if count >= 1 {
 			level = 4
-		case count >= 3:
-			level = 3
-		case count >= 2:
-			level = 2
-		case count >= 1:
-			level = 1
 		}
 		cells = append(cells, HeatmapCell{
 			Date:  key,

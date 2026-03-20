@@ -14,7 +14,19 @@
 </div>
 {{end}}
 
-<div class="card">
+<div class="occ-view-toggle" role="group" aria-label="View mode">
+  <button type="button" class="btn btn-ghost btn-sm occ-view-btn active" data-view="list" aria-pressed="true" title="List view">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/></svg>
+    List
+  </button>
+  <button type="button" class="btn btn-ghost btn-sm occ-view-btn" data-view="card" aria-pressed="false" title="Card view">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+    Cards
+  </button>
+</div>
+
+<!-- List view -->
+<div class="card occ-list-view">
   {{if not .Occurrences}}
     <p style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px">No occurrences{{if .ActiveGroup}} in this group{{end}}.</p>
   {{else}}
@@ -43,4 +55,71 @@
     {{end}}
   {{end}}
 </div>
+
+<!-- Card view -->
+<div class="occ-card-grid" style="display:none">
+  {{if not .Occurrences}}
+    <p class="occ-card-grid-empty" style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px">No occurrences{{if .ActiveGroup}} in this group{{end}}.</p>
+  {{else}}
+    {{range .Occurrences}}
+      {{$group := index $.Groups .GroupID}}
+      <a href="/occurrences/{{.ID}}" class="occ-card status-{{.Status}}{{if isPast .Date}} past{{end}}">
+        <div class="occ-card-header">
+          <span class="occ-card-title">{{.Title}}</span>
+        </div>
+        <div class="occ-card-badges">
+          {{if $group.ID}}<span class="badge badge-accent">{{$group.Name}}</span>{{end}}
+          {{if isPast .Date}}<span class="badge badge-gray">past</span>{{end}}
+          {{if eq .Status "under"}}<span class="badge badge-red">needs people</span>
+          {{else if eq .Status "good"}}<span class="badge badge-green">filled</span>
+          {{else if eq .Status "over"}}<span class="badge badge-yellow">over-staffed</span>{{end}}
+        </div>
+        {{if .Description}}<div class="occ-card-desc">{{.Description}}</div>{{end}}
+        <div class="occ-card-footer">
+          <span class="occ-card-date">{{formatDate .Date}}</span>
+          <span class="occ-card-slots">{{.ParticipantCount}}/{{.MinParticipants}}&#8211;{{.MaxParticipants}}</span>
+        </div>
+      </a>
+    {{end}}
+  {{end}}
+</div>
+
+<script>
+(function() {
+  var STORAGE_KEY = 'dr-occ-view';
+  var listView = document.querySelector('.occ-list-view');
+  var cardGrid = document.querySelector('.occ-card-grid');
+  var buttons  = document.querySelectorAll('.occ-view-btn');
+
+  if (!listView || !cardGrid || !buttons.length) return;
+
+  function setView(mode) {
+    if (mode === 'card') {
+      listView.style.display = 'none';
+      cardGrid.style.display = '';
+    } else {
+      listView.style.display = '';
+      cardGrid.style.display = 'none';
+      mode = 'list';
+    }
+    buttons.forEach(function(btn) {
+      var active = btn.getAttribute('data-view') === mode;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    try { localStorage.setItem(STORAGE_KEY, mode); } catch(e) {}
+  }
+
+  buttons.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      setView(btn.getAttribute('data-view'));
+    });
+  });
+
+  // Restore saved preference
+  var saved = 'list';
+  try { saved = localStorage.getItem(STORAGE_KEY) || 'list'; } catch(e) {}
+  setView(saved);
+})();
+</script>
 {{end}}
