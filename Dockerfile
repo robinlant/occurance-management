@@ -19,6 +19,10 @@ RUN CGO_ENABLED=1 go build \
     -ldflags="-s -w -linkmode external -extldflags '-static'" \
     -o /dutyround ./cmd/server
 
+RUN CGO_ENABLED=1 go build \
+    -ldflags="-s -w -linkmode external -extldflags '-static'" \
+    -o /seed ./cmd/seed
+
 # ---- Runtime stage ----
 FROM alpine:3.21
 
@@ -29,6 +33,9 @@ WORKDIR /app
 
 # Copy the compiled binary
 COPY --from=builder /dutyround .
+
+# Copy runtime seed binary
+COPY --from=builder /seed .
 
 # Copy runtime assets
 COPY --from=builder /src/static ./static
