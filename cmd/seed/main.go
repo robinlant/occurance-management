@@ -30,14 +30,6 @@ func main() {
 	}
 	defer db.Close()
 
-	migration, err := os.ReadFile("migrations/001_init.sql")
-	if err != nil {
-		log.Fatalf("read migration: %v", err)
-	}
-	if _, err := db.Exec(string(migration)); err != nil {
-		log.Fatalf("migration: %v", err)
-	}
-
 	userRepo := sqlite.NewUserRepository(db)
 	oooRepo := sqlite.NewOutOfOfficeRepository(db)
 	partRepo := sqlite.NewParticipationRepository(db)
