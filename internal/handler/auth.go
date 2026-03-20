@@ -10,6 +10,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/robinlant/occurance-management/internal/domain"
+	"github.com/robinlant/occurance-management/internal/i18n"
 	"github.com/robinlant/occurance-management/internal/repository"
 )
 
@@ -31,17 +32,19 @@ func (h *AuthHandler) ShowLogin(c *gin.Context) {
 	Page(c, "login.html", gin.H{
 		"CurrentUser": domain.User{},
 		"Flash":       popFlash(c),
+		"Lang":        i18n.GetLang(c),
 	})
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {
 	email := c.PostForm("email")
 	password := c.PostForm("password")
+	lang := i18n.GetLang(c)
 
 	user, err := h.users.FindByEmail(c.Request.Context(), email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			SetFlash(c, "error", "Invalid email or password.")
+			SetFlash(c, "error", i18n.T(lang, "flash.invalidEmailOrPassword"))
 			c.Redirect(http.StatusFound, "/login")
 			return
 		}
@@ -50,7 +53,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-		SetFlash(c, "error", "Invalid email or password.")
+		SetFlash(c, "error", i18n.T(lang, "flash.invalidEmailOrPassword"))
 		c.Redirect(http.StatusFound, "/login")
 		return
 	}

@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/robinlant/occurance-management/internal/i18n"
 	apptmpl "github.com/robinlant/occurance-management/internal/templates"
 )
 
@@ -73,6 +74,26 @@ var funcMap = template.FuncMap{
 	"weekday": func(t time.Time) string {
 		return t.Weekday().String()
 	},
+	"t": func(lang, key string) string {
+		return i18n.T(lang, key)
+	},
+	"monthNameT": func(lang string, t time.Time) string {
+		if lang == "de" {
+			months := [...]string{
+				"Januar", "Februar", "M\u00e4rz", "April", "Mai", "Juni",
+				"Juli", "August", "September", "Oktober", "November", "Dezember",
+			}
+			return months[t.Month()-1] + " " + t.Format("2006")
+		}
+		return t.Format("January 2006")
+	},
+	"weekdayT": func(lang string, t time.Time) string {
+		if lang == "de" {
+			days := [...]string{"Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"}
+			return days[t.Weekday()]
+		}
+		return t.Weekday().String()
+	},
 }
 
 // templateCache caches parsed templates to avoid re-parsing on every request.
@@ -124,7 +145,13 @@ func Page(c *gin.Context, page string, data gin.H, extraPartials ...string) {
 
 // Partial renders an HTMX partial (no layout).
 // The partial file must contain {{define "partialName"}}...{{end}}.
+// If data is a gin.H and lacks "Lang", it is injected automatically.
 func Partial(c *gin.Context, partial string, data any) {
+	if m, ok := data.(gin.H); ok {
+		if _, exists := m["Lang"]; !exists {
+			m["Lang"] = i18n.GetLang(c)
+		}
+	}
 	patterns := []string{"partials/" + partial}
 	cacheKey := "partial:" + partial
 	t, err := getCachedTemplate(cacheKey, patterns)

@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/robinlant/occurance-management/internal/domain"
+	"github.com/robinlant/occurance-management/internal/i18n"
 	"github.com/robinlant/occurance-management/internal/service"
 )
 
@@ -67,11 +68,12 @@ func (h *DashboardHandler) Show(c *gin.Context) {
 			maxCount = e.Count
 		}
 	}
+	lang := i18n.GetLang(c)
 	Page(c, "dashboard.html", pageData(c, gin.H{
 		"OpenOccurrences": dashOccs,
 		"Leaderboard":     top,
 		"MaxCount":        maxCount,
 		"ActivePage":      "dashboard",
-		"PageTitle":       "Dashboard",
+		"PageTitle":       i18n.T(lang, "title.dashboard"),
 	}))
 }

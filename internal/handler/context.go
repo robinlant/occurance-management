@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/robinlant/occurance-management/internal/domain"
+	"github.com/robinlant/occurance-management/internal/i18n"
 )
 
 func init() {
@@ -54,7 +55,7 @@ func popFlash(c *gin.Context) *Flash {
 	return &f
 }
 
-// pageData builds the base gin.H with CurrentUser, Flash, and CSRFToken, ready for Page().
+// pageData builds the base gin.H with CurrentUser, Flash, CSRFToken, and Lang, ready for Page().
 func pageData(c *gin.Context, extra gin.H) gin.H {
 	user, _ := CurrentUser(c)
 	csrfToken, _ := c.Get("csrf_token")
@@ -62,6 +63,7 @@ func pageData(c *gin.Context, extra gin.H) gin.H {
 		"CurrentUser": user,
 		"Flash":       popFlash(c),
 		"CSRFToken":   csrfToken,
+		"Lang":        i18n.GetLang(c),
 	}
 	for k, v := range extra {
 		data[k] = v
