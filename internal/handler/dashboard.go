@@ -11,6 +11,7 @@ import (
 	"github.com/robinlant/occurance-management/internal/service"
 )
 
+
 type DashboardOccurrence struct {
 	domain.Occurrence
 	ParticipantCount int
@@ -58,26 +59,35 @@ func (h *DashboardHandler) Show(c *gin.Context) {
 		})
 	}
 
-	top, err := h.occurrences.GetLeaderboard(c.Request.Context(), time.Time{}, time.Time{})
-	if err != nil {
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-	if len(top) > 5 {
-		top = top[:5]
-	}
-	var maxCount int
-	for _, e := range top {
-		if e.Count > maxCount {
-			maxCount = e.Count
-		}
-	}
+	currentUser, _ := CurrentUser(c)
 	lang := i18n.GetLang(c)
-	Page(c, "dashboard.html", pageData(c, gin.H{
+	data := gin.H{
 		"OpenOccurrences": dashOccs,
-		"Leaderboard":     top,
-		"MaxCount":        maxCount,
 		"ActivePage":      "dashboard",
 		"PageTitle":       i18n.T(lang, "title.dashboard"),
-	}))
+	}
+
+	if currentUser.Role == domain.RoleParticipant {
+		upcoming, _ := h.occurrences.GetUpcomingForUser(c.Request.Context(), currentUser.ID)
+		data["UserUpcoming"] = upcoming
+	} else {
+		top, err := h.occurrences.GetLeaderboard(c.Request.Context(), time.Time{}, time.Time{})
+		if err != nil {
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+		if len(top) > 5 {
+			top = top[:5]
+		}
+		var maxCount int
+		for _, e := range top {
+			if e.Count > maxCount {
+				maxCount = e.Count
+			}
+		}
+		data["Leaderboard"] = top
+		data["MaxCount"] = maxCount
+	}
+
+	Page(c, "dashboard.html", pageData(c, data))
 }

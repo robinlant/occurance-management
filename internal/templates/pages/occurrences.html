@@ -65,6 +65,7 @@
           </div>
           <div class="occ-meta">
             <div class="occ-date">{{formatDate .Date}}</div>
+            <div class="occ-slots">{{weekday .Date}} &middot; {{relativeDay .Date}}</div>
             <div class="occ-slots">{{.ParticipantCount}}/{{.MinParticipants}}&#8211;{{.MaxParticipants}} people</div>
           </div>
         </div>
@@ -93,7 +94,10 @@
         </div>
         {{if .Description}}<div class="occ-card-desc">{{.Description}}</div>{{end}}
         <div class="occ-card-footer">
-          <span class="occ-card-date">{{formatDate .Date}}</span>
+          <div>
+            <div class="occ-card-date">{{formatDate .Date}}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">{{weekday .Date}} &middot; {{relativeDay .Date}}</div>
+          </div>
           <span class="occ-card-slots">{{.ParticipantCount}}/{{.MinParticipants}}&#8211;{{.MaxParticipants}}</span>
         </div>
       </a>

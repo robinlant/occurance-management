@@ -24,6 +24,7 @@
                data-time="{{.Date.Format "15:04"}}"
                data-min="{{.MinParticipants}}"
                data-max="{{.MaxParticipants}}"
+               data-group-id="{{.GroupID}}"
                onclick="selectCopy(this)">
             <span>{{.Title}}</span>
             <span style="color:var(--text-muted);font-size:11px">{{formatDateTime .Date}}</span>
@@ -145,16 +146,28 @@ function filterCopyDropdown(q) {
   });
 }
 function selectCopy(el) {
-  var title = el.getAttribute('data-title') || '';
-  var desc  = el.getAttribute('data-desc')  || '';
-  var time  = el.getAttribute('data-time')  || '';
-  var min   = el.getAttribute('data-min')   || '';
-  var max   = el.getAttribute('data-max')   || '';
+  var title   = el.getAttribute('data-title')    || '';
+  var desc    = el.getAttribute('data-desc')     || '';
+  var time    = el.getAttribute('data-time')     || '';
+  var min     = el.getAttribute('data-min')      || '';
+  var max     = el.getAttribute('data-max')      || '';
+  var groupId = el.getAttribute('data-group-id') || '';
 
   if (title) document.getElementById('occ-title').value = title;
   if (desc !== null) document.getElementById('occ-desc').value = desc;
   if (min)   document.getElementById('occ-min').value = min;
   if (max)   document.getElementById('occ-max').value = max;
+  if (min || max) syncMinMax();
+
+  // Populate group field
+  var groupOpt = document.querySelector('#group-dropdown .custom-select-option[data-value="' + groupId + '"]');
+  if (groupOpt) {
+    selectGroup(groupOpt);
+  } else {
+    // No matching group (or none) — clear the group selection
+    document.getElementById('group-id-input').value = '';
+    document.getElementById('group-search').value = '';
+  }
 
   // Replace just the time portion of the current date value
   if (time) {

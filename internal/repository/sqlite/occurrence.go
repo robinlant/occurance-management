@@ -74,6 +74,21 @@ func (r *OccurrenceRepository) FindOpenSpots(ctx context.Context) ([]domain.Occu
 	return scanOccurrences(rows)
 }
 
+func (r *OccurrenceRepository) FindUpcomingByUser(ctx context.Context, userID int64, from time.Time) ([]domain.Occurrence, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT o.id, o.group_id, o.title, o.description, o.date, o.min_participants, o.max_participants
+		FROM occurrences o
+		JOIN participations p ON p.occurrence_id = o.id
+		WHERE p.user_id = ? AND o.date >= ?
+		ORDER BY o.date ASC`,
+		userID, from)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanOccurrences(rows)
+}
+
 func (r *OccurrenceRepository) FindByTitleLike(ctx context.Context, query string, limit int) ([]domain.Occurrence, error) {
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT id, group_id, title, description, date, min_participants, max_participants FROM occurrences WHERE title LIKE ? ORDER BY date DESC LIMIT ?`,

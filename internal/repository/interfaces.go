@@ -30,6 +30,7 @@ type OccurrenceRepository interface {
 	FindByGroup(ctx context.Context, groupID int64) ([]domain.Occurrence, error)
 	FindByDate(ctx context.Context, date time.Time) ([]domain.Occurrence, error)
 	FindOpenSpots(ctx context.Context) ([]domain.Occurrence, error)
+	FindUpcomingByUser(ctx context.Context, userID int64, from time.Time) ([]domain.Occurrence, error)
 	FindByTitleLike(ctx context.Context, query string, limit int) ([]domain.Occurrence, error)
 	Save(ctx context.Context, occurrence domain.Occurrence) (domain.Occurrence, error)
 	Delete(ctx context.Context, id int64) error

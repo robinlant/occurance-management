@@ -71,6 +71,21 @@ var funcMap = template.FuncMap{
 		days := int(target.Sub(now).Hours() / 24)
 		return days
 	},
+	"relativeDay": func(t time.Time) string {
+		d := int(t.Truncate(24 * time.Hour).Sub(time.Now().Truncate(24 * time.Hour)).Hours() / 24)
+		switch {
+		case d == 0:
+			return "today"
+		case d == 1:
+			return "tomorrow"
+		case d == -1:
+			return "yesterday"
+		case d > 1:
+			return fmt.Sprintf("in %d days", d)
+		default:
+			return fmt.Sprintf("%d days ago", -d)
+		}
+	},
 	"weekday": func(t time.Time) string {
 		return t.Weekday().String()
 	},
