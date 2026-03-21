@@ -18,7 +18,15 @@ func NewLeaderboardHandler(occ *service.OccurrenceService) *LeaderboardHandler {
 }
 
 func (h *LeaderboardHandler) Show(c *gin.Context) {
+	now := time.Now()
+	syFrom, syTo := studentYearDates(now)
+	tyFrom, tyTo := thisYearDates(now)
+
 	from, to := parseDateRange(c)
+	if from.IsZero() && to.IsZero() {
+		from, to = syFrom, syTo
+	}
+
 	entries, err := h.occurrences.GetLeaderboard(c.Request.Context(), from, to)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
@@ -37,14 +45,27 @@ func (h *LeaderboardHandler) Show(c *gin.Context) {
 		average = float64(totalCount) / float64(len(entries))
 	}
 
+	fromStr := formatDateInput(from)
+	toStr := formatDateInput(to)
+	syFromStr := formatDateInput(syFrom)
+	syToStr := formatDateInput(syTo)
+	tyFromStr := formatDateInput(tyFrom)
+	tyToStr := formatDateInput(tyTo)
+
 	data := gin.H{
-		"Entries":    entries,
-		"MaxCount":   maxCount,
-		"Average":    average,
-		"From":       formatDateInput(from),
-		"To":         formatDateInput(to),
-		"ActivePage": "leaderboard",
-		"PageTitle":  "Leaderboard",
+		"Entries":           entries,
+		"MaxCount":          maxCount,
+		"Average":           average,
+		"From":              fromStr,
+		"To":                toStr,
+		"StudentYearFrom":   syFromStr,
+		"StudentYearTo":     syToStr,
+		"ThisYearFrom":      tyFromStr,
+		"ThisYearTo":        tyToStr,
+		"StudentYearActive": fromStr == syFromStr && toStr == syToStr,
+		"ThisYearActive":    fromStr == tyFromStr && toStr == tyToStr,
+		"ActivePage":        "leaderboard",
+		"PageTitle":         "Leaderboard",
 	}
 
 	if c.GetHeader("HX-Request") == "true" {
@@ -52,6 +73,23 @@ func (h *LeaderboardHandler) Show(c *gin.Context) {
 		return
 	}
 	Page(c, "leaderboard.html", pageData(c, data), "leaderboard_table.html")
+}
+
+func studentYearDates(now time.Time) (time.Time, time.Time) {
+	y := now.Year()
+	if now.Month() < time.September {
+		y--
+	}
+	from := time.Date(y, time.September, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(y+1, time.August, 31, 0, 0, 0, 0, time.UTC)
+	return from, to
+}
+
+func thisYearDates(now time.Time) (time.Time, time.Time) {
+	y := now.Year()
+	from := time.Date(y, time.January, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(y, time.December, 31, 0, 0, 0, 0, time.UTC)
+	return from, to
 }
 
 func parseDateRange(c *gin.Context) (time.Time, time.Time) {
