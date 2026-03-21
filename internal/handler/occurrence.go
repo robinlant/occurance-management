@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -40,6 +41,8 @@ func (h *OccurrenceHandler) List(c *gin.Context) {
 			activeGroup = gid
 		}
 	}
+	statusFilter := c.Query("status") // "under" | "good" | "over"
+	hidePast := c.Query("hide_past") == "1"
 
 	var occs []domain.Occurrence
 	var err error
@@ -59,44 +62,81 @@ func (h *OccurrenceHandler) List(c *gin.Context) {
 		return
 	}
 
+	now := time.Now()
 	items := make([]OccurrenceListItem, 0, len(occs))
 	for _, o := range occs {
+		if hidePast && o.Date.Before(now) {
+			continue
+		}
 		count := counts[o.ID]
+		status := service.ComputeOccStatus(o, count)
+		if statusFilter != "" && status != statusFilter {
+			continue
+		}
 		items = append(items, OccurrenceListItem{
 			Occurrence:       o,
 			ParticipantCount: count,
-			Status:           service.ComputeOccStatus(o, count),
+			Status:           status,
 		})
 	}
 
+	// Sort: upcoming ASC (earliest first), then past DESC (most recent past first)
+	sort.SliceStable(items, func(i, j int) bool {
+		iPast := items[i].Date.Before(now)
+		jPast := items[j].Date.Before(now)
+		if iPast != jPast {
+			return !iPast // upcoming before past
+		}
+		if iPast {
+			return items[i].Date.After(items[j].Date) // most recent past first
+		}
+		return items[i].Date.Before(items[j].Date) // earliest upcoming first
+	})
+
 	Page(c, "occurrences.html", pageData(c, gin.H{
-		"Occurrences": items,
-		"Groups":      groupMap,
-		"GroupList":   groups,
-		"ActiveGroup": activeGroup,
-		"ActivePage":  "occurrences",
-		"PageTitle":   "Occurrences",
+		"Occurrences":  items,
+		"Groups":       groupMap,
+		"GroupList":    groups,
+		"ActiveGroup":  activeGroup,
+		"StatusFilter": statusFilter,
+		"HidePast":     hidePast,
+		"ActivePage":   "occurrences",
+		"PageTitle":    "Occurrences",
 	}))
 }
 
 func (h *OccurrenceHandler) ShowCreate(c *gin.Context) {
 	groups, _ := h.groups.List(c.Request.Context())
-	now := time.Now()
-	defaultDate := time.Date(now.Year(), now.Month(), now.Day(), 8, 0, 0, 0, now.Location())
+	occs, _ := h.occurrences.ListOccurrences(c.Request.Context())
+
+	defaultDate := time.Now()
+	if dateStr := c.Query("date"); dateStr != "" {
+		if d, err := time.ParseInLocation("2006-01-02", dateStr, time.Local); err == nil {
+			defaultDate = d
+		}
+	}
+	defaultDate = time.Date(defaultDate.Year(), defaultDate.Month(), defaultDate.Day(), 8, 0, 0, 0, defaultDate.Location())
+
 	Page(c, "occurrence_form.html", pageData(c, gin.H{
-		"Groups":      groups,
-		"Occurrence":  nil,
-		"GroupID":     int64(0),
-		"DefaultDate": defaultDate.Format("2006-01-02T15:04"),
-		"ActivePage":  "occurrences",
-		"PageTitle":   "New Occurrence",
+		"Groups":          groups,
+		"Occurrence":      nil,
+		"GroupID":         int64(0),
+		"DefaultDate":     defaultDate.Format("2006-01-02T15:04"),
+		"ActivePage":      "occurrences",
+		"PageTitle":       "New Occurrence",
+		"PastOccurrences": occs,
 	}))
 }
 
 func (h *OccurrenceHandler) Create(c *gin.Context) {
 	occ, err := h.occurrenceFromForm(c)
 	if err != nil {
-		SetFlash(c, "error", "Invalid form data.")
+		SetFlash(c, "error", err.Error())
+		c.Redirect(http.StatusFound, "/occurrences/new")
+		return
+	}
+	if occ.Date.Before(time.Now()) {
+		SetFlash(c, "error", "Date cannot be in the past.")
 		c.Redirect(http.StatusFound, "/occurrences/new")
 		return
 	}
@@ -138,7 +178,7 @@ func (h *OccurrenceHandler) Update(c *gin.Context) {
 	}
 	occ, err := h.occurrenceFromForm(c)
 	if err != nil {
-		SetFlash(c, "error", "Invalid form data.")
+		SetFlash(c, "error", err.Error())
 		c.Redirect(http.StatusFound, "/occurrences/"+strconv.FormatInt(id, 10)+"/edit")
 		return
 	}
@@ -341,6 +381,12 @@ func (h *OccurrenceHandler) occurrenceFromForm(c *gin.Context) (domain.Occurrenc
 	max, err := strconv.Atoi(maxStr)
 	if err != nil {
 		return domain.Occurrence{}, err
+	}
+	if min < 1 || max < 1 {
+		return domain.Occurrence{}, errors.New("participants must be at least 1")
+	}
+	if min > max {
+		return domain.Occurrence{}, errors.New("min participants cannot exceed max")
 	}
 	occ := domain.Occurrence{
 		Title:           title,

@@ -5,11 +5,28 @@
 {{end}}
 {{define "content"}}
 
+{{/* Status filter chips */}}
+<div class="filter-bar" style="margin-bottom:8px">
+  <a href="/occurrences{{if .ActiveGroup}}?group={{.ActiveGroup}}{{end}}"
+     class="chip {{if and (not .StatusFilter) (not .HidePast)}}active{{end}}">All</a>
+  <a href="/occurrences?hide_past=1{{if .ActiveGroup}}&group={{.ActiveGroup}}{{end}}"
+     class="chip {{if and .HidePast (not .StatusFilter)}}active{{end}}">Upcoming</a>
+  <a href="/occurrences?status=under{{if .ActiveGroup}}&group={{.ActiveGroup}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
+     class="chip {{if eq .StatusFilter "under"}}active{{end}}">Needs people</a>
+  <a href="/occurrences?status=good{{if .ActiveGroup}}&group={{.ActiveGroup}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
+     class="chip {{if eq .StatusFilter "good"}}active{{end}}">Filled</a>
+  <a href="/occurrences?status=over{{if .ActiveGroup}}&group={{.ActiveGroup}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
+     class="chip {{if eq .StatusFilter "over"}}active{{end}}">Over-staffed</a>
+</div>
+
+{{/* Group filter chips */}}
 {{if .GroupList}}
 <div class="filter-bar">
-  <a href="/occurrences" class="chip {{if not .ActiveGroup}}active{{end}}">All</a>
+  <a href="/occurrences{{if .StatusFilter}}?status={{.StatusFilter}}{{if .HidePast}}&hide_past=1{{end}}{{else}}{{if .HidePast}}?hide_past=1{{end}}{{end}}"
+     class="chip {{if not .ActiveGroup}}active{{end}}">All groups</a>
   {{range .GroupList}}
-    <a href="/occurrences?group={{.ID}}" class="chip {{if eq $.ActiveGroup .ID}}active{{end}}">{{.Name}}</a>
+    <a href="/occurrences?group={{.ID}}{{if $.StatusFilter}}&status={{$.StatusFilter}}{{end}}{{if $.HidePast}}&hide_past=1{{end}}"
+       class="chip {{if eq $.ActiveGroup .ID}}active{{end}}">{{.Name}}</a>
   {{end}}
 </div>
 {{end}}
@@ -32,7 +49,7 @@
   {{else}}
     {{range .Occurrences}}
       {{$group := index $.Groups .GroupID}}
-      <a href="/occurrences/{{.ID}}" style="display:block">
+      <a href="/occurrences/{{.ID}}" style="display:block" class="{{if isPast .Date}}past{{end}}">
         <div class="occ-item">
           <div class="occ-info">
             <div class="occ-title">

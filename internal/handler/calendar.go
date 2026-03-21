@@ -37,6 +37,7 @@ func NewCalendarHandler(occ *service.OccurrenceService, grp *service.GroupServic
 func (h *CalendarHandler) Show(c *gin.Context) {
 	month := parseMonth(c.Query("month"))
 	statusFilter := c.Query("status") // "", "under", "good", "over"
+	hidePast := c.Query("hide_past") == "1"
 	var groupFilter int64
 	if raw := c.Query("group"); raw != "" {
 		groupFilter, _ = strconv.ParseInt(raw, 10, 64)
@@ -50,10 +51,14 @@ func (h *CalendarHandler) Show(c *gin.Context) {
 		groupMap[g.ID] = g
 	}
 
-	// Build CalendarOccurrences, applying group + status filters.
+	now := time.Now()
+	// Build CalendarOccurrences, applying group + status + hidePast filters.
 	var calOccs []CalendarOccurrence
 	for _, o := range allOccs {
 		if groupFilter != 0 && o.GroupID != groupFilter {
+			continue
+		}
+		if hidePast && o.Date.Before(now) {
 			continue
 		}
 		count := counts[o.ID]
@@ -80,6 +85,7 @@ func (h *CalendarHandler) Show(c *gin.Context) {
 		"NextMonth":    nextMonth,
 		"Weeks":        weeks,
 		"StatusFilter": statusFilter,
+		"HidePast":     hidePast,
 		"GroupFilter":  groupFilter,
 		"GroupList":    groups,
 		"Groups":       groupMap,
@@ -114,9 +120,11 @@ func (h *CalendarHandler) DayOccurrences(c *gin.Context) {
 			Status:           service.ComputeOccStatus(o, count),
 		})
 	}
+	currentUser, _ := CurrentUser(c)
 	Partial(c, "day_occurrences.html", gin.H{
 		"Date":        date,
 		"Occurrences": dayOccs,
+		"CurrentUser": currentUser,
 	})
 }
 
