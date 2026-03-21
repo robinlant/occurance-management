@@ -1,24 +1,26 @@
 {{define "content"}}
 
-{{/* Status filter tabs */}}
+{{/* Status + upcoming filter chips */}}
 <div class="cal-filter-bar">
   <a href="/calendar?month={{formatMonth .Month}}{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}"
-     class="chip {{if not .StatusFilter}}active{{end}}">All events</a>
-  <a href="/calendar?month={{formatMonth .Month}}&status=under{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}"
+     class="chip {{if and (not .StatusFilter) (not .HidePast)}}active{{end}}">All events</a>
+  <a href="/calendar?month={{formatMonth .Month}}&hide_past=1{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}"
+     class="chip {{if and .HidePast (not .StatusFilter)}}active{{end}}">Upcoming</a>
+  <a href="/calendar?month={{formatMonth .Month}}&status=under{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
      class="chip {{if eq .StatusFilter "under"}}active{{end}}">Needs people</a>
-  <a href="/calendar?month={{formatMonth .Month}}&status=good{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}"
+  <a href="/calendar?month={{formatMonth .Month}}&status=good{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
      class="chip {{if eq .StatusFilter "good"}}active{{end}}">Filled</a>
-  <a href="/calendar?month={{formatMonth .Month}}&status=over{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}"
+  <a href="/calendar?month={{formatMonth .Month}}&status=over{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
      class="chip {{if eq .StatusFilter "over"}}active{{end}}">Over-staffed</a>
 </div>
 
 {{/* Group filter chips */}}
 {{if .GroupList}}
 <div class="filter-bar">
-  <a href="/calendar?month={{formatMonth .Month}}{{if .StatusFilter}}&status={{.StatusFilter}}{{end}}"
+  <a href="/calendar?month={{formatMonth .Month}}{{if .StatusFilter}}&status={{.StatusFilter}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
      class="chip {{if not .GroupFilter}}active{{end}}">All groups</a>
   {{range .GroupList}}
-    <a href="/calendar?month={{formatMonth $.Month}}&group={{.ID}}{{if $.StatusFilter}}&status={{$.StatusFilter}}{{end}}"
+    <a href="/calendar?month={{formatMonth $.Month}}&group={{.ID}}{{if $.StatusFilter}}&status={{$.StatusFilter}}{{end}}{{if $.HidePast}}&hide_past=1{{end}}"
        class="chip {{if eq $.GroupFilter .ID}}active{{end}}">{{.Name}}</a>
   {{end}}
 </div>
@@ -27,12 +29,12 @@
 <div class="calendar-layout" style="margin-top:16px">
   <div>
     <div class="cal-header">
-      <a href="/calendar{{if .StatusFilter}}?status={{.StatusFilter}}{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}{{else}}{{if .GroupFilter}}?group={{.GroupFilter}}{{end}}{{end}}"
+      <a href="/calendar{{if .StatusFilter}}?status={{.StatusFilter}}{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}{{if .HidePast}}&hide_past=1{{end}}{{else}}{{if .GroupFilter}}?group={{.GroupFilter}}{{if .HidePast}}&hide_past=1{{end}}{{else}}{{if .HidePast}}?hide_past=1{{end}}{{end}}{{end}}"
          class="btn btn-ghost btn-sm">Today</a>
-      <a href="/calendar?month={{formatMonth .PrevMonth}}{{if .StatusFilter}}&status={{.StatusFilter}}{{end}}{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}"
+      <a href="/calendar?month={{formatMonth .PrevMonth}}{{if .StatusFilter}}&status={{.StatusFilter}}{{end}}{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
          class="btn btn-ghost btn-sm">&#8592;</a>
       <div class="cal-month">{{monthName .Month}}</div>
-      <a href="/calendar?month={{formatMonth .NextMonth}}{{if .StatusFilter}}&status={{.StatusFilter}}{{end}}{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}"
+      <a href="/calendar?month={{formatMonth .NextMonth}}{{if .StatusFilter}}&status={{.StatusFilter}}{{end}}{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
          class="btn btn-ghost btn-sm">&#8594;</a>
     </div>
 
@@ -55,11 +57,13 @@
             <div class="day-num">{{dayNum .Date}}</div>
             {{range $i, $o := .Occurrences}}
               {{if lt $i 3}}
-                <div class="cal-event-pill status-{{$o.Status}}{{if isPast $o.Date}} past{{end}}"
-                     title="{{$o.Title}} ({{$o.ParticipantCount}}/{{$o.MaxParticipants}} people)">
+                <a href="/occurrences/{{$o.ID}}"
+                   class="cal-event-pill status-{{$o.Status}}{{if isPast $o.Date}} past{{end}}"
+                   title="{{$o.Title}} ({{$o.ParticipantCount}}/{{$o.MaxParticipants}} people)"
+                   onclick="event.stopPropagation()">
                   <span class="cal-event-name">{{$o.Title}}</span>
                   <span class="cal-event-time">{{formatTime $o.Date}}</span>
-                </div>
+                </a>
               {{end}}
             {{end}}
             {{if gt (len .Occurrences) 3}}

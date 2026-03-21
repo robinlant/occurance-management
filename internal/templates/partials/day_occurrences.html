@@ -19,4 +19,9 @@
   <div class="legend-item"><span class="legend-dot good"></span>Filled</div>
   <div class="legend-item"><span class="legend-dot over"></span>Over-staffed</div>
 </div>
+{{if or (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
+<a href="/occurrences/new?date={{formatISO .Date}}"
+   class="btn btn-primary btn-sm"
+   style="display:block;text-align:center;margin-top:12px;width:100%">+ New occurrence</a>
+{{end}}
 {{end}}

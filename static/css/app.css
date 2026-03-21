@@ -42,12 +42,15 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+html { overscroll-behavior: none; }
+
 body {
   background: var(--bg);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px;
   line-height: 1.5;
+  overscroll-behavior: none;
 }
 
 a { color: inherit; text-decoration: none; }
@@ -407,6 +410,9 @@ a:hover .occ-item { background: var(--hover-bg); }
   margin-bottom: 2px;
 }
 .occ-desc { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Dim past items in list view, matching card behaviour */
+.occ-list-view a.past .occ-item { filter: grayscale(55%) opacity(0.45); }
 .occ-meta { text-align: right; flex-shrink: 0; }
 .occ-date { font-size: 13px; color: var(--text); font-variant-numeric: tabular-nums; }
 .occ-slots { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
@@ -460,7 +466,7 @@ a:hover .occ-item { background: var(--hover-bg); }
 .occ-card.status-under { border-left-color: var(--danger); }
 .occ-card.status-good  { border-left-color: var(--success); }
 .occ-card.status-over  { border-left-color: var(--warning); }
-.occ-card.past         { opacity: 0.65; }
+.occ-card.past         { filter: grayscale(55%) opacity(0.45); }
 
 .occ-card-header {
   margin-bottom: 8px;

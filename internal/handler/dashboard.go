@@ -38,8 +38,12 @@ func (h *DashboardHandler) Show(c *gin.Context) {
 		return
 	}
 
+	now := time.Now()
 	dashOccs := make([]DashboardOccurrence, 0, len(open))
 	for _, o := range open {
+		if o.Date.Before(now) {
+			continue
+		}
 		count := counts[o.ID]
 		status := service.ComputeOccStatus(o, count)
 		needed := 0

@@ -1,8 +1,43 @@
 {{define "content"}}
-<div style="max-width:540px">
+<div style="max-width:680px;margin:0 auto">
+
+  {{if not .Occurrence}}
+  <div class="card" style="margin-bottom:16px;padding:20px 24px">
+    <div class="card-title" style="margin-bottom:8px">Copy from existing</div>
+    <div class="form-group">
+      <label for="copy-search">Pre-fill title, description, time &amp; participant limits from a past occurrence</label>
+      <div class="custom-select-wrap" style="margin-top:6px">
+        <input type="text" class="custom-select-input" id="copy-search"
+               placeholder="Search occurrences to copy from&#8230;"
+               autocomplete="off"
+               onfocus="openCopyDropdown()"
+               oninput="filterCopyDropdown(this.value)">
+        <div class="custom-select-dropdown" id="copy-dropdown">
+          <div class="custom-select-option copy-opt" data-name="" onclick="selectCopy(this)">
+            <span style="color:var(--text-muted)">&#8212; none &#8212;</span>
+          </div>
+          {{range .PastOccurrences}}
+          <div class="custom-select-option copy-opt"
+               data-name="{{.Title}}"
+               data-title="{{.Title}}"
+               data-desc="{{.Description}}"
+               data-time="{{.Date.Format "15:04"}}"
+               data-min="{{.MinParticipants}}"
+               data-max="{{.MaxParticipants}}"
+               onclick="selectCopy(this)">
+            <span>{{.Title}}</span>
+            <span style="color:var(--text-muted);font-size:11px">{{formatDateTime .Date}}</span>
+          </div>
+          {{end}}
+        </div>
+      </div>
+    </div>
+  </div>
+  {{end}}
+
   <form method="POST"
     action="{{if .Occurrence}}/occurrences/{{.Occurrence.ID}}{{else}}/occurrences{{end}}"
-    class="card stack">
+    class="card stack" style="padding:28px 32px;gap:18px">
     <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
 
     <div class="form-group">
@@ -14,7 +49,7 @@
 
     <div class="form-group">
       <label for="occ-desc">Description</label>
-      <textarea name="description" id="occ-desc" placeholder="Optional details&#8230;">{{if .Occurrence}}{{.Occurrence.Description}}{{end}}</textarea>
+      <textarea name="description" id="occ-desc" placeholder="Optional details&#8230;" style="min-height:96px">{{if .Occurrence}}{{.Occurrence.Description}}{{end}}</textarea>
     </div>
 
     <div class="form-group">
@@ -46,19 +81,22 @@
     <div class="form-group">
       <label for="occ-date">Date &amp; Time</label>
       <input type="datetime-local" name="date" id="occ-date" required
-        value="{{if .Occurrence}}{{.Occurrence.Date.Format "2006-01-02T15:04"}}{{else}}{{.DefaultDate}}{{end}}">
+        value="{{if .Occurrence}}{{.Occurrence.Date.Format "2006-01-02T15:04"}}{{else}}{{.DefaultDate}}{{end}}"
+        {{if not .Occurrence}}data-enforce-future="1"{{end}}>
     </div>
 
     <div class="grid-2">
       <div class="form-group">
         <label for="occ-min">Min participants</label>
         <input type="number" name="min_participants" id="occ-min" min="1" required
-          value="{{if .Occurrence}}{{.Occurrence.MinParticipants}}{{else}}1{{end}}">
+          value="{{if .Occurrence}}{{.Occurrence.MinParticipants}}{{else}}1{{end}}"
+          oninput="syncMinMax()">
       </div>
       <div class="form-group">
         <label for="occ-max">Max participants</label>
         <input type="number" name="max_participants" id="occ-max" min="1" required
-          value="{{if .Occurrence}}{{.Occurrence.MaxParticipants}}{{else}}1{{end}}">
+          value="{{if .Occurrence}}{{.Occurrence.MaxParticipants}}{{else}}1{{end}}"
+          oninput="syncMinMax()">
       </div>
     </div>
 
@@ -70,6 +108,7 @@
 </div>
 
 <script>
+// ── Group dropdown ──────────────────────────────────────────
 function openGroupDropdown() {
   document.getElementById('group-dropdown').classList.add('open');
 }
@@ -88,10 +127,88 @@ function selectGroup(el) {
   document.getElementById('group-search').value = el.getAttribute('data-name');
   document.getElementById('group-dropdown').classList.remove('open');
 }
+
+// ── Copy-from dropdown ───────────────────────────────────────
+function openCopyDropdown() {
+  var dd = document.getElementById('copy-dropdown');
+  if (dd) dd.classList.add('open');
+}
+function filterCopyDropdown(q) {
+  q = q.toLowerCase();
+  var dd = document.getElementById('copy-dropdown');
+  if (!dd) return;
+  dd.classList.add('open');
+  dd.querySelectorAll('.copy-opt').forEach(function(el) {
+    var name = (el.getAttribute('data-name') || '').toLowerCase();
+    if (!el.getAttribute('data-name')) { el.style.display = ''; return; }
+    el.style.display = name.indexOf(q) >= 0 ? '' : 'none';
+  });
+}
+function selectCopy(el) {
+  var title = el.getAttribute('data-title') || '';
+  var desc  = el.getAttribute('data-desc')  || '';
+  var time  = el.getAttribute('data-time')  || '';
+  var min   = el.getAttribute('data-min')   || '';
+  var max   = el.getAttribute('data-max')   || '';
+
+  if (title) document.getElementById('occ-title').value = title;
+  if (desc !== null) document.getElementById('occ-desc').value = desc;
+  if (min)   document.getElementById('occ-min').value = min;
+  if (max)   document.getElementById('occ-max').value = max;
+
+  // Replace just the time portion of the current date value
+  if (time) {
+    var dateEl = document.getElementById('occ-date');
+    var current = dateEl.value; // "2006-01-02T15:04"
+    var datePart = current ? current.split('T')[0] : '';
+    if (datePart) {
+      dateEl.value = datePart + 'T' + time;
+    }
+  }
+
+  document.getElementById('copy-search').value = title;
+  document.getElementById('copy-dropdown').classList.remove('open');
+}
+
+// ── Min/Max cross-validation ─────────────────────────────────
+function syncMinMax() {
+  var minEl = document.getElementById('occ-min');
+  var maxEl = document.getElementById('occ-max');
+  var minVal = parseInt(minEl.value) || 1;
+  var maxVal = parseInt(maxEl.value) || 1;
+  // Keep max >= min
+  maxEl.min = minVal;
+  if (maxVal < minVal) { maxEl.value = minVal; }
+  // Keep min <= max
+  minEl.max = parseInt(maxEl.value) || 1;
+}
+// Initialise constraints on load
+document.addEventListener('DOMContentLoaded', function() {
+  syncMinMax();
+  // Enforce future-only date on create form
+  var dateEl = document.getElementById('occ-date');
+  if (dateEl && dateEl.dataset.enforceFuture) {
+    var now = new Date();
+    var pad = function(n) { return String(n).padStart(2, '0'); };
+    var minStr = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate())
+               + 'T' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+    dateEl.min = minStr;
+  }
+});
+
+// ── Close dropdowns on outside click ────────────────────────
 document.addEventListener('click', function(e) {
-  var wrap = document.querySelector('.custom-select-wrap');
-  if (wrap && !wrap.contains(e.target)) {
-    document.getElementById('group-dropdown').classList.remove('open');
+  var groupSearch = document.getElementById('group-search');
+  var groupDD = document.getElementById('group-dropdown');
+  if (groupSearch && groupDD &&
+      !groupSearch.contains(e.target) && !groupDD.contains(e.target)) {
+    groupDD.classList.remove('open');
+  }
+  var copySearch = document.getElementById('copy-search');
+  var copyDD = document.getElementById('copy-dropdown');
+  if (copySearch && copyDD &&
+      !copySearch.contains(e.target) && !copyDD.contains(e.target)) {
+    copyDD.classList.remove('open');
   }
 });
 </script>
