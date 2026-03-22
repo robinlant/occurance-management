@@ -6,21 +6,25 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/robinlant/occurance-management/internal/domain"
+	"github.com/robinlant/occurance-management/internal/i18n"
+	"github.com/robinlant/occurance-management/internal/repository"
 	"github.com/robinlant/occurance-management/internal/service"
 )
 
 type OccurrenceHandler struct {
 	occurrences *service.OccurrenceService
 	groups      *service.GroupService
+	comments    repository.CommentRepository
 }
 
-func NewOccurrenceHandler(occ *service.OccurrenceService, grp *service.GroupService) *OccurrenceHandler {
-	return &OccurrenceHandler{occurrences: occ, groups: grp}
+func NewOccurrenceHandler(occ *service.OccurrenceService, grp *service.GroupService, comments repository.CommentRepository) *OccurrenceHandler {
+	return &OccurrenceHandler{occurrences: occ, groups: grp, comments: comments}
 }
 
 type OccurrenceListItem struct {
@@ -243,6 +247,8 @@ func (h *OccurrenceHandler) Detail(c *gin.Context) {
 		}
 	}
 
+	comments, _ := h.comments.FindByOccurrence(c.Request.Context(), id)
+
 	Page(c, "occurrence_detail.html", pageData(c, gin.H{
 		"Occurrence":   occ,
 		"Group":        group,
@@ -252,7 +258,9 @@ func (h *OccurrenceHandler) Detail(c *gin.Context) {
 		"Status":       status,
 		"ActivePage":   "occurrences",
 		"PageTitle":    occ.Title,
-	}), "participant_list.html")
+		"Comments":     comments,
+		"OccurrenceID": id,
+	}), "participant_list.html", "comment_list.html")
 }
 
 // --- HTMX actions ---
@@ -375,6 +383,81 @@ func (h *OccurrenceHandler) AvailableUsers(c *gin.Context) {
 	Partial(c, "available_users.html", gin.H{
 		"OccurrenceID": id,
 		"Users":        available,
+	})
+}
+
+func (h *OccurrenceHandler) AddComment(c *gin.Context) {
+	id, err := pathID(c)
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	user, _ := CurrentUser(c)
+	body := strings.TrimSpace(c.PostForm("body"))
+	if body == "" {
+		h.renderCommentList(c, id)
+		return
+	}
+	if len(body) > 1000 {
+		body = body[:1000]
+	}
+	comment, err := h.comments.Save(c.Request.Context(), domain.Comment{
+		OccurrenceID: id,
+		UserID:       user.ID,
+		Body:         body,
+	})
+	if err != nil {
+		slog.Error("comment: create failed", "user_id", user.ID, "occurrence_id", id, "error", err)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	slog.Info("comment_created", "user_id", user.ID, "occurrence_id", id, "comment_id", comment.ID)
+	h.renderCommentList(c, id)
+}
+
+func (h *OccurrenceHandler) DeleteComment(c *gin.Context) {
+	occID, err := pathID(c)
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	cid, err := strconv.ParseInt(c.Param("cid"), 10, 64)
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	user, _ := CurrentUser(c)
+
+	comment, err := h.comments.FindByID(c.Request.Context(), cid)
+	if err != nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	canDelete := comment.UserID == user.ID || user.Role == domain.RoleAdmin || user.Role == domain.RoleOrganizer
+	if !canDelete {
+		c.Status(http.StatusForbidden)
+		return
+	}
+
+	if err := h.comments.Delete(c.Request.Context(), cid); err != nil {
+		slog.Error("comment: delete failed", "user_id", user.ID, "comment_id", cid, "error", err)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	slog.Info("comment_deleted", "user_id", user.ID, "comment_id", cid, "occurrence_id", occID)
+	h.renderCommentList(c, occID)
+}
+
+func (h *OccurrenceHandler) renderCommentList(c *gin.Context, occID int64) {
+	comments, _ := h.comments.FindByOccurrence(c.Request.Context(), occID)
+	user, _ := CurrentUser(c)
+	lang := i18n.GetLang(c)
+	Partial(c, "comment_list.html", gin.H{
+		"OccurrenceID": occID,
+		"Comments":     comments,
+		"CurrentUser":  user,
+		"Lang":         lang,
 	})
 }
 

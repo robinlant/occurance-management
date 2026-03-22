@@ -300,6 +300,14 @@ var en = map[string]string{
 	// Language
 	"lang.switch": "DE",
 
+	// Comments
+	"comment.title":         "Comments",
+	"comment.none":          "No comments yet.",
+	"comment.placeholder":   "Add a comment\u2026",
+	"comment.post":          "Post",
+	"comment.delete":        "delete",
+	"comment.confirmDelete": "Delete this comment?",
+
 	// Email content
 	"email.hi":                     "Hi",
 	"email.newOccAvailable":        "New occurrences are available. Sign up if you have time!",
@@ -584,6 +592,14 @@ var de = map[string]string{
 
 	// Language
 	"lang.switch": "EN",
+
+	// Comments
+	"comment.title":         "Kommentare",
+	"comment.none":          "Noch keine Kommentare.",
+	"comment.placeholder":   "Kommentar hinzuf\u00fcgen\u2026",
+	"comment.post":          "Senden",
+	"comment.delete":        "l\u00f6schen",
+	"comment.confirmDelete": "Diesen Kommentar l\u00f6schen?",
 
 	// Email content
 	"email.hi":                     "Hallo",

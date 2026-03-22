@@ -46,3 +46,12 @@ type OutOfOffice struct {
 	From   time.Time
 	To     time.Time
 }
+
+type Comment struct {
+	ID           int64
+	OccurrenceID int64
+	UserID       int64
+	UserName     string
+	Body         string
+	CreatedAt    time.Time
+}

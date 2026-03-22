@@ -48,6 +48,7 @@ func main() {
 	oooRepo := sqlite.NewOutOfOfficeRepository(db)
 	settingsRepo := sqlite.NewSettingsRepository(db)
 	emailLogRepo := sqlite.NewEmailLogRepository(db)
+	commentRepo := sqlite.NewCommentRepository(db)
 
 	// Services
 	userSvc := service.NewUserService(userRepo, oooRepo, partRepo)
@@ -63,7 +64,7 @@ func main() {
 	// Handlers
 	authH := handler.NewAuthHandler(userRepo)
 	dashH := handler.NewDashboardHandler(occSvc)
-	occH := handler.NewOccurrenceHandler(occSvc, groupSvc)
+	occH := handler.NewOccurrenceHandler(occSvc, groupSvc, commentRepo)
 	grpH := handler.NewGroupHandler(groupSvc)
 	usrH := handler.NewUserAdminHandler(userSvc)
 	profH := handler.NewProfileHandler(userSvc, occSvc)
@@ -124,6 +125,8 @@ func main() {
 	protected.GET("/occurrences/:id", occH.Detail)
 	protected.POST("/occurrences/:id/signup", occH.SignUp)
 	protected.POST("/occurrences/:id/withdraw", occH.Withdraw)
+	protected.POST("/occurrences/:id/comments", occH.AddComment)
+	protected.POST("/occurrences/:id/comments/:cid/delete", occH.DeleteComment)
 	protected.GET("/leaderboard", lbH.Show)
 	protected.GET("/profile", profH.Show)
 	protected.POST("/profile/password", profH.ChangePassword)
