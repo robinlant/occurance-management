@@ -77,7 +77,7 @@ func (h *ProfileHandler) ShowPublic(c *gin.Context) {
 
 	user, err := h.users.GetUser(c.Request.Context(), id)
 	if err != nil {
-		c.Status(http.StatusNotFound)
+		Page(c, "error.html", pageData(c, gin.H{"Code": 404, "Message": "User not found"}))
 		return
 	}
 

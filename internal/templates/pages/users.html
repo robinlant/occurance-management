@@ -25,12 +25,12 @@
         </div>
         <form method="POST" action="/users/{{.ID}}/set-email" class="row" style="margin-bottom:6px">
           <input type="hidden" name="_csrf" value="{{$.CSRFToken}}">
-          <input type="email" name="email" placeholder="{{t $.Lang "users.setNewEmail"}}" required style="flex:1">
+          <input type="email" name="email" placeholder="{{t $.Lang "users.setNewEmail"}}" required style="flex:1" autocomplete="off">
           <button type="submit" class="btn btn-ghost btn-sm">{{t $.Lang "users.set"}}</button>
         </form>
         <form method="POST" action="/users/{{.ID}}/set-password" class="row" style="margin-bottom:12px">
           <input type="hidden" name="_csrf" value="{{$.CSRFToken}}">
-          <input type="password" name="password" placeholder="{{t $.Lang "users.setNewPassword"}}" required minlength="8" style="flex:1">
+          <input type="password" name="password" placeholder="{{t $.Lang "users.setNewPassword"}}" required minlength="8" style="flex:1" autocomplete="new-password">
           <button type="submit" class="btn btn-ghost btn-sm">{{t $.Lang "users.set"}}</button>
         </form>
       </div>
@@ -48,11 +48,11 @@
       </div>
       <div class="form-group">
         <label for="create-email">{{t .Lang "users.email"}}</label>
-        <input type="email" name="email" id="create-email" required placeholder="email@company.com">
+        <input type="email" name="email" id="create-email" required placeholder="email@company.com" autocomplete="off">
       </div>
       <div class="form-group">
         <label for="create-password">{{t .Lang "users.password"}}</label>
-        <input type="password" name="password" id="create-password" required placeholder="{{t .Lang "users.minPassword"}}" minlength="8">
+        <input type="password" name="password" id="create-password" required placeholder="{{t .Lang "users.minPassword"}}" minlength="8" autocomplete="new-password">
       </div>
       <div class="form-group">
         <label for="role-search">{{t .Lang "users.role"}}</label>

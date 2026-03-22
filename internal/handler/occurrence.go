@@ -175,7 +175,7 @@ func (h *OccurrenceHandler) ShowEdit(c *gin.Context) {
 	}
 	occ, err := h.occurrences.GetOccurrence(c.Request.Context(), id)
 	if err != nil {
-		c.Status(http.StatusNotFound)
+		Page(c, "error.html", pageData(c, gin.H{"Code": 404, "Message": "Occurrence not found"}))
 		return
 	}
 	groups, _ := h.groups.List(c.Request.Context())
@@ -241,7 +241,7 @@ func (h *OccurrenceHandler) Detail(c *gin.Context) {
 	}
 	occ, err := h.occurrences.GetOccurrence(c.Request.Context(), id)
 	if err != nil {
-		c.Status(http.StatusNotFound)
+		Page(c, "error.html", pageData(c, gin.H{"Code": 404, "Message": "Occurrence not found"}))
 		return
 	}
 	currentUser, _ := CurrentUser(c)

@@ -330,7 +330,7 @@ var en = map[string]string{
 
 	// Occurrence form extra
 	"form.copyFromExisting":      "Use as template",
-	"form.copyFromExistingLabel": "Pre-fill title, description, time &amp; participant limits from another occurrence",
+	"form.copyFromExistingLabel": "Pre-fill title, description, time & participant limits from another occurrence",
 	"form.copySearchPlaceholder": "Search occurrences\u2026",
 
 	// Comments
@@ -656,7 +656,7 @@ var de = map[string]string{
 
 	// Occurrence form extra
 	"form.copyFromExisting":      "Als Vorlage verwenden",
-	"form.copyFromExistingLabel": "Titel, Beschreibung, Uhrzeit &amp; Teilnehmerlimits aus einem anderen Einsatz \u00fcbernehmen",
+	"form.copyFromExistingLabel": "Titel, Beschreibung, Uhrzeit & Teilnehmerlimits aus einem anderen Einsatz \u00fcbernehmen",
 	"form.copySearchPlaceholder": "Einsatz suchen\u2026",
 
 	// Comments
