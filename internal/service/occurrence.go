@@ -242,13 +242,17 @@ func (s *OccurrenceService) checkOOO(ctx context.Context, userID int64, date tim
 }
 
 func isOOOOnDate(ooos []domain.OutOfOffice, date time.Time) bool {
-	d := date.Truncate(24 * time.Hour)
+	d := toDate(date)
 	for _, o := range ooos {
-		from := o.From.Truncate(24 * time.Hour)
-		to := o.To.Truncate(24 * time.Hour)
+		from := toDate(o.From)
+		to := toDate(o.To)
 		if !d.Before(from) && !d.After(to) {
 			return true
 		}
 	}
 	return false
+}
+
+func toDate(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 }
