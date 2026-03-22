@@ -38,8 +38,12 @@
       {{range .UserUpcoming}}
         <a href="/occurrences/{{.ID}}" class="dash-occ-item">
           <div style="min-width:0;flex:1">
-            <div class="dash-occ-title">{{.Title}}</div>
-            {{if .Description}}<div class="dash-occ-sub">{{.Description}}</div>{{end}}
+            <div class="dash-occ-title">
+              <span class="occ-status-dot {{.Status}}"></span>
+              {{.Title}}
+              {{if eq .Status "under"}}<span class="badge badge-red" style="font-size:10px;margin-left:4px">needs {{.Needed}} more</span>{{end}}
+            </div>
+            <div class="dash-occ-sub">{{.ParticipantCount}}/{{.MinParticipants}}&#8211;{{.MaxParticipants}} {{t $.Lang "occ.people"}}</div>
           </div>
           <div class="dash-occ-meta">
             <div class="dash-occ-date">{{weekday .Date}}, {{formatDate .Date}}</div>

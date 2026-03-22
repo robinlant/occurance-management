@@ -10,13 +10,15 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 
+	"github.com/robinlant/occurance-management/internal/domain"
 	"github.com/robinlant/occurance-management/internal/service"
 )
 
 type HeatmapCell struct {
 	Date  string
 	Count int
-	Level int // 0=none, 1-4
+	Level int  // 0=none, 1-4
+	IsOOO bool // day is within an out-of-office period
 }
 
 type ProfileStats struct {
@@ -43,16 +45,17 @@ func (h *ProfileHandler) Show(c *gin.Context) {
 	from := now.AddDate(-1, 0, 0)
 	activityMap, _ := h.occurrences.GetActivityHeatmap(c.Request.Context(), user.ID, from, now)
 
-	heatmap, weekCount := buildHeatmap(activityMap, from, now)
+	heatmap, weekCount := buildHeatmap(activityMap, ooos, from, now)
 	stats := computeProfileStats(activityMap, from, now)
 
 	Page(c, "profile.html", pageData(c, gin.H{
-		"OOOs":       ooos,
-		"Heatmap":    heatmap,
-		"WeekCount":  weekCount,
-		"Stats":      stats,
-		"ActivePage": "profile",
-		"PageTitle":  "Profile",
+		"OOOs":             ooos,
+		"IsCurrentlyOOO":   isCurrentlyOOO(ooos),
+		"Heatmap":          heatmap,
+		"WeekCount":        weekCount,
+		"Stats":            stats,
+		"ActivePage":       "profile",
+		"PageTitle":        "Profile",
 	}), "ooo_list.html")
 }
 
@@ -61,6 +64,12 @@ func (h *ProfileHandler) ShowPublic(c *gin.Context) {
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	// Redirect to own profile so the user can edit it
+	if current, ok := CurrentUser(c); ok && current.ID == id {
+		c.Redirect(http.StatusFound, "/profile")
 		return
 	}
 
@@ -73,20 +82,23 @@ func (h *ProfileHandler) ShowPublic(c *gin.Context) {
 	now := time.Now()
 	from := now.AddDate(-1, 0, 0)
 	activityMap, _ := h.occurrences.GetActivityHeatmap(c.Request.Context(), user.ID, from, now)
+	ooos, _ := h.users.GetOutOfOffice(c.Request.Context(), user.ID)
 
-	heatmap, weekCount := buildHeatmap(activityMap, from, now)
+	heatmap, weekCount := buildHeatmap(activityMap, ooos, from, now)
 	stats := computeProfileStats(activityMap, from, now)
 
 	totalCount, _ := h.occurrences.GetParticipationCount(c.Request.Context(), user.ID)
 
 	Page(c, "user_profile.html", pageData(c, gin.H{
-		"ProfileUser": user,
-		"Heatmap":     heatmap,
-		"WeekCount":   weekCount,
-		"Stats":       stats,
-		"TotalCount":  totalCount,
-		"ActivePage":  "",
-		"PageTitle":   user.Name,
+		"ProfileUser":    user,
+		"OOOs":           ooos,
+		"IsCurrentlyOOO": isCurrentlyOOO(ooos),
+		"Heatmap":        heatmap,
+		"WeekCount":      weekCount,
+		"Stats":          stats,
+		"TotalCount":     totalCount,
+		"ActivePage":     "",
+		"PageTitle":      user.Name,
 	}))
 }
 
@@ -132,14 +144,15 @@ func (h *ProfileHandler) AddOOO(c *gin.Context) {
 		if errors.Is(err, service.ErrOOOConflict) {
 			c.Header("HX-Retarget", "#ooo-error")
 			c.Header("HX-Reswap", "innerHTML")
-			c.String(http.StatusOK, `<div class="flash flash-error" style="margin-top:8px">&#10005; You have participations assigned in that period.</div>`)
+			c.String(http.StatusOK, `<div class="flash flash-error" style="margin-top:8px">&#10005; You are signed up for one or more occurrences during this period. Please withdraw from them first before marking these dates as out of office.</div>`)
 			return
 		}
 		c.Status(http.StatusInternalServerError)
 		return
 	}
 
-	h.renderOOOList(c, user.ID)
+	c.Header("HX-Refresh", "true")
+	c.Status(http.StatusOK)
 }
 
 // DeleteOOO — HTMX: returns updated ooo_list partial.
@@ -158,15 +171,12 @@ func (h *ProfileHandler) DeleteOOO(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	h.renderOOOList(c, user.ID)
+	c.Header("HX-Refresh", "true")
+	c.Status(http.StatusOK)
 }
 
-func (h *ProfileHandler) renderOOOList(c *gin.Context, userID int64) {
-	ooos, _ := h.users.GetOutOfOffice(c.Request.Context(), userID)
-	Partial(c, "ooo_list.html", gin.H{"OOOs": ooos})
-}
 
-func buildHeatmap(activityMap map[string]int, from, to time.Time) ([]HeatmapCell, int) {
+func buildHeatmap(activityMap map[string]int, ooos []domain.OutOfOffice, from, to time.Time) ([]HeatmapCell, int) {
 	// Start from Monday on or before `from`
 	start := from
 	for start.Weekday() != time.Monday {
@@ -181,15 +191,39 @@ func buildHeatmap(activityMap map[string]int, from, to time.Time) ([]HeatmapCell
 		if count >= 1 {
 			level = 4
 		}
+		isOOO := false
+		dNorm := time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, time.UTC)
+		for _, o := range ooos {
+			oFrom := time.Date(o.From.Year(), o.From.Month(), o.From.Day(), 0, 0, 0, 0, time.UTC)
+			oTo := time.Date(o.To.Year(), o.To.Month(), o.To.Day(), 0, 0, 0, 0, time.UTC)
+			if !dNorm.Before(oFrom) && !dNorm.After(oTo) {
+				isOOO = true
+				break
+			}
+		}
 		cells = append(cells, HeatmapCell{
 			Date:  key,
 			Count: count,
 			Level: level,
+			IsOOO: isOOO,
 		})
 	}
 
 	weekCount := (len(cells) + 6) / 7
 	return cells, weekCount
+}
+
+func isCurrentlyOOO(ooos []domain.OutOfOffice) bool {
+	today := time.Now()
+	t := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC)
+	for _, o := range ooos {
+		oFrom := time.Date(o.From.Year(), o.From.Month(), o.From.Day(), 0, 0, 0, 0, time.UTC)
+		oTo := time.Date(o.To.Year(), o.To.Month(), o.To.Day(), 0, 0, 0, 0, time.UTC)
+		if !t.Before(oFrom) && !t.After(oTo) {
+			return true
+		}
+	}
+	return false
 }
 
 func computeProfileStats(activityMap map[string]int, from, to time.Time) ProfileStats {

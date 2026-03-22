@@ -67,9 +67,24 @@ func (h *DashboardHandler) Show(c *gin.Context) {
 		"PageTitle":       i18n.T(lang, "title.dashboard"),
 	}
 
-	if currentUser.Role == domain.RoleParticipant || currentUser.Role == domain.RoleOrganizer {
+	if currentUser.Role == domain.RoleParticipant || currentUser.Role == domain.RoleOrganizer || currentUser.Role == domain.RoleAdmin {
 		upcoming, _ := h.occurrences.GetUpcomingForUser(c.Request.Context(), currentUser.ID)
-		data["UserUpcoming"] = upcoming
+		dashUpcoming := make([]DashboardOccurrence, 0, len(upcoming))
+		for _, o := range upcoming {
+			count := counts[o.ID]
+			status := service.ComputeOccStatus(o, count)
+			needed := 0
+			if count < o.MinParticipants {
+				needed = o.MinParticipants - count
+			}
+			dashUpcoming = append(dashUpcoming, DashboardOccurrence{
+				Occurrence:       o,
+				ParticipantCount: count,
+				Status:           status,
+				Needed:           needed,
+			})
+		}
+		data["UserUpcoming"] = dashUpcoming
 	}
 	if currentUser.Role == domain.RoleOrganizer || currentUser.Role == domain.RoleAdmin {
 		top, err := h.occurrences.GetLeaderboard(c.Request.Context(), time.Time{}, time.Time{}, []domain.Role{domain.RoleParticipant}, 0)

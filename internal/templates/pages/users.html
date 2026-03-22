@@ -10,18 +10,24 @@
         <div class="occ-item">
           <div class="occ-info">
             <div class="occ-title" style="display:flex;align-items:center;gap:8px">
-              {{.Name}}
+              <a href="/profile/{{.ID}}" style="color:inherit;text-decoration:none;font-weight:600">{{.Name}}</a>
               <span class="badge {{if eq .Role "admin"}}badge-red{{else if eq .Role "organizer"}}badge-accent{{else}}badge-gray{{end}}">{{.Role}}</span>
             </div>
             <div class="occ-desc">{{.Email}}</div>
           </div>
           <div class="row">
+            <a href="/profile/{{.ID}}" class="btn btn-ghost btn-sm">{{t $.Lang "users.viewProfile"}}</a>
             <form method="POST" action="/users/{{.ID}}/delete" onsubmit="return confirm('Are you sure you want to delete this user?')">
               <input type="hidden" name="_csrf" value="{{$.CSRFToken}}">
               <button class="btn btn-danger btn-sm">{{t $.Lang "users.delete"}}</button>
             </form>
           </div>
         </div>
+        <form method="POST" action="/users/{{.ID}}/set-email" class="row" style="margin-bottom:6px">
+          <input type="hidden" name="_csrf" value="{{$.CSRFToken}}">
+          <input type="email" name="email" placeholder="{{t $.Lang "users.setNewEmail"}}" required style="flex:1">
+          <button type="submit" class="btn btn-ghost btn-sm">{{t $.Lang "users.set"}}</button>
+        </form>
         <form method="POST" action="/users/{{.ID}}/set-password" class="row" style="margin-bottom:12px">
           <input type="hidden" name="_csrf" value="{{$.CSRFToken}}">
           <input type="password" name="password" placeholder="{{t $.Lang "users.setNewPassword"}}" required minlength="8" style="flex:1">

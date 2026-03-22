@@ -110,7 +110,8 @@ a { color: inherit; text-decoration: none; }
 .nav-link:hover { background: var(--bg-hover); color: var(--text); }
 .nav-link.active { background: var(--accent-light); color: var(--accent); }
 
-.nav-icon { width: 16px; text-align: center; font-size: 15px; flex-shrink: 0; }
+.nav-icon { width: 16px; text-align: center; font-size: 15px; flex-shrink: 0; color: var(--text); }
+.nav-link.active .nav-icon { color: var(--accent); }
 
 /* ── Main layout ────────────────────────── */
 .main-wrap { margin-left: var(--sidebar-w); min-height: 100vh; }
@@ -289,6 +290,13 @@ input[type=search], textarea, select {
   transition: border-color 0.12s, box-shadow 0.12s;
   width: 100%;
   font-family: inherit;
+}
+
+/* Calendar picker icon: invert in dark mode so it's visible */
+[data-theme="dark"] input[type=date]::-webkit-calendar-picker-indicator,
+[data-theme="dark"] input[type=datetime-local]::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
+  cursor: pointer;
 }
 
 input:focus, textarea:focus, select:focus {
@@ -667,20 +675,23 @@ a:hover .occ-item { background: var(--hover-bg); }
 
 /* Status colors */
 .cal-event-pill.status-under {
-  background: rgba(255,71,87,0.12);
+  background: rgba(255,71,87,0.18);
   color: var(--danger);
   border-left-color: var(--danger);
 }
 .cal-event-pill.status-good {
-  background: rgba(0,255,135,0.12);
+  background: rgba(0,255,135,0.18);
   color: var(--success);
   border-left-color: var(--success);
 }
 .cal-event-pill.status-over {
-  background: rgba(255,214,10,0.12);
+  background: rgba(255,214,10,0.18);
   color: var(--warning);
   border-left-color: var(--warning);
 }
+[data-theme="dark"] .cal-event-pill.status-under { background: rgba(255,71,87,0.28); }
+[data-theme="dark"] .cal-event-pill.status-good  { background: rgba(0,255,135,0.22); }
+[data-theme="dark"] .cal-event-pill.status-over  { background: rgba(255,214,10,0.22); }
 /* Past events: desaturate */
 .cal-event-pill.past { opacity: 0.5; }
 
@@ -904,6 +915,8 @@ a:hover .occ-item { background: var(--hover-bg); }
 .heatmap-cell.level-2 { background: rgba(255,68,68,0.35); }
 .heatmap-cell.level-3 { background: rgba(255,68,68,0.55); }
 .heatmap-cell.level-4 { background: var(--accent); }
+.heatmap-cell.ooo { background: rgba(180,100,0,0.55); box-shadow: inset 0 0 0 1px rgba(180,100,0,0.8); }
+[data-theme="dark"] .heatmap-cell.ooo { background: rgba(255,198,0,0.32); box-shadow: inset 0 0 0 1px rgba(255,198,0,0.6); }
 
 [data-theme="light"] .heatmap-cell.level-0 { background: var(--bg-hover); }
 

@@ -9,7 +9,7 @@
         <button class="btn btn-danger btn-sm"
           hx-post="/profile/ooo/{{.ID}}/delete"
           hx-target="#ooo-list"
-          hx-swap="outerHTML">{{t .Lang "profile.remove"}}</button>
+          hx-swap="outerHTML">{{t $.Lang "profile.remove"}}</button>
       </div>
     {{end}}
   {{end}}

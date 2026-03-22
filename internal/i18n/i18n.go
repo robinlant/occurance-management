@@ -153,6 +153,8 @@ var en = map[string]string{
 	"profile.remove":              "remove",
 	"profile.less":                "Less",
 	"profile.more":                "More",
+	"profile.ooo":                 "OOO",
+	"profile.currentlyOOO":        "Currently OOO",
 	"profile.userInfo":            "User info",
 
 	// Leaderboard
@@ -191,6 +193,8 @@ var en = map[string]string{
 	"users.delete":         "Delete",
 	"users.confirmDelete":  "Are you sure you want to delete this user?",
 	"users.setNewPassword": "Set new password",
+	"users.setNewEmail":    "Set new email",
+	"users.viewProfile":    "Profile",
 	"users.set":            "Set",
 	"users.participant":    "Participant",
 	"users.organizer":      "Organizer",
@@ -434,6 +438,8 @@ var de = map[string]string{
 	"profile.remove":              "entfernen",
 	"profile.less":                "Weniger",
 	"profile.more":                "Mehr",
+	"profile.ooo":                 "Abwesend",
+	"profile.currentlyOOO":        "Derzeit abwesend",
 	"profile.userInfo":            "Benutzerinfo",
 
 	// Leaderboard
@@ -472,6 +478,8 @@ var de = map[string]string{
 	"users.delete":         "L\u00f6schen",
 	"users.confirmDelete":  "Sind Sie sicher, dass Sie diesen Benutzer l\u00f6schen m\u00f6chten?",
 	"users.setNewPassword": "Neues Passwort setzen",
+	"users.setNewEmail":    "Neue E-Mail setzen",
+	"users.viewProfile":    "Profil",
 	"users.set":            "Setzen",
 	"users.participant":    "Teilnehmer",
 	"users.organizer":      "Organisator",

@@ -70,6 +70,25 @@ func (h *UserAdminHandler) SetPassword(c *gin.Context) {
 	c.Redirect(http.StatusFound, "/users")
 }
 
+func (h *UserAdminHandler) SetEmail(c *gin.Context) {
+	id, err := pathID(c)
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	email := c.PostForm("email")
+	if err := h.users.SetEmail(c.Request.Context(), id, email); err != nil {
+		if errors.Is(err, service.ErrEmailTaken) {
+			SetFlash(c, "error", "That email is already in use.")
+		} else {
+			SetFlash(c, "error", "Failed to update email.")
+		}
+	} else {
+		SetFlash(c, "success", "Email updated.")
+	}
+	c.Redirect(http.StatusFound, "/users")
+}
+
 func (h *UserAdminHandler) Delete(c *gin.Context) {
 	id, err := pathID(c)
 	if err != nil {

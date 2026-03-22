@@ -146,6 +146,7 @@ func main() {
 	adminUsers.GET("", usrH.List)
 	adminUsers.POST("", usrH.Create)
 	adminUsers.POST("/:id/set-password", usrH.SetPassword)
+	adminUsers.POST("/:id/set-email", usrH.SetEmail)
 	adminUsers.POST("/:id/delete", usrH.Delete)
 
 	adminSettings := protected.Group("/settings", handler.RoleRequired(domain.RoleAdmin))
