@@ -167,6 +167,7 @@ var en = map[string]string{
 	"lb.participants":     "Participants",
 	"lb.organizers":       "Organizers",
 	"lb.all":              "All",
+	"lb.allGroups":        "All groups",
 
 	// Groups
 	"groups.createGroup":    "Create group",
@@ -447,6 +448,7 @@ var de = map[string]string{
 	"lb.participants":     "Teilnehmer",
 	"lb.organizers":       "Organisatoren",
 	"lb.all":              "Alle",
+	"lb.allGroups":        "Alle Gruppen",
 
 	// Groups
 	"groups.createGroup":    "Gruppe erstellen",

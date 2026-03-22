@@ -149,12 +149,19 @@ func (r *ParticipationRepository) FindUsersByOccurrence(ctx context.Context, occ
 	return users, rows.Err()
 }
 
-func (r *ParticipationRepository) LeaderboardAll(ctx context.Context, roles []domain.Role) ([]repository.LeaderboardRow, error) {
-	placeholders, args := roleFilterArgs(roles)
+func (r *ParticipationRepository) LeaderboardAll(ctx context.Context, roles []domain.Role, groupID int64) ([]repository.LeaderboardRow, error) {
+	placeholders, roleArgs := roleFilterArgs(roles)
+	joinSQL := "LEFT JOIN participations p ON p.user_id = u.id"
+	var joinArgs []any
+	if groupID > 0 {
+		joinSQL += " AND p.occurrence_id IN (SELECT id FROM occurrences WHERE group_id = ?)"
+		joinArgs = append(joinArgs, groupID)
+	}
+	args := append(joinArgs, roleArgs...)
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT u.id, u.name, u.email, u.role, COUNT(p.id) as cnt
 		FROM users u
-		LEFT JOIN participations p ON p.user_id = u.id
+		`+joinSQL+`
 		WHERE u.role IN (`+placeholders+`)
 		GROUP BY u.id
 		ORDER BY cnt DESC`, args...)
@@ -165,14 +172,20 @@ func (r *ParticipationRepository) LeaderboardAll(ctx context.Context, roles []do
 	return scanLeaderboardRows(rows)
 }
 
-func (r *ParticipationRepository) LeaderboardInRange(ctx context.Context, from, to time.Time, roles []domain.Role) ([]repository.LeaderboardRow, error) {
-	placeholders, args := roleFilterArgs(roles)
-	args = append([]any{from, to}, args...)
+func (r *ParticipationRepository) LeaderboardInRange(ctx context.Context, from, to time.Time, roles []domain.Role, groupID int64) ([]repository.LeaderboardRow, error) {
+	placeholders, roleArgs := roleFilterArgs(roles)
+	joinSQL := "LEFT JOIN participations p ON p.user_id = u.id AND p.occurrence_id IN (SELECT id FROM occurrences WHERE date >= ? AND date <= ?"
+	joinArgs := []any{from, to}
+	if groupID > 0 {
+		joinSQL += " AND group_id = ?"
+		joinArgs = append(joinArgs, groupID)
+	}
+	joinSQL += ")"
+	args := append(joinArgs, roleArgs...)
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT u.id, u.name, u.email, u.role, COUNT(p.id) as cnt
 		FROM users u
-		LEFT JOIN participations p ON p.user_id = u.id
-		LEFT JOIN occurrences o ON o.id = p.occurrence_id AND o.date >= ? AND o.date <= ?
+		`+joinSQL+`
 		WHERE u.role IN (`+placeholders+`)
 		GROUP BY u.id
 		ORDER BY cnt DESC`, args...)

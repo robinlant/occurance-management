@@ -72,7 +72,7 @@ func (h *DashboardHandler) Show(c *gin.Context) {
 		data["UserUpcoming"] = upcoming
 	}
 	if currentUser.Role == domain.RoleOrganizer || currentUser.Role == domain.RoleAdmin {
-		top, err := h.occurrences.GetLeaderboard(c.Request.Context(), time.Time{}, time.Time{}, []domain.Role{domain.RoleParticipant})
+		top, err := h.occurrences.GetLeaderboard(c.Request.Context(), time.Time{}, time.Time{}, []domain.Role{domain.RoleParticipant}, 0)
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return

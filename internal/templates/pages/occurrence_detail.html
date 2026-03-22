@@ -8,7 +8,10 @@
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
             <h2 style="font-size:16px;font-weight:600">{{.Occurrence.Title}}</h2>
             {{if .Group}}<span class="badge badge-accent">{{.Group.Name}}</span>{{end}}
-            {{if isPast .Occurrence.Date}}<span class="badge badge-gray">past</span>{{end}}
+            {{if isPast .Occurrence.Date}}<span class="badge badge-gray">{{t .Lang "occ.past"}}</span>{{end}}
+            {{if eq .Status "under"}}<span class="badge badge-red">{{t .Lang "occ.needsPeople"}}</span>
+            {{else if eq .Status "good"}}<span class="badge badge-green">{{t .Lang "occ.filled"}}</span>
+            {{else if eq .Status "over"}}<span class="badge badge-yellow">{{t .Lang "occ.overStaffed"}}</span>{{end}}
           </div>
           <div style="font-size:13px;color:var(--text-muted)">{{formatDateTime .Occurrence.Date}}</div>
           {{if .Occurrence.Description}}

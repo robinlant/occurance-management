@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -12,10 +13,11 @@ import (
 
 type LeaderboardHandler struct {
 	occurrences *service.OccurrenceService
+	groups      *service.GroupService
 }
 
-func NewLeaderboardHandler(occ *service.OccurrenceService) *LeaderboardHandler {
-	return &LeaderboardHandler{occurrences: occ}
+func NewLeaderboardHandler(occ *service.OccurrenceService, grp *service.GroupService) *LeaderboardHandler {
+	return &LeaderboardHandler{occurrences: occ, groups: grp}
 }
 
 func (h *LeaderboardHandler) Show(c *gin.Context) {
@@ -35,11 +37,17 @@ func (h *LeaderboardHandler) Show(c *gin.Context) {
 	}
 	roles := leaderboardRoles(roleFilter)
 
-	entries, err := h.occurrences.GetLeaderboard(c.Request.Context(), from, to, roles)
+	// Group filter
+	groupIDStr := c.Query("group")
+	groupID, _ := strconv.ParseInt(groupIDStr, 10, 64)
+
+	entries, err := h.occurrences.GetLeaderboard(c.Request.Context(), from, to, roles, groupID)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
+
+	allGroups, _ := h.groups.List(c.Request.Context())
 
 	var maxCount, totalCount int
 	for _, e := range entries {
@@ -73,6 +81,8 @@ func (h *LeaderboardHandler) Show(c *gin.Context) {
 		"StudentYearActive": fromStr == syFromStr && toStr == syToStr,
 		"ThisYearActive":    fromStr == tyFromStr && toStr == tyToStr,
 		"RoleFilter":        roleFilter,
+		"Groups":            allGroups,
+		"ActiveGroup":       groupID,
 		"ActivePage":        "leaderboard",
 		"PageTitle":         "Leaderboard",
 	}

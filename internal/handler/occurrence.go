@@ -221,6 +221,7 @@ func (h *OccurrenceHandler) Detail(c *gin.Context) {
 	participants, _ := h.occurrences.GetParticipants(c.Request.Context(), id)
 	isSignedUp := containsUser(participants, currentUser.ID)
 	isFull := len(participants) >= occ.MaxParticipants
+	status := service.ComputeOccStatus(occ, len(participants))
 
 	var group *domain.Group
 	if occ.GroupID != 0 {
@@ -236,6 +237,7 @@ func (h *OccurrenceHandler) Detail(c *gin.Context) {
 		"Participants": participants,
 		"IsSignedUp":   isSignedUp,
 		"IsFull":       isFull,
+		"Status":       status,
 		"ActivePage":   "occurrences",
 		"PageTitle":    occ.Title,
 	}), "participant_list.html")

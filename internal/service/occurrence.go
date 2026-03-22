@@ -178,13 +178,13 @@ func (s *OccurrenceService) GetAvailableUsersForDate(ctx context.Context, date t
 }
 
 // GetLeaderboard returns all users with their participation count (single JOIN query, no N+1).
-func (s *OccurrenceService) GetLeaderboard(ctx context.Context, from, to time.Time, roles []domain.Role) ([]LeaderboardEntry, error) {
+func (s *OccurrenceService) GetLeaderboard(ctx context.Context, from, to time.Time, roles []domain.Role, groupID int64) ([]LeaderboardEntry, error) {
 	var rows []repository.LeaderboardRow
 	var err error
 	if from.IsZero() && to.IsZero() {
-		rows, err = s.participations.LeaderboardAll(ctx, roles)
+		rows, err = s.participations.LeaderboardAll(ctx, roles, groupID)
 	} else {
-		rows, err = s.participations.LeaderboardInRange(ctx, from, to, roles)
+		rows, err = s.participations.LeaderboardInRange(ctx, from, to, roles, groupID)
 	}
 	if err != nil {
 		return nil, err

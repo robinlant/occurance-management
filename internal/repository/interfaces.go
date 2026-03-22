@@ -47,8 +47,8 @@ type ParticipationRepository interface {
 	CountAllByOccurrence(ctx context.Context) (map[int64]int, error)
 	CountByUserGroupedByDate(ctx context.Context, userID int64, from, to time.Time) (map[string]int, error)
 	ExistsForUserInDateRange(ctx context.Context, userID int64, from, to time.Time) (bool, error)
-	LeaderboardAll(ctx context.Context, roles []domain.Role) ([]LeaderboardRow, error)
-	LeaderboardInRange(ctx context.Context, from, to time.Time, roles []domain.Role) ([]LeaderboardRow, error)
+	LeaderboardAll(ctx context.Context, roles []domain.Role, groupID int64) ([]LeaderboardRow, error)
+	LeaderboardInRange(ctx context.Context, from, to time.Time, roles []domain.Role, groupID int64) ([]LeaderboardRow, error)
 	CountAndInsert(ctx context.Context, occurrenceID, userID int64, maxParticipants int) (isOverMax bool, err error)
 	Save(ctx context.Context, p domain.Participation) (domain.Participation, error)
 	Delete(ctx context.Context, id int64) error

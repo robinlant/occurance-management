@@ -62,7 +62,7 @@ func main() {
 	grpH := handler.NewGroupHandler(groupSvc)
 	usrH := handler.NewUserAdminHandler(userSvc)
 	profH := handler.NewProfileHandler(userSvc, occSvc)
-	lbH := handler.NewLeaderboardHandler(occSvc)
+	lbH := handler.NewLeaderboardHandler(occSvc, groupSvc)
 	calH := handler.NewCalendarHandler(occSvc, groupSvc)
 	searchH := handler.NewSearchHandler(occSvc, userSvc)
 	settingsH := handler.NewSettingsHandler(settingsSvc, emailSvc)
