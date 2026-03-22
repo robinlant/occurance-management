@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
+	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -15,6 +17,28 @@ import (
 )
 
 const sessionCSRFToken = "csrf_token"
+
+// RequestLogger logs method, path, status, duration, user_id, and IP for every request.
+func RequestLogger() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
+		c.Next()
+
+		userID := int64(0)
+		if u, ok := CurrentUser(c); ok {
+			userID = u.ID
+		}
+
+		slog.Info("request",
+			"method", c.Request.Method,
+			"path", c.Request.URL.Path,
+			"status", c.Writer.Status(),
+			"duration_ms", time.Since(start).Milliseconds(),
+			"user_id", userID,
+			"ip", c.ClientIP(),
+		)
+	}
+}
 
 // CSRFMiddleware validates CSRF tokens on POST requests and generates tokens for GET requests.
 func CSRFMiddleware() gin.HandlerFunc {
@@ -38,6 +62,7 @@ func CSRFMiddleware() gin.HandlerFunc {
 			if c.Request.URL.Path != "/login" && c.Request.URL.Path != "/logout" && c.GetHeader("HX-Request") != "true" {
 				formToken := c.PostForm("_csrf")
 				if formToken == "" || formToken != token {
+					slog.Warn("csrf: token mismatch", "path", c.Request.URL.Path, "ip", c.ClientIP())
 					c.AbortWithStatus(http.StatusForbidden)
 					return
 				}
@@ -71,9 +96,11 @@ func AuthRequired(users repository.UserRepository) gin.HandlerFunc {
 		user, err := users.FindByID(c.Request.Context(), userID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
+				slog.Warn("auth: session user not found", "user_id", userID)
 				redirectToLogin(c)
 				return
 			}
+			slog.Error("auth: db error looking up session user", "user_id", userID, "error", err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
@@ -95,6 +122,7 @@ func RoleRequired(roles ...domain.Role) gin.HandlerFunc {
 			return
 		}
 		if _, ok := allowed[user.Role]; !ok {
+			slog.Warn("authz: access denied", "user_id", user.ID, "role", user.Role, "path", c.Request.URL.Path)
 			c.AbortWithStatus(http.StatusForbidden)
 			return
 		}

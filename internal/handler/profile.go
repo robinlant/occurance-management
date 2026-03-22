@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -105,12 +106,14 @@ func (h *ProfileHandler) ShowPublic(c *gin.Context) {
 func (h *ProfileHandler) ChangePassword(c *gin.Context) {
 	user, _ := CurrentUser(c)
 	if err := h.users.ChangePassword(c.Request.Context(), user.ID, c.PostForm("password")); err != nil {
+		slog.Error("profile: change password failed", "user_id", user.ID, "error", err)
 		if errors.Is(err, service.ErrPasswordTooShort) {
 			SetFlash(c, "error", "Password must be at least 8 characters.")
 		} else {
 			SetFlash(c, "error", "Failed to update password.")
 		}
 	} else {
+		slog.Info("password_changed", "user_id", user.ID)
 		// Regenerate session to invalidate old sessions
 		s := sessions.Default(c)
 		s.Clear()
@@ -140,17 +143,20 @@ func (h *ProfileHandler) AddOOO(c *gin.Context) {
 		return
 	}
 
-	if _, err := h.users.AddOutOfOffice(c.Request.Context(), user.ID, from, to); err != nil {
+	ooo, err := h.users.AddOutOfOffice(c.Request.Context(), user.ID, from, to)
+	if err != nil {
 		if errors.Is(err, service.ErrOOOConflict) {
+			slog.Warn("ooo: conflict with existing participation", "user_id", user.ID)
 			c.Header("HX-Retarget", "#ooo-error")
 			c.Header("HX-Reswap", "innerHTML")
 			c.String(http.StatusOK, `<div class="flash flash-error" style="margin-top:8px">&#10005; You are signed up for one or more occurrences during this period. Please withdraw from them first before marking these dates as out of office.</div>`)
 			return
 		}
+		slog.Error("ooo: add failed", "user_id", user.ID, "error", err)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-
+	slog.Info("ooo_added", "user_id", user.ID, "ooo_id", ooo.ID)
 	c.Header("HX-Refresh", "true")
 	c.Status(http.StatusOK)
 }
@@ -165,12 +171,15 @@ func (h *ProfileHandler) DeleteOOO(c *gin.Context) {
 	user, _ := CurrentUser(c)
 	if err := h.users.RemoveOutOfOffice(c.Request.Context(), id, user.ID); err != nil {
 		if errors.Is(err, service.ErrOOONotOwner) {
+			slog.Warn("ooo: delete denied — not owner", "user_id", user.ID, "ooo_id", id)
 			c.Status(http.StatusForbidden)
 			return
 		}
+		slog.Error("ooo: delete failed", "user_id", user.ID, "ooo_id", id, "error", err)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
+	slog.Info("ooo_deleted", "user_id", user.ID, "ooo_id", id)
 	c.Header("HX-Refresh", "true")
 	c.Status(http.StatusOK)
 }

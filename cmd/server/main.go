@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,11 +16,15 @@ import (
 
 	"github.com/robinlant/occurance-management/internal/domain"
 	"github.com/robinlant/occurance-management/internal/handler"
+	"github.com/robinlant/occurance-management/internal/logger"
 	"github.com/robinlant/occurance-management/internal/repository/sqlite"
 	"github.com/robinlant/occurance-management/internal/service"
 )
 
 func main() {
+	production := os.Getenv("GIN_MODE") == "release"
+	logger.Init(production)
+
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
 		dbPath = "dutyround.db"
@@ -43,6 +48,7 @@ func main() {
 	oooRepo := sqlite.NewOutOfOfficeRepository(db)
 	settingsRepo := sqlite.NewSettingsRepository(db)
 	emailLogRepo := sqlite.NewEmailLogRepository(db)
+	commentRepo := sqlite.NewCommentRepository(db)
 
 	// Services
 	userSvc := service.NewUserService(userRepo, oooRepo, partRepo)
@@ -58,7 +64,7 @@ func main() {
 	// Handlers
 	authH := handler.NewAuthHandler(userRepo)
 	dashH := handler.NewDashboardHandler(occSvc)
-	occH := handler.NewOccurrenceHandler(occSvc, groupSvc)
+	occH := handler.NewOccurrenceHandler(occSvc, groupSvc, commentRepo)
 	grpH := handler.NewGroupHandler(groupSvc)
 	usrH := handler.NewUserAdminHandler(userSvc)
 	profH := handler.NewProfileHandler(userSvc, occSvc)
@@ -69,15 +75,17 @@ func main() {
 	errH := handler.NewErrorHandler()
 
 	// Router
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Recovery())
+	r.Use(handler.RequestLogger())
 
 	// Session secret
 	sessionSecret := os.Getenv("SESSION_SECRET")
 	if sessionSecret == "" {
-		if os.Getenv("GIN_MODE") == "release" {
+		if production {
 			log.Fatal("SESSION_SECRET must be set in production (GIN_MODE=release)")
 		}
-		log.Println("WARNING: Using default session secret. Set SESSION_SECRET for production.")
+		slog.Warn("using default session secret — set SESSION_SECRET for production")
 		sessionSecret = "dev-secret-change-in-production"
 	}
 	store := cookie.NewStore([]byte(sessionSecret))
@@ -117,6 +125,8 @@ func main() {
 	protected.GET("/occurrences/:id", occH.Detail)
 	protected.POST("/occurrences/:id/signup", occH.SignUp)
 	protected.POST("/occurrences/:id/withdraw", occH.Withdraw)
+	protected.POST("/occurrences/:id/comments", occH.AddComment)
+	protected.POST("/occurrences/:id/comments/:cid/delete", occH.DeleteComment)
 	protected.GET("/leaderboard", lbH.Show)
 	protected.GET("/profile", profH.Show)
 	protected.POST("/profile/password", profH.ChangePassword)
@@ -166,7 +176,7 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("DutyRound listening on :%s", port)
+		slog.Info("DutyRound started", "port", port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("server error: %v", err)
 		}
@@ -175,13 +185,13 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Println("Shutting down server...")
+	slog.Info("shutting down server")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatalf("server forced to shutdown: %v", err)
 	}
-	log.Println("Server exited")
+	slog.Info("server exited")
 }
 

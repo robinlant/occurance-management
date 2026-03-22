@@ -90,3 +90,10 @@ type EmailLogRepository interface {
 	LastSentAt(ctx context.Context, userID int64) (time.Time, error)
 	CountSentToday(ctx context.Context, userID int64) (int, error)
 }
+
+type CommentRepository interface {
+	FindByOccurrence(ctx context.Context, occurrenceID int64) ([]domain.Comment, error)
+	FindByID(ctx context.Context, id int64) (domain.Comment, error)
+	Save(ctx context.Context, c domain.Comment) (domain.Comment, error)
+	Delete(ctx context.Context, id int64) error
+}

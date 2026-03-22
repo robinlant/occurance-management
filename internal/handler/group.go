@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -36,9 +37,13 @@ func (h *GroupHandler) Create(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/groups")
 		return
 	}
-	if _, err := h.groups.Create(c.Request.Context(), name); err != nil {
+	actor, _ := CurrentUser(c)
+	created, err := h.groups.Create(c.Request.Context(), name)
+	if err != nil {
+		slog.Error("group: create failed", "actor_user_id", actor.ID, "name", name, "error", err)
 		SetFlash(c, "error", "Failed to create group.")
 	} else {
+		slog.Info("group_created", "actor_user_id", actor.ID, "group_id", created.ID)
 		SetFlash(c, "success", "Group created.")
 	}
 	c.Redirect(http.StatusFound, "/groups")
@@ -50,9 +55,12 @@ func (h *GroupHandler) Delete(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
+	actor, _ := CurrentUser(c)
 	if err := h.groups.Delete(c.Request.Context(), id); err != nil {
+		slog.Error("group: delete failed", "actor_user_id", actor.ID, "group_id", id, "error", err)
 		SetFlash(c, "error", "Failed to delete group.")
 	} else {
+		slog.Info("group_deleted", "actor_user_id", actor.ID, "group_id", id)
 		SetFlash(c, "success", "Group deleted.")
 	}
 	c.Redirect(http.StatusFound, "/groups")
