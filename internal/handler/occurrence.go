@@ -245,7 +245,12 @@ func (h *OccurrenceHandler) Detail(c *gin.Context) {
 		return
 	}
 	currentUser, _ := CurrentUser(c)
-	participants, _ := h.occurrences.GetParticipants(c.Request.Context(), id)
+	participants, err := h.occurrences.GetParticipants(c.Request.Context(), id)
+	if err != nil {
+		slog.Error("failed to get participants", "occurrence_id", id, "error", err)
+		Page(c, "error.html", pageData(c, gin.H{"Code": 500, "Message": "Internal error"}))
+		return
+	}
 	isSignedUp := containsUser(participants, currentUser.ID)
 	isFull := len(participants) >= occ.MaxParticipants
 	status := service.ComputeOccStatus(occ, len(participants))
@@ -258,7 +263,10 @@ func (h *OccurrenceHandler) Detail(c *gin.Context) {
 		}
 	}
 
-	comments, _ := h.comments.FindByOccurrence(c.Request.Context(), id)
+	comments, err := h.comments.FindByOccurrence(c.Request.Context(), id)
+	if err != nil {
+		slog.Error("failed to get comments", "occurrence_id", id, "error", err)
+	}
 
 	Page(c, "occurrence_detail.html", pageData(c, gin.H{
 		"Occurrence":   occ,
