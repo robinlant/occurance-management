@@ -154,9 +154,6 @@ func (s *OccurrenceService) GetAvailableUsersForDate(ctx context.Context, date t
 
 	var available []AvailableUser
 	for _, u := range allUsers {
-		if u.Role == domain.RoleAdmin {
-			continue
-		}
 		ooos, err := s.ooo.FindByUser(ctx, u.ID)
 		if err != nil {
 			return nil, err

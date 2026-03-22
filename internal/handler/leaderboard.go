@@ -97,9 +97,9 @@ func (h *LeaderboardHandler) Show(c *gin.Context) {
 func leaderboardRoles(filter string) []domain.Role {
 	switch filter {
 	case "organizers":
-		return []domain.Role{domain.RoleOrganizer}
+		return []domain.Role{domain.RoleOrganizer, domain.RoleAdmin}
 	case "all":
-		return []domain.Role{domain.RoleParticipant, domain.RoleOrganizer}
+		return []domain.Role{domain.RoleParticipant, domain.RoleOrganizer, domain.RoleAdmin}
 	default:
 		return []domain.Role{domain.RoleParticipant}
 	}

@@ -25,7 +25,7 @@
     </div>
   {{end}}
 
-  {{if or (eq .CurrentUser.Role "participant") (eq .CurrentUser.Role "organizer")}}
+  {{if or (eq .CurrentUser.Role "participant") (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
     {{if .IsSignedUp}}
       <button class="btn btn-ghost"
         hx-post="/occurrences/{{.Occurrence.ID}}/withdraw"
