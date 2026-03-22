@@ -30,6 +30,7 @@ type OccurrenceRepository interface {
 	FindByGroup(ctx context.Context, groupID int64) ([]domain.Occurrence, error)
 	FindByDate(ctx context.Context, date time.Time) ([]domain.Occurrence, error)
 	FindOpenSpots(ctx context.Context) ([]domain.Occurrence, error)
+	FindUpcomingByUser(ctx context.Context, userID int64, from time.Time) ([]domain.Occurrence, error)
 	FindByTitleLike(ctx context.Context, query string, limit int) ([]domain.Occurrence, error)
 	Save(ctx context.Context, occurrence domain.Occurrence) (domain.Occurrence, error)
 	Delete(ctx context.Context, id int64) error
@@ -41,12 +42,13 @@ type ParticipationRepository interface {
 	FindByUser(ctx context.Context, userID int64) ([]domain.Participation, error)
 	FindUsersByOccurrence(ctx context.Context, occurrenceID int64) ([]domain.User, error)
 	CountByUser(ctx context.Context, userID int64) (int, error)
+	CountByOccurrence(ctx context.Context, occurrenceID int64) (int, error)
 	CountByUserInRange(ctx context.Context, userID int64, from, to time.Time) (int, error)
 	CountAllByOccurrence(ctx context.Context) (map[int64]int, error)
 	CountByUserGroupedByDate(ctx context.Context, userID int64, from, to time.Time) (map[string]int, error)
 	ExistsForUserInDateRange(ctx context.Context, userID int64, from, to time.Time) (bool, error)
-	LeaderboardAll(ctx context.Context) ([]LeaderboardRow, error)
-	LeaderboardInRange(ctx context.Context, from, to time.Time) ([]LeaderboardRow, error)
+	LeaderboardAll(ctx context.Context, roles []domain.Role, groupID int64) ([]LeaderboardRow, error)
+	LeaderboardInRange(ctx context.Context, from, to time.Time, roles []domain.Role, groupID int64) ([]LeaderboardRow, error)
 	CountAndInsert(ctx context.Context, occurrenceID, userID int64, maxParticipants int) (isOverMax bool, err error)
 	Save(ctx context.Context, p domain.Participation) (domain.Participation, error)
 	Delete(ctx context.Context, id int64) error

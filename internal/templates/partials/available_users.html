@@ -1,6 +1,6 @@
 {{define "available_users"}}
 {{if not .Users}}
-  <p style="color:var(--text-muted);font-size:13px">No available users for this date.</p>
+  <p style="color:var(--text-muted);font-size:13px">{{t .Lang "occ.noAvailableUsers"}}</p>
 {{else}}
   <form hx-post="/occurrences/{{.OccurrenceID}}/assign"
         hx-target="#participant-section"
@@ -9,24 +9,24 @@
     <input type="hidden" name="user_id" id="assign-user-id">
     <div class="custom-select-wrap" style="flex:1">
       <input type="text" class="custom-select-input" id="assign-search"
-             placeholder="Search user..."
+             placeholder="{{t .Lang "occ.searchUser"}}"
              autocomplete="off"
              onfocus="openAssignDropdown()"
              oninput="filterAssignDropdown(this.value)">
       <div class="custom-select-dropdown" id="assign-dropdown">
         {{range .Users}}
-          <div class="custom-select-option" data-value="{{.User.ID}}" data-name="{{.User.Name}} ({{.Count}} done)"
+          <div class="custom-select-option" data-value="{{.User.ID}}" data-name="{{.User.Name}} ({{.Count}} {{t $.Lang "occ.done"}})"
                onclick="selectAssignUser(this)">
             <div style="display:flex;align-items:center;gap:8px">
               <div class="user-avatar" style="width:22px;height:22px;font-size:9px">{{initial .User.Name}}</div>
               <span>{{.User.Name}}</span>
             </div>
-            <span style="color:var(--text-muted);font-size:11px">{{.Count}} done</span>
+            <span style="color:var(--text-muted);font-size:11px">{{.Count}} {{t $.Lang "occ.done"}}</span>
           </div>
         {{end}}
       </div>
     </div>
-    <button type="submit" class="btn btn-primary btn-sm">Assign</button>
+    <button type="submit" class="btn btn-primary btn-sm">{{t .Lang "occ.assign"}}</button>
   </form>
 
   <script>

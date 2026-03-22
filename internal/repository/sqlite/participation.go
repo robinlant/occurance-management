@@ -3,6 +3,7 @@ package sqlite
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"time"
 
 	"github.com/robinlant/occurance-management/internal/domain"
@@ -49,6 +50,14 @@ func (r *ParticipationRepository) CountByUser(ctx context.Context, userID int64)
 	var count int
 	err := r.db.QueryRowContext(ctx,
 		`SELECT COUNT(*) FROM participations WHERE user_id = ?`, userID,
+	).Scan(&count)
+	return count, err
+}
+
+func (r *ParticipationRepository) CountByOccurrence(ctx context.Context, occurrenceID int64) (int, error) {
+	var count int
+	err := r.db.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM participations WHERE occurrence_id = ?`, occurrenceID,
 	).Scan(&count)
 	return count, err
 }
@@ -140,14 +149,22 @@ func (r *ParticipationRepository) FindUsersByOccurrence(ctx context.Context, occ
 	return users, rows.Err()
 }
 
-func (r *ParticipationRepository) LeaderboardAll(ctx context.Context) ([]repository.LeaderboardRow, error) {
+func (r *ParticipationRepository) LeaderboardAll(ctx context.Context, roles []domain.Role, groupID int64) ([]repository.LeaderboardRow, error) {
+	placeholders, roleArgs := roleFilterArgs(roles)
+	joinSQL := "LEFT JOIN participations p ON p.user_id = u.id"
+	var joinArgs []any
+	if groupID > 0 {
+		joinSQL += " AND p.occurrence_id IN (SELECT id FROM occurrences WHERE group_id = ?)"
+		joinArgs = append(joinArgs, groupID)
+	}
+	args := append(joinArgs, roleArgs...)
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT u.id, u.name, u.email, u.role, COUNT(p.id) as cnt
 		FROM users u
-		LEFT JOIN participations p ON p.user_id = u.id
-		WHERE u.role NOT IN ('admin', 'organizer')
+		`+joinSQL+`
+		WHERE u.role IN (`+placeholders+`)
 		GROUP BY u.id
-		ORDER BY cnt DESC`)
+		ORDER BY cnt DESC`, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -155,20 +172,41 @@ func (r *ParticipationRepository) LeaderboardAll(ctx context.Context) ([]reposit
 	return scanLeaderboardRows(rows)
 }
 
-func (r *ParticipationRepository) LeaderboardInRange(ctx context.Context, from, to time.Time) ([]repository.LeaderboardRow, error) {
+func (r *ParticipationRepository) LeaderboardInRange(ctx context.Context, from, to time.Time, roles []domain.Role, groupID int64) ([]repository.LeaderboardRow, error) {
+	placeholders, roleArgs := roleFilterArgs(roles)
+	joinSQL := "LEFT JOIN participations p ON p.user_id = u.id AND p.occurrence_id IN (SELECT id FROM occurrences WHERE date >= ? AND date <= ?"
+	joinArgs := []any{from, to}
+	if groupID > 0 {
+		joinSQL += " AND group_id = ?"
+		joinArgs = append(joinArgs, groupID)
+	}
+	joinSQL += ")"
+	args := append(joinArgs, roleArgs...)
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT u.id, u.name, u.email, u.role, COUNT(p.id) as cnt
 		FROM users u
-		LEFT JOIN participations p ON p.user_id = u.id
-		LEFT JOIN occurrences o ON o.id = p.occurrence_id AND o.date >= ? AND o.date <= ?
-		WHERE u.role NOT IN ('admin', 'organizer')
+		`+joinSQL+`
+		WHERE u.role IN (`+placeholders+`)
 		GROUP BY u.id
-		ORDER BY cnt DESC`, from, to)
+		ORDER BY cnt DESC`, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	return scanLeaderboardRows(rows)
+}
+
+func roleFilterArgs(roles []domain.Role) (string, []any) {
+	if len(roles) == 0 {
+		return "'participant'", nil
+	}
+	placeholders := make([]string, len(roles))
+	args := make([]any, len(roles))
+	for i, r := range roles {
+		placeholders[i] = "?"
+		args[i] = string(r)
+	}
+	return strings.Join(placeholders, ","), args
 }
 
 // CountAndInsert atomically checks the participation count and inserts if not already signed up.

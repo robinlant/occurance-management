@@ -1,10 +1,10 @@
 {{define "leaderboard_table"}}
 <div id="leaderboard-table">
   {{if not .Entries}}
-    <p style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px">No data.</p>
+    <p style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px">{{t .Lang "lb.noData"}}</p>
   {{else}}
     <div class="lb-stats">
-      <span class="lb-stat-label">Average</span>
+      <span class="lb-stat-label">{{t .Lang "lb.average"}}</span>
       <span class="lb-stat-value">{{formatFloat .Average}}</span>
     </div>
     {{range $i, $e := .Entries}}

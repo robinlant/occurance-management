@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html"
 	"log"
+	"net"
 	"net/smtp"
 	"strings"
 	"sync"
@@ -234,7 +235,7 @@ func sanitizeHeader(s string) string {
 
 func (s *EmailService) sendEmail(config EmailConfig, to, subject, htmlBody string) error {
 	from := config.SenderEmail
-	addr := fmt.Sprintf("%s:%d", config.SMTPHost, config.SMTPPort)
+	addr := net.JoinHostPort(config.SMTPHost, fmt.Sprintf("%d", config.SMTPPort))
 
 	var msg strings.Builder
 	fmt.Fprintf(&msg, "From: %s <%s>\r\n", sanitizeHeader(config.SenderName), sanitizeHeader(from))
@@ -245,8 +246,41 @@ func (s *EmailService) sendEmail(config EmailConfig, to, subject, htmlBody strin
 	msg.WriteString("\r\n")
 	msg.WriteString(htmlBody)
 
+	// Use a dialer with timeout to prevent hanging on unreachable SMTP servers
+	conn, err := net.DialTimeout("tcp", addr, 10*time.Second)
+	if err != nil {
+		return fmt.Errorf("SMTP connection failed: %w", err)
+	}
+	conn.SetDeadline(time.Now().Add(30 * time.Second))
+
+	client, err := smtp.NewClient(conn, config.SMTPHost)
+	if err != nil {
+		conn.Close()
+		return fmt.Errorf("SMTP handshake failed: %w", err)
+	}
+	defer client.Close()
+
 	auth := smtp.PlainAuth("", config.SMTPUsername, config.SMTPPassword, config.SMTPHost)
-	return smtp.SendMail(addr, auth, from, []string{to}, []byte(msg.String()))
+	if err := client.Auth(auth); err != nil {
+		return fmt.Errorf("SMTP authentication failed: %w", err)
+	}
+	if err := client.Mail(from); err != nil {
+		return fmt.Errorf("SMTP MAIL FROM failed: %w", err)
+	}
+	if err := client.Rcpt(to); err != nil {
+		return fmt.Errorf("SMTP RCPT TO failed: %w", err)
+	}
+	w, err := client.Data()
+	if err != nil {
+		return fmt.Errorf("SMTP DATA failed: %w", err)
+	}
+	if _, err := w.Write([]byte(msg.String())); err != nil {
+		return fmt.Errorf("SMTP write failed: %w", err)
+	}
+	if err := w.Close(); err != nil {
+		return fmt.Errorf("SMTP send failed: %w", err)
+	}
+	return client.Quit()
 }
 
 // SendTestEmail sends a test email to verify the SMTP configuration.

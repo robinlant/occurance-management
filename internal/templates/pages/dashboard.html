@@ -1,9 +1,9 @@
 {{define "content"}}
 <div class="grid-2" style="margin-bottom:20px">
   <div class="card">
-    <div class="card-title">Open spots</div>
+    <div class="card-title">{{t .Lang "dash.openSpots"}}</div>
     {{if not .OpenOccurrences}}
-      <p style="color:var(--text-muted);font-size:13px">All filled up.</p>
+      <p style="color:var(--text-muted);font-size:13px">{{t .Lang "dash.allFilled"}}</p>
     {{else}}
       {{range .OpenOccurrences}}
         <a href="/occurrences/{{.ID}}" class="dash-occ-item">
@@ -13,14 +13,14 @@
               {{.Title}}
               {{if eq .Status "under"}}<span class="badge badge-red" style="font-size:10px;margin-left:4px">needs {{.Needed}} more</span>{{end}}
             </div>
-            <div class="dash-occ-sub">{{.ParticipantCount}}/{{.MinParticipants}}&#8211;{{.MaxParticipants}} people</div>
+            <div class="dash-occ-sub">{{.ParticipantCount}}/{{.MinParticipants}}&#8211;{{.MaxParticipants}} {{t $.Lang "occ.people"}}</div>
           </div>
           <div class="dash-occ-meta">
             <div class="dash-occ-date">{{weekday .Date}}, {{formatDate .Date}}</div>
             <div class="dash-occ-days">
               {{$days := daysUntil .Date}}
-              {{if eq $days 0}}Today
-              {{else if eq $days 1}}Tomorrow
+              {{if eq $days 0}}{{t $.Lang "dash.today"}}
+              {{else if eq $days 1}}{{t $.Lang "dash.tomorrow"}}
               {{else if isPast .Date}}{{sub 0 $days}} days ago
               {{else}}in {{$days}} days
               {{end}}
@@ -31,11 +31,32 @@
     {{end}}
   </div>
 
-  <div class="card">
-    <div class="card-title">Top performers</div>
-    {{if not .Leaderboard}}
-      <p style="color:var(--text-muted);font-size:13px">No data yet.</p>
-    {{else}}
+  <div class="stack" style="gap:20px">
+    {{if .UserUpcoming}}
+    <div class="card">
+      <div class="card-title">Your schedule</div>
+      {{range .UserUpcoming}}
+        <a href="/occurrences/{{.ID}}" class="dash-occ-item">
+          <div style="min-width:0;flex:1">
+            <div class="dash-occ-title">
+              <span class="occ-status-dot {{.Status}}"></span>
+              {{.Title}}
+              {{if eq .Status "under"}}<span class="badge badge-red" style="font-size:10px;margin-left:4px">needs {{.Needed}} more</span>{{end}}
+            </div>
+            <div class="dash-occ-sub">{{.ParticipantCount}}/{{.MinParticipants}}&#8211;{{.MaxParticipants}} {{t $.Lang "occ.people"}}</div>
+          </div>
+          <div class="dash-occ-meta">
+            <div class="dash-occ-date">{{weekday .Date}}, {{formatDate .Date}}</div>
+            <div class="dash-occ-days">{{relativeDay .Date}}</div>
+          </div>
+        </a>
+      {{end}}
+    </div>
+    {{end}}
+
+    {{if .Leaderboard}}
+    <div class="card">
+      <div class="card-title">{{t .Lang "dash.topPerformers"}}</div>
       {{range $i, $e := .Leaderboard}}
         <a href="/profile/{{$e.User.ID}}" class="lb-row">
           <div class="lb-rank-cell">
@@ -54,6 +75,13 @@
           <span class="lb-count">{{$e.Count}}</span>
         </a>
       {{end}}
+    </div>
+    {{end}}
+
+    {{if and (not .UserUpcoming) (not .Leaderboard)}}
+    <div class="card">
+      <p style="color:var(--text-muted);font-size:13px">No upcoming occurrences. <a href="/occurrences" style="color:var(--accent)">Browse open spots</a>.</p>
+    </div>
     {{end}}
   </div>
 </div>

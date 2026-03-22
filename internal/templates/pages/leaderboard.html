@@ -1,53 +1,41 @@
 {{define "content"}}
 <div class="card">
-  <form id="lb-form"
-    style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:20px"
-    hx-get="/leaderboard"
-    hx-target="#leaderboard-table"
-    hx-swap="outerHTML"
-    hx-push-url="true">
+  <div class="filter-bar" style="margin-bottom:16px">
+    <a href="/leaderboard?from={{.StudentYearFrom}}&to={{.StudentYearTo}}&role_filter={{.RoleFilter}}&group={{.ActiveGroup}}"
+       class="chip {{if .StudentYearActive}}active{{end}}">{{t .Lang "lb.studentYear"}}</a>
+    <a href="/leaderboard?from={{.ThisYearFrom}}&to={{.ThisYearTo}}&role_filter={{.RoleFilter}}&group={{.ActiveGroup}}"
+       class="chip {{if .ThisYearActive}}active{{end}}">{{t .Lang "lb.thisYear"}}</a>
+    <form id="lb-form" style="display:inline-flex;align-items:center;gap:6px;margin:0" action="/leaderboard" method="get">
+      <input type="hidden" name="role_filter" value="{{.RoleFilter}}">
+      <input type="hidden" name="group" value="{{.ActiveGroup}}">
+      <input type="date" name="from" id="lb-from" value="{{.From}}" onchange="document.getElementById('lb-form').submit()"
+             style="padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;font-family:inherit;outline:none">
+      <span style="color:var(--text-muted);font-size:12px">&ndash;</span>
+      <input type="date" name="to" id="lb-to" value="{{.To}}" onchange="document.getElementById('lb-form').submit()"
+             style="padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;font-family:inherit;outline:none">
+    </form>
+  </div>
 
-    <div class="form-group" style="flex:none">
-      <label for="lb-from">From</label>
-      <input type="date" name="from" id="lb-from" value="{{.From}}">
-    </div>
-    <div class="form-group" style="flex:none">
-      <label for="lb-to">To</label>
-      <input type="date" name="to" id="lb-to" value="{{.To}}">
-    </div>
+  <div class="filter-bar" style="margin-bottom:16px">
+    <a href="/leaderboard?from={{.From}}&to={{.To}}&role_filter=participants&group={{.ActiveGroup}}"
+       class="chip {{if eq .RoleFilter "participants"}}active{{end}}">{{t .Lang "lb.participants"}}</a>
+    <a href="/leaderboard?from={{.From}}&to={{.To}}&role_filter=organizers&group={{.ActiveGroup}}"
+       class="chip {{if eq .RoleFilter "organizers"}}active{{end}}">{{t .Lang "lb.organizers"}}</a>
+    <a href="/leaderboard?from={{.From}}&to={{.To}}&role_filter=all&group={{.ActiveGroup}}"
+       class="chip {{if eq .RoleFilter "all"}}active{{end}}">{{t .Lang "lb.all"}}</a>
+  </div>
 
-    <button type="submit" class="btn btn-primary btn-sm">Filter</button>
-    <a href="/leaderboard" class="btn btn-ghost btn-sm">Reset</a>
-    <button type="button" onclick="setThisYear()" class="btn btn-ghost btn-sm" id="btn-this-year">This year</button>
-    <button type="button" onclick="setStudentYear()" class="btn btn-ghost btn-sm" id="btn-student-year">Student year</button>
-    <span id="lb-range-label" style="font-size:12px;color:var(--text-muted);margin-left:4px"></span>
-  </form>
+  {{if .Groups}}
+  <div class="filter-bar" style="margin-bottom:16px">
+    <a href="/leaderboard?from={{.From}}&to={{.To}}&role_filter={{.RoleFilter}}"
+       class="chip {{if eq .ActiveGroup 0}}active{{end}}">{{t .Lang "lb.allGroups"}}</a>
+    {{range .Groups}}
+    <a href="/leaderboard?from={{$.From}}&to={{$.To}}&role_filter={{$.RoleFilter}}&group={{.ID}}"
+       class="chip {{if eq $.ActiveGroup .ID}}active{{end}}">{{.Name}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   {{template "leaderboard_table" .}}
 </div>
-
-<script>
-function fmtD(d){var p=d.split('-');return p[2]+'.'+p[1]+'.'+p[0];}
-function showRange(){
-  var f=document.getElementById('lb-from').value, t=document.getElementById('lb-to').value;
-  var el=document.getElementById('lb-range-label');
-  if(f&&t){el.textContent=fmtD(f)+' \u2013 '+fmtD(t);}else{el.textContent='';}
-}
-function setThisYear(){
-  var y=new Date().getFullYear();
-  document.getElementById('lb-from').value=y+'-01-01';
-  document.getElementById('lb-to').value=y+'-12-31';
-  showRange();
-  htmx.trigger('#lb-form','submit');
-}
-function setStudentYear(){
-  var now=new Date(), m=now.getMonth(), y=now.getFullYear();
-  var s=m>=8?y:y-1;
-  document.getElementById('lb-from').value=s+'-09-01';
-  document.getElementById('lb-to').value=(s+1)+'-08-31';
-  showRange();
-  htmx.trigger('#lb-form','submit');
-}
-document.addEventListener('DOMContentLoaded',showRange);
-</script>
 {{end}}

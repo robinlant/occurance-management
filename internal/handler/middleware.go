@@ -35,7 +35,7 @@ func CSRFMiddleware() gin.HandlerFunc {
 		// Validate on POST requests (skip login which has no prior token)
 		if c.Request.Method == "POST" {
 			// Skip CSRF check for login (no session yet) and HTMX requests (same-origin enforced by browser)
-			if c.Request.URL.Path != "/login" && c.GetHeader("HX-Request") != "true" {
+			if c.Request.URL.Path != "/login" && c.Request.URL.Path != "/logout" && c.GetHeader("HX-Request") != "true" {
 				formToken := c.PostForm("_csrf")
 				if formToken == "" || formToken != token {
 					c.AbortWithStatus(http.StatusForbidden)

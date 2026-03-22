@@ -16,6 +16,7 @@ var (
 	ErrNotSignedUp        = errors.New("user is not signed up for this occurrence")
 	ErrUserOOO            = errors.New("user is out of office on the occurrence date")
 	ErrAssignedDuringOOO  = errors.New("cannot set out-of-office: user is assigned to an occurrence on that date")
+	ErrOccurrenceFull     = errors.New("occurrence is full and does not allow over-limit registrations")
 )
 
 type LeaderboardEntry struct {
@@ -82,7 +83,7 @@ func (s *OccurrenceService) RemoveParticipant(ctx context.Context, occurrenceID,
 
 // --- Participant ---
 
-// SignUp signs a user up for an occurrence. Blocked if OOO. Uses atomic count+insert.
+// SignUp signs a user up for an occurrence. Blocked if OOO or if full and over-limit not allowed.
 func (s *OccurrenceService) SignUp(ctx context.Context, occurrenceID, userID int64) (isOverMax bool, err error) {
 	occ, err := s.occurrences.FindByID(ctx, occurrenceID)
 	if err != nil {
@@ -90,6 +91,15 @@ func (s *OccurrenceService) SignUp(ctx context.Context, occurrenceID, userID int
 	}
 	if err := s.checkOOO(ctx, userID, occ.Date); err != nil {
 		return false, err
+	}
+	if !occ.AllowOverLimit {
+		count, err := s.participations.CountByOccurrence(ctx, occ.ID)
+		if err != nil {
+			return false, err
+		}
+		if count >= occ.MaxParticipants {
+			return false, ErrOccurrenceFull
+		}
 	}
 	return s.participations.CountAndInsert(ctx, occ.ID, userID, occ.MaxParticipants)
 }
@@ -125,6 +135,10 @@ func (s *OccurrenceService) ListOpenOccurrences(ctx context.Context) ([]domain.O
 	return s.occurrences.FindOpenSpots(ctx)
 }
 
+func (s *OccurrenceService) GetUpcomingForUser(ctx context.Context, userID int64) ([]domain.Occurrence, error) {
+	return s.occurrences.FindUpcomingByUser(ctx, userID, time.Now())
+}
+
 // GetParticipants returns users participating in an occurrence (single JOIN query, no N+1).
 func (s *OccurrenceService) GetParticipants(ctx context.Context, occurrenceID int64) ([]domain.User, error) {
 	return s.participations.FindUsersByOccurrence(ctx, occurrenceID)
@@ -140,9 +154,6 @@ func (s *OccurrenceService) GetAvailableUsersForDate(ctx context.Context, date t
 
 	var available []AvailableUser
 	for _, u := range allUsers {
-		if u.Role == domain.RoleOrganizer || u.Role == domain.RoleAdmin {
-			continue
-		}
 		ooos, err := s.ooo.FindByUser(ctx, u.ID)
 		if err != nil {
 			return nil, err
@@ -164,13 +175,13 @@ func (s *OccurrenceService) GetAvailableUsersForDate(ctx context.Context, date t
 }
 
 // GetLeaderboard returns all users with their participation count (single JOIN query, no N+1).
-func (s *OccurrenceService) GetLeaderboard(ctx context.Context, from, to time.Time) ([]LeaderboardEntry, error) {
+func (s *OccurrenceService) GetLeaderboard(ctx context.Context, from, to time.Time, roles []domain.Role, groupID int64) ([]LeaderboardEntry, error) {
 	var rows []repository.LeaderboardRow
 	var err error
 	if from.IsZero() && to.IsZero() {
-		rows, err = s.participations.LeaderboardAll(ctx)
+		rows, err = s.participations.LeaderboardAll(ctx, roles, groupID)
 	} else {
-		rows, err = s.participations.LeaderboardInRange(ctx, from, to)
+		rows, err = s.participations.LeaderboardInRange(ctx, from, to, roles, groupID)
 	}
 	if err != nil {
 		return nil, err

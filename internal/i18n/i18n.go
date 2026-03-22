@@ -153,17 +153,23 @@ var en = map[string]string{
 	"profile.remove":              "remove",
 	"profile.less":                "Less",
 	"profile.more":                "More",
+	"profile.ooo":                 "OOO",
+	"profile.currentlyOOO":        "Currently OOO",
 	"profile.userInfo":            "User info",
 
 	// Leaderboard
-	"lb.from":        "From",
-	"lb.to":          "To",
-	"lb.filter":      "Filter",
-	"lb.reset":       "Reset",
-	"lb.thisYear":    "This year",
-	"lb.studentYear": "Student year",
-	"lb.average":     "Average",
-	"lb.noData":      "No data.",
+	"lb.from":             "From",
+	"lb.to":               "To",
+	"lb.filter":           "Filter",
+	"lb.reset":            "Reset",
+	"lb.thisYear":         "This year",
+	"lb.studentYear":      "Student year",
+	"lb.average":          "Average",
+	"lb.noData":           "No data.",
+	"lb.participants":     "Participants",
+	"lb.organizers":       "Organizers",
+	"lb.all":              "All",
+	"lb.allGroups":        "All groups",
 
 	// Groups
 	"groups.createGroup":    "Create group",
@@ -187,6 +193,8 @@ var en = map[string]string{
 	"users.delete":         "Delete",
 	"users.confirmDelete":  "Are you sure you want to delete this user?",
 	"users.setNewPassword": "Set new password",
+	"users.setNewEmail":    "Set new email",
+	"users.viewProfile":    "Profile",
 	"users.set":            "Set",
 	"users.participant":    "Participant",
 	"users.organizer":      "Organizer",
@@ -282,6 +290,12 @@ var en = map[string]string{
 	"search.noResults":   "No results for",
 	"search.people":      "People",
 	"search.occurrences": "Occurrences",
+
+	// Occurrence over-limit
+	"occ.full":                "Full",
+	"occ.overLimitWarning":    "This occurrence is at capacity. Signing up will exceed the limit.",
+	"occ.signupOverLimit":     "Sign up (over limit)",
+	"form.allowOverLimit":     "Allow over-limit registrations",
 
 	// Language
 	"lang.switch": "DE",
@@ -424,17 +438,23 @@ var de = map[string]string{
 	"profile.remove":              "entfernen",
 	"profile.less":                "Weniger",
 	"profile.more":                "Mehr",
+	"profile.ooo":                 "Abwesend",
+	"profile.currentlyOOO":        "Derzeit abwesend",
 	"profile.userInfo":            "Benutzerinfo",
 
 	// Leaderboard
-	"lb.from":        "Von",
-	"lb.to":          "Bis",
-	"lb.filter":      "Filtern",
-	"lb.reset":       "Zur\u00fccksetzen",
-	"lb.thisYear":    "Dieses Jahr",
-	"lb.studentYear": "Schuljahr",
-	"lb.average":     "Durchschnitt",
-	"lb.noData":      "Keine Daten.",
+	"lb.from":             "Von",
+	"lb.to":               "Bis",
+	"lb.filter":           "Filtern",
+	"lb.reset":            "Zur\u00fccksetzen",
+	"lb.thisYear":         "Dieses Jahr",
+	"lb.studentYear":      "Schuljahr",
+	"lb.average":          "Durchschnitt",
+	"lb.noData":           "Keine Daten.",
+	"lb.participants":     "Teilnehmer",
+	"lb.organizers":       "Organisatoren",
+	"lb.all":              "Alle",
+	"lb.allGroups":        "Alle Gruppen",
 
 	// Groups
 	"groups.createGroup":    "Gruppe erstellen",
@@ -458,6 +478,8 @@ var de = map[string]string{
 	"users.delete":         "L\u00f6schen",
 	"users.confirmDelete":  "Sind Sie sicher, dass Sie diesen Benutzer l\u00f6schen m\u00f6chten?",
 	"users.setNewPassword": "Neues Passwort setzen",
+	"users.setNewEmail":    "Neue E-Mail setzen",
+	"users.viewProfile":    "Profil",
 	"users.set":            "Setzen",
 	"users.participant":    "Teilnehmer",
 	"users.organizer":      "Organisator",
@@ -553,6 +575,12 @@ var de = map[string]string{
 	"search.noResults":   "Keine Ergebnisse f\u00fcr",
 	"search.people":      "Personen",
 	"search.occurrences": "Eins\u00e4tze",
+
+	// Occurrence over-limit
+	"occ.full":                "Voll",
+	"occ.overLimitWarning":    "Dieser Einsatz ist voll. Eine Anmeldung w\u00fcrde das Limit \u00fcberschreiten.",
+	"occ.signupOverLimit":     "Eintragen (\u00fcber Limit)",
+	"form.allowOverLimit":     "\u00dcber-Limit-Anmeldungen erlauben",
 
 	// Language
 	"lang.switch": "EN",

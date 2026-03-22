@@ -8,7 +8,10 @@
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
             <h2 style="font-size:16px;font-weight:600">{{.Occurrence.Title}}</h2>
             {{if .Group}}<span class="badge badge-accent">{{.Group.Name}}</span>{{end}}
-            {{if isPast .Occurrence.Date}}<span class="badge badge-gray">past</span>{{end}}
+            {{if isPast .Occurrence.Date}}<span class="badge badge-gray">{{t .Lang "occ.past"}}</span>{{end}}
+            {{if eq .Status "under"}}<span class="badge badge-red">{{t .Lang "occ.needsPeople"}}</span>
+            {{else if eq .Status "good"}}<span class="badge badge-green">{{t .Lang "occ.filled"}}</span>
+            {{else if eq .Status "over"}}<span class="badge badge-yellow">{{t .Lang "occ.overStaffed"}}</span>{{end}}
           </div>
           <div style="font-size:13px;color:var(--text-muted)">{{formatDateTime .Occurrence.Date}}</div>
           {{if .Occurrence.Description}}
@@ -17,10 +20,10 @@
         </div>
         {{if or (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
           <div class="row">
-            <a href="/occurrences/{{.Occurrence.ID}}/edit" class="btn btn-ghost btn-sm">Edit</a>
-            <form method="POST" action="/occurrences/{{.Occurrence.ID}}/delete" onsubmit="return confirm('Are you sure you want to delete this occurrence?')">
+            <a href="/occurrences/{{.Occurrence.ID}}/edit" class="btn btn-ghost btn-sm">{{t .Lang "occ.edit"}}</a>
+            <form method="POST" action="/occurrences/{{.Occurrence.ID}}/delete" onsubmit="return confirm('{{t .Lang "occ.confirmDelete"}}')">
               <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
-              <button class="btn btn-danger btn-sm">Delete</button>
+              <button class="btn btn-danger btn-sm">{{t .Lang "occ.delete"}}</button>
             </form>
           </div>
         {{end}}
@@ -34,12 +37,12 @@
 
   {{if or (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
     <div class="card">
-      <div class="card-title">Assign participant</div>
+      <div class="card-title">{{t .Lang "occ.assignParticipant"}}</div>
       <div id="available-users"
         hx-get="/occurrences/{{.Occurrence.ID}}/available"
         hx-trigger="load"
         hx-swap="innerHTML">
-        <p style="color:var(--text-muted);font-size:12px">Loading&#8230;</p>
+        <p style="color:var(--text-muted);font-size:12px">{{t .Lang "occ.loading"}}</p>
       </div>
     </div>
   {{end}}

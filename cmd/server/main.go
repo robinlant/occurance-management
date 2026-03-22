@@ -62,7 +62,7 @@ func main() {
 	grpH := handler.NewGroupHandler(groupSvc)
 	usrH := handler.NewUserAdminHandler(userSvc)
 	profH := handler.NewProfileHandler(userSvc, occSvc)
-	lbH := handler.NewLeaderboardHandler(occSvc)
+	lbH := handler.NewLeaderboardHandler(occSvc, groupSvc)
 	calH := handler.NewCalendarHandler(occSvc, groupSvc)
 	searchH := handler.NewSearchHandler(occSvc, userSvc)
 	settingsH := handler.NewSettingsHandler(settingsSvc, emailSvc)
@@ -105,6 +105,7 @@ func main() {
 	// Public
 	r.GET("/login", authH.ShowLogin)
 	r.POST("/login", authH.Login)
+	r.GET("/lang", handler.SwitchLang)
 	r.NoRoute(errH.NotFound)
 
 	// All authenticated
@@ -145,6 +146,7 @@ func main() {
 	adminUsers.GET("", usrH.List)
 	adminUsers.POST("", usrH.Create)
 	adminUsers.POST("/:id/set-password", usrH.SetPassword)
+	adminUsers.POST("/:id/set-email", usrH.SetEmail)
 	adminUsers.POST("/:id/delete", usrH.Delete)
 
 	adminSettings := protected.Group("/settings", handler.RoleRequired(domain.RoleAdmin))

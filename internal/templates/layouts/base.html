@@ -10,7 +10,7 @@
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 </head>
 <body>
-<a href="#main-content" class="skip-to-content">Skip to content</a>
+<a href="#main-content" class="skip-to-content">{{t .Lang "nav.skipContent"}}</a>
 {{if .CurrentUser.ID}}
 <button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')" aria-label="Toggle navigation">&#9776;</button>
 <div class="sidebar">
@@ -19,16 +19,16 @@
     DutyRound
   </div>
   <nav class="sidebar-nav" aria-label="Main navigation">
-    <a href="/"            class="nav-link {{if eq .ActivePage "dashboard"}}active{{end}}"{{if eq .ActivePage "dashboard"}} aria-current="page"{{end}}><span class="nav-icon">&#9638;</span> Dashboard</a>
-    <a href="/occurrences" class="nav-link {{if eq .ActivePage "occurrences"}}active{{end}}"{{if eq .ActivePage "occurrences"}} aria-current="page"{{end}}><span class="nav-icon">&#10022;</span> Occurrences</a>
-    <a href="/calendar"    class="nav-link {{if eq .ActivePage "calendar"}}active{{end}}"{{if eq .ActivePage "calendar"}} aria-current="page"{{end}}><span class="nav-icon">&#9643;</span> Calendar</a>
-    <a href="/leaderboard" class="nav-link {{if eq .ActivePage "leaderboard"}}active{{end}}"{{if eq .ActivePage "leaderboard"}} aria-current="page"{{end}}><span class="nav-icon">&#9672;</span> Leaderboard</a>
+    <a href="/"            class="nav-link {{if eq .ActivePage "dashboard"}}active{{end}}"{{if eq .ActivePage "dashboard"}} aria-current="page"{{end}}><span class="nav-icon">&#9638;</span> {{t .Lang "nav.dashboard"}}</a>
+    <a href="/occurrences" class="nav-link {{if eq .ActivePage "occurrences"}}active{{end}}"{{if eq .ActivePage "occurrences"}} aria-current="page"{{end}}><span class="nav-icon">&#10022;</span> {{t .Lang "nav.occurrences"}}</a>
+    <a href="/calendar"    class="nav-link {{if eq .ActivePage "calendar"}}active{{end}}"{{if eq .ActivePage "calendar"}} aria-current="page"{{end}}><span class="nav-icon">&#9643;</span> {{t .Lang "nav.calendar"}}</a>
+    <a href="/leaderboard" class="nav-link {{if eq .ActivePage "leaderboard"}}active{{end}}"{{if eq .ActivePage "leaderboard"}} aria-current="page"{{end}}><span class="nav-icon">&#9672;</span> {{t .Lang "nav.leaderboard"}}</a>
     {{if or (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
-    <a href="/groups"      class="nav-link {{if eq .ActivePage "groups"}}active{{end}}"{{if eq .ActivePage "groups"}} aria-current="page"{{end}}><span class="nav-icon">&#9673;</span> Groups</a>
+    <a href="/groups"      class="nav-link {{if eq .ActivePage "groups"}}active{{end}}"{{if eq .ActivePage "groups"}} aria-current="page"{{end}}><span class="nav-icon">&#9673;</span> {{t .Lang "nav.groups"}}</a>
     {{end}}
     {{if eq .CurrentUser.Role "admin"}}
-    <a href="/users"       class="nav-link {{if eq .ActivePage "users"}}active{{end}}"{{if eq .ActivePage "users"}} aria-current="page"{{end}}><span class="nav-icon">&#9678;</span> Users</a>
-    <a href="/settings"    class="nav-link {{if eq .ActivePage "settings"}}active{{end}}"{{if eq .ActivePage "settings"}} aria-current="page"{{end}}><span class="nav-icon">&#9881;</span> Settings</a>
+    <a href="/users"       class="nav-link {{if eq .ActivePage "users"}}active{{end}}"{{if eq .ActivePage "users"}} aria-current="page"{{end}}><span class="nav-icon">&#9678;</span> {{t .Lang "nav.users"}}</a>
+    <a href="/settings"    class="nav-link {{if eq .ActivePage "settings"}}active{{end}}"{{if eq .ActivePage "settings"}} aria-current="page"{{end}}><span class="nav-icon">&#9881;</span> {{t .Lang "nav.settings"}}</a>
     {{end}}
   </nav>
 </div>
@@ -62,7 +62,7 @@ document.addEventListener('click',function(e){
   <div class="topbar">
     <span class="topbar-title">{{.PageTitle}}</span>
     <div class="search-wrap">
-      <input type="search" name="q" placeholder="Search people &amp; occurrences..."
+      <input type="search" name="q" placeholder="{{t .Lang "nav.search"}}"
              class="search-input" aria-label="Search people and occurrences"
              hx-get="/search" hx-trigger="keyup changed delay:300ms"
              hx-target="#search-results" hx-swap="outerHTML"
@@ -74,6 +74,7 @@ document.addEventListener('click',function(e){
         {{block "topbar-actions" .}}{{end}}
       </div>
       <div class="topbar-sep"></div>
+      <a href="/lang?lang={{if eq .Lang "de"}}en{{else}}de{{end}}" class="btn btn-ghost btn-sm" title="Switch language">{{if eq .Lang "de"}}EN{{else}}DE{{end}}</a>
       <button onclick="toggleTheme()" id="theme-btn" class="btn btn-ghost btn-sm" aria-label="Toggle theme" title="Toggle theme">&#9790;</button>
       <a href="/profile" class="topbar-user">
         <div class="user-avatar">{{initial .CurrentUser.Name}}</div>
@@ -84,7 +85,7 @@ document.addEventListener('click',function(e){
       </a>
       <form method="POST" action="/logout" style="margin:0">
         <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
-        <button class="btn btn-ghost btn-sm">Logout</button>
+        <button class="btn btn-ghost btn-sm">{{t .Lang "nav.logout"}}</button>
       </form>
     </div>
   </div>

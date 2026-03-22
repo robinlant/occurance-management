@@ -124,6 +124,20 @@ func (s *UserService) ListUsers(ctx context.Context) ([]domain.User, error) {
 	return s.users.FindAll(ctx)
 }
 
+func (s *UserService) SetEmail(ctx context.Context, userID int64, email string) error {
+	existing, err := s.users.FindByEmail(ctx, email)
+	if err == nil && existing.ID != userID {
+		return ErrEmailTaken
+	}
+	user, err := s.users.FindByID(ctx, userID)
+	if err != nil {
+		return ErrUserNotFound
+	}
+	user.Email = email
+	_, err = s.users.Save(ctx, user)
+	return err
+}
+
 func (s *UserService) DeleteUser(ctx context.Context, userID int64) error {
 	return s.users.Delete(ctx, userID)
 }
