@@ -88,6 +88,7 @@ type SettingsRepository interface {
 type EmailLogRepository interface {
 	LogSent(ctx context.Context, userID int64, emailType string) error
 	LastSentAt(ctx context.Context, userID int64) (time.Time, error)
+	LastSentAtByType(ctx context.Context, userID int64, emailType string) (time.Time, error)
 	CountSentToday(ctx context.Context, userID int64) (int, error)
 }
 

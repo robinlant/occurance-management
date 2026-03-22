@@ -23,7 +23,7 @@ var funcMap = template.FuncMap{
 		return t.Format("02.01.2006 15:04")
 	},
 	"formatTime": func(t time.Time) string {
-		return t.Format("3:04 PM")
+		return t.Format("15:04")
 	},
 	"add": func(a, b int) int { return a + b },
 	"sub": func(a, b int) int { return a - b },
@@ -71,19 +71,19 @@ var funcMap = template.FuncMap{
 		days := int(target.Sub(now).Hours() / 24)
 		return days
 	},
-	"relativeDay": func(t time.Time) string {
+	"relativeDay": func(lang string, t time.Time) string {
 		d := int(t.Truncate(24 * time.Hour).Sub(time.Now().Truncate(24 * time.Hour)).Hours() / 24)
 		switch {
 		case d == 0:
-			return "today"
+			return i18n.T(lang, "rel.today")
 		case d == 1:
-			return "tomorrow"
+			return i18n.T(lang, "rel.tomorrow")
 		case d == -1:
-			return "yesterday"
+			return i18n.T(lang, "rel.yesterday")
 		case d > 1:
-			return fmt.Sprintf("in %d days", d)
+			return fmt.Sprintf(i18n.T(lang, "rel.inDays"), d)
 		default:
-			return fmt.Sprintf("%d days ago", -d)
+			return fmt.Sprintf(i18n.T(lang, "rel.daysAgo"), -d)
 		}
 	},
 	"weekday": func(t time.Time) string {

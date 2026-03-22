@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/robinlant/occurance-management/internal/domain"
+	"github.com/robinlant/occurance-management/internal/i18n"
 	"github.com/robinlant/occurance-management/internal/service"
 )
 
@@ -104,13 +105,14 @@ func (h *ProfileHandler) ShowPublic(c *gin.Context) {
 }
 
 func (h *ProfileHandler) ChangePassword(c *gin.Context) {
+	lang := i18n.GetLang(c)
 	user, _ := CurrentUser(c)
 	if err := h.users.ChangePassword(c.Request.Context(), user.ID, c.PostForm("password")); err != nil {
 		slog.Error("profile: change password failed", "user_id", user.ID, "error", err)
 		if errors.Is(err, service.ErrPasswordTooShort) {
-			SetFlash(c, "error", "Password must be at least 8 characters.")
+			SetFlash(c, "error", i18n.T(lang, "flash.passwordTooShort"))
 		} else {
-			SetFlash(c, "error", "Failed to update password.")
+			SetFlash(c, "error", i18n.T(lang, "flash.failedUpdatePassword"))
 		}
 	} else {
 		slog.Info("password_changed", "user_id", user.ID)
@@ -119,27 +121,28 @@ func (h *ProfileHandler) ChangePassword(c *gin.Context) {
 		s.Clear()
 		s.Set(sessionUserID, user.ID)
 		s.Save()
-		SetFlash(c, "success", "Password updated.")
+		SetFlash(c, "success", i18n.T(lang, "flash.passwordUpdated"))
 	}
 	c.Redirect(http.StatusFound, "/profile")
 }
 
 // AddOOO — HTMX: returns updated ooo_list partial.
 func (h *ProfileHandler) AddOOO(c *gin.Context) {
+	lang := i18n.GetLang(c)
 	user, _ := CurrentUser(c)
 
-	from, err1 := time.Parse("2006-01-02", c.PostForm("from"))
-	to, err2 := time.Parse("2006-01-02", c.PostForm("to"))
+	from, err1 := time.ParseInLocation("2006-01-02", c.PostForm("from"), time.Local)
+	to, err2 := time.ParseInLocation("2006-01-02", c.PostForm("to"), time.Local)
 	if err1 != nil || err2 != nil {
 		c.Header("HX-Retarget", "#ooo-error")
 		c.Header("HX-Reswap", "innerHTML")
-		c.String(http.StatusOK, `<div class="flash flash-error" style="margin-top:8px">&#10005; Invalid dates.</div>`)
+		c.String(http.StatusOK, `<div class="flash flash-error" style="margin-top:8px">&#10005; `+i18n.T(lang, "flash.invalidDates")+`</div>`)
 		return
 	}
 	if !to.After(from) {
 		c.Header("HX-Retarget", "#ooo-error")
 		c.Header("HX-Reswap", "innerHTML")
-		c.String(http.StatusOK, `<div class="flash flash-error" style="margin-top:8px">&#10005; End date must be after start date.</div>`)
+		c.String(http.StatusOK, `<div class="flash flash-error" style="margin-top:8px">&#10005; `+i18n.T(lang, "flash.endDateAfterStart")+`</div>`)
 		return
 	}
 
@@ -149,7 +152,7 @@ func (h *ProfileHandler) AddOOO(c *gin.Context) {
 			slog.Warn("ooo: conflict with existing participation", "user_id", user.ID)
 			c.Header("HX-Retarget", "#ooo-error")
 			c.Header("HX-Reswap", "innerHTML")
-			c.String(http.StatusOK, `<div class="flash flash-error" style="margin-top:8px">&#10005; You are signed up for one or more occurrences during this period. Please withdraw from them first before marking these dates as out of office.</div>`)
+			c.String(http.StatusOK, `<div class="flash flash-error" style="margin-top:8px">&#10005; `+i18n.T(lang, "flash.oooConflictDetail")+`</div>`)
 			return
 		}
 		slog.Error("ooo: add failed", "user_id", user.ID, "error", err)
@@ -197,8 +200,15 @@ func buildHeatmap(activityMap map[string]int, ooos []domain.OutOfOffice, from, t
 		key := d.Format("2006-01-02")
 		count := activityMap[key]
 		level := 0
-		if count >= 1 {
+		switch {
+		case count >= 4:
 			level = 4
+		case count >= 3:
+			level = 3
+		case count >= 2:
+			level = 2
+		case count >= 1:
+			level = 1
 		}
 		isOOO := false
 		dNorm := time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, time.UTC)

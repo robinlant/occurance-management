@@ -76,6 +76,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	}
 	s := sessions.Default(c)
 	s.Clear()
+	s.Options(sessions.Options{MaxAge: -1})
 	s.Save()
 	c.Redirect(http.StatusFound, "/login")
 }

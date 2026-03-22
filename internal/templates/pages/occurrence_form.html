@@ -3,12 +3,12 @@
 
   {{if not .Occurrence}}
   <div class="card" style="margin-bottom:16px;padding:20px 24px">
-    <div class="card-title" style="margin-bottom:8px">Copy from existing</div>
+    <div class="card-title" style="margin-bottom:8px">{{t .Lang "form.copyFromExisting"}}</div>
     <div class="form-group">
-      <label for="copy-search">Pre-fill title, description, time &amp; participant limits from a past occurrence</label>
+      <label for="copy-search">{{t .Lang "form.copyFromExistingLabel"}}</label>
       <div class="custom-select-wrap" style="margin-top:6px">
         <input type="text" class="custom-select-input" id="copy-search"
-               placeholder="Search occurrences to copy from&#8230;"
+               placeholder="{{t .Lang "form.copySearchPlaceholder"}}"
                autocomplete="off"
                onfocus="openCopyDropdown()"
                oninput="filterCopyDropdown(this.value)">

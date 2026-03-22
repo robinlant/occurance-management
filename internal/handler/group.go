@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/robinlant/occurance-management/internal/i18n"
 	"github.com/robinlant/occurance-management/internal/service"
 )
 
@@ -18,6 +19,7 @@ func NewGroupHandler(grp *service.GroupService) *GroupHandler {
 }
 
 func (h *GroupHandler) List(c *gin.Context) {
+	lang := i18n.GetLang(c)
 	groups, err := h.groups.List(c.Request.Context())
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
@@ -26,14 +28,15 @@ func (h *GroupHandler) List(c *gin.Context) {
 	Page(c, "groups.html", pageData(c, gin.H{
 		"Groups":     groups,
 		"ActivePage": "groups",
-		"PageTitle":  "Groups",
+		"PageTitle":  i18n.T(lang, "title.groups"),
 	}))
 }
 
 func (h *GroupHandler) Create(c *gin.Context) {
+	lang := i18n.GetLang(c)
 	name := c.PostForm("name")
 	if name == "" {
-		SetFlash(c, "error", "Name is required.")
+		SetFlash(c, "error", i18n.T(lang, "flash.nameRequired"))
 		c.Redirect(http.StatusFound, "/groups")
 		return
 	}
@@ -41,15 +44,16 @@ func (h *GroupHandler) Create(c *gin.Context) {
 	created, err := h.groups.Create(c.Request.Context(), name)
 	if err != nil {
 		slog.Error("group: create failed", "actor_user_id", actor.ID, "name", name, "error", err)
-		SetFlash(c, "error", "Failed to create group.")
+		SetFlash(c, "error", i18n.T(lang, "flash.failedCreateGroup"))
 	} else {
 		slog.Info("group_created", "actor_user_id", actor.ID, "group_id", created.ID)
-		SetFlash(c, "success", "Group created.")
+		SetFlash(c, "success", i18n.T(lang, "flash.groupCreated"))
 	}
 	c.Redirect(http.StatusFound, "/groups")
 }
 
 func (h *GroupHandler) Delete(c *gin.Context) {
+	lang := i18n.GetLang(c)
 	id, err := pathID(c)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
@@ -58,10 +62,10 @@ func (h *GroupHandler) Delete(c *gin.Context) {
 	actor, _ := CurrentUser(c)
 	if err := h.groups.Delete(c.Request.Context(), id); err != nil {
 		slog.Error("group: delete failed", "actor_user_id", actor.ID, "group_id", id, "error", err)
-		SetFlash(c, "error", "Failed to delete group.")
+		SetFlash(c, "error", i18n.T(lang, "flash.failedDeleteGroup"))
 	} else {
 		slog.Info("group_deleted", "actor_user_id", actor.ID, "group_id", id)
-		SetFlash(c, "success", "Group deleted.")
+		SetFlash(c, "success", i18n.T(lang, "flash.groupDeleted"))
 	}
 	c.Redirect(http.StatusFound, "/groups")
 }

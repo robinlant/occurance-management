@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/robinlant/occurance-management/internal/domain"
+	"github.com/robinlant/occurance-management/internal/i18n"
 	"github.com/robinlant/occurance-management/internal/service"
 )
 
@@ -21,6 +23,7 @@ func NewLeaderboardHandler(occ *service.OccurrenceService, grp *service.GroupSer
 }
 
 func (h *LeaderboardHandler) Show(c *gin.Context) {
+	lang := i18n.GetLang(c)
 	now := time.Now()
 	syFrom, syTo := studentYearDates(now)
 	tyFrom, tyTo := thisYearDates(now)
@@ -43,6 +46,7 @@ func (h *LeaderboardHandler) Show(c *gin.Context) {
 
 	entries, err := h.occurrences.GetLeaderboard(c.Request.Context(), from, to, roles, groupID)
 	if err != nil {
+		slog.Error("leaderboard: query failed", "error", err)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
@@ -84,7 +88,7 @@ func (h *LeaderboardHandler) Show(c *gin.Context) {
 		"Groups":            allGroups,
 		"ActiveGroup":       groupID,
 		"ActivePage":        "leaderboard",
-		"PageTitle":         "Leaderboard",
+		"PageTitle":         i18n.T(lang, "title.leaderboard"),
 	}
 
 	if c.GetHeader("HX-Request") == "true" {
@@ -123,8 +127,8 @@ func thisYearDates(now time.Time) (time.Time, time.Time) {
 }
 
 func parseDateRange(c *gin.Context) (time.Time, time.Time) {
-	from, _ := time.Parse("2006-01-02", c.Query("from"))
-	to, _ := time.Parse("2006-01-02", c.Query("to"))
+	from, _ := time.ParseInLocation("2006-01-02", c.Query("from"), time.Local)
+	to, _ := time.ParseInLocation("2006-01-02", c.Query("to"), time.Local)
 	return from, to
 }
 

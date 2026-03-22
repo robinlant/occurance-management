@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -30,11 +31,13 @@ func NewDashboardHandler(occ *service.OccurrenceService) *DashboardHandler {
 func (h *DashboardHandler) Show(c *gin.Context) {
 	open, err := h.occurrences.ListOpenOccurrences(c.Request.Context())
 	if err != nil {
+		slog.Error("dashboard: list open occurrences failed", "error", err)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
 	counts, err := h.occurrences.GetParticipantCountsByOccurrence(c.Request.Context())
 	if err != nil {
+		slog.Error("dashboard: get participant counts failed", "error", err)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
@@ -89,6 +92,7 @@ func (h *DashboardHandler) Show(c *gin.Context) {
 	if currentUser.Role == domain.RoleOrganizer || currentUser.Role == domain.RoleAdmin {
 		top, err := h.occurrences.GetLeaderboard(c.Request.Context(), time.Time{}, time.Time{}, []domain.Role{domain.RoleParticipant}, 0)
 		if err != nil {
+			slog.Error("dashboard: leaderboard query failed", "user_id", currentUser.ID, "error", err)
 			c.Status(http.StatusInternalServerError)
 			return
 		}

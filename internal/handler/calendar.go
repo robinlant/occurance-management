@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/robinlant/occurance-management/internal/domain"
+	"github.com/robinlant/occurance-management/internal/i18n"
 	"github.com/robinlant/occurance-management/internal/service"
 )
 
@@ -35,6 +37,7 @@ func NewCalendarHandler(occ *service.OccurrenceService, grp *service.GroupServic
 }
 
 func (h *CalendarHandler) Show(c *gin.Context) {
+	lang := i18n.GetLang(c)
 	month := parseMonth(c.Query("month"))
 	statusFilter := c.Query("status") // "", "under", "good", "over"
 	hidePast := c.Query("hide_past") == "1"
@@ -90,7 +93,7 @@ func (h *CalendarHandler) Show(c *gin.Context) {
 		"GroupList":    groups,
 		"Groups":       groupMap,
 		"ActivePage":   "calendar",
-		"PageTitle":    "Calendar",
+		"PageTitle":    i18n.T(lang, "title.calendar"),
 	}))
 }
 
@@ -102,11 +105,13 @@ func (h *CalendarHandler) DayOccurrences(c *gin.Context) {
 	}
 	dayOccsList, err := h.occurrences.ListOccurrencesByDate(c.Request.Context(), date)
 	if err != nil {
+		slog.Error("calendar: list occurrences by date failed", "date", date.Format("2006-01-02"), "error", err)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
 	counts, err := h.occurrences.GetParticipantCountsByOccurrence(c.Request.Context())
 	if err != nil {
+		slog.Error("calendar: get participant counts failed", "error", err)
 		c.Status(http.StatusInternalServerError)
 		return
 	}

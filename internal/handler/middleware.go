@@ -56,10 +56,9 @@ func CSRFMiddleware() gin.HandlerFunc {
 		// Store token in context for templates
 		c.Set("csrf_token", token)
 
-		// Validate on POST requests (skip login which has no prior token)
+		// Validate on POST requests (skip login/logout which have no prior token)
 		if c.Request.Method == "POST" {
-			// Skip CSRF check for login (no session yet) and HTMX requests (same-origin enforced by browser)
-			if c.Request.URL.Path != "/login" && c.Request.URL.Path != "/logout" && c.GetHeader("HX-Request") != "true" {
+			if c.Request.URL.Path != "/login" && c.Request.URL.Path != "/logout" {
 				formToken := c.PostForm("_csrf")
 				if formToken == "" || formToken != token {
 					slog.Warn("csrf: token mismatch", "path", c.Request.URL.Path, "ip", c.ClientIP())

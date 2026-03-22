@@ -273,6 +273,16 @@ var en = map[string]string{
 	"flash.testEmailSent":           "Test email sent to ",
 	"flash.userOOOSignup":           "You are out of office on this date.",
 	"flash.userOOOAssign":           "User is out of office on this date.",
+	"flash.dateCantBePast":          "Date cannot be in the past.",
+	"flash.titleRequired":           "Title is required.",
+	"flash.participantsMin":         "Participants must be at least 1.",
+	"flash.minExceedsMax":           "Min participants cannot exceed max.",
+	"flash.occurrenceFull":          "This occurrence is full.",
+	"flash.emailAlreadyInUse":       "That email is already in use.",
+	"flash.failedUpdateEmail":       "Failed to update email.",
+	"flash.emailUpdated":            "Email updated.",
+	"flash.commentTooLong":          "Comment must be 1000 characters or fewer.",
+	"flash.oooConflictDetail":       "You are signed up for one or more occurrences during this period. Please withdraw from them first.",
 
 	// Page titles
 	"title.dashboard":      "Dashboard",
@@ -299,6 +309,29 @@ var en = map[string]string{
 
 	// Language
 	"lang.switch": "DE",
+
+	// Relative date (used in templates via relativeDay function)
+	"rel.today":     "Today",
+	"rel.yesterday": "Yesterday",
+	"rel.tomorrow":  "Tomorrow",
+	"rel.inDays":    "in %d days",
+	"rel.daysAgo":   "%d days ago",
+
+	// Dashboard extra
+	"dash.yourSchedule":  "Your schedule",
+	"dash.noUpcoming":    "No upcoming occurrences.",
+	"dash.browseSpots":   "Browse open spots",
+
+	// Occurrences list extra
+	"occ.upcoming": "Upcoming",
+	"occ.allGroups": "All groups",
+	"occ.listView":  "List",
+	"occ.cardView":  "Cards",
+
+	// Occurrence form extra
+	"form.copyFromExisting":      "Copy from existing",
+	"form.copyFromExistingLabel": "Pre-fill title, description, time &amp; participant limits from an existing occurrence",
+	"form.copySearchPlaceholder": "Search occurrences to copy from\u2026",
 
 	// Comments
 	"comment.title":         "Comments",
@@ -566,6 +599,16 @@ var de = map[string]string{
 	"flash.testEmailSent":           "Test-E-Mail gesendet an ",
 	"flash.userOOOSignup":           "Sie sind an diesem Datum abwesend.",
 	"flash.userOOOAssign":           "Benutzer ist an diesem Datum abwesend.",
+	"flash.dateCantBePast":          "Das Datum darf nicht in der Vergangenheit liegen.",
+	"flash.titleRequired":           "Titel ist erforderlich.",
+	"flash.participantsMin":         "Teilnehmer m\u00fcssen mindestens 1 sein.",
+	"flash.minExceedsMax":           "Mindestteilnehmer darf Maximum nicht \u00fcberschreiten.",
+	"flash.occurrenceFull":          "Dieser Einsatz ist voll.",
+	"flash.emailAlreadyInUse":       "Diese E-Mail-Adresse wird bereits verwendet.",
+	"flash.failedUpdateEmail":       "E-Mail-Adresse konnte nicht aktualisiert werden.",
+	"flash.emailUpdated":            "E-Mail-Adresse aktualisiert.",
+	"flash.commentTooLong":          "Kommentar darf maximal 1000 Zeichen lang sein.",
+	"flash.oooConflictDetail":       "Sie sind f\u00fcr einen oder mehrere Eins\u00e4tze in diesem Zeitraum eingetragen. Bitte tragen Sie sich zuerst aus.",
 
 	// Page titles
 	"title.dashboard":      "Dashboard",
@@ -592,6 +635,29 @@ var de = map[string]string{
 
 	// Language
 	"lang.switch": "EN",
+
+	// Relative date
+	"rel.today":     "Heute",
+	"rel.yesterday": "Gestern",
+	"rel.tomorrow":  "Morgen",
+	"rel.inDays":    "in %d Tagen",
+	"rel.daysAgo":   "vor %d Tagen",
+
+	// Dashboard extra
+	"dash.yourSchedule":  "Meine Eins\u00e4tze",
+	"dash.noUpcoming":    "Keine bevorstehenden Eins\u00e4tze.",
+	"dash.browseSpots":   "Offene Pl\u00e4tze ansehen",
+
+	// Occurrences list extra
+	"occ.upcoming":  "Bevorstehend",
+	"occ.allGroups": "Alle Gruppen",
+	"occ.listView":  "Liste",
+	"occ.cardView":  "Karten",
+
+	// Occurrence form extra
+	"form.copyFromExisting":      "Von bestehendem Einsatz kopieren",
+	"form.copyFromExistingLabel": "Titel, Beschreibung, Uhrzeit &amp; Teilnehmerlimits aus einem bestehenden Einsatz \u00fcbernehmen",
+	"form.copySearchPlaceholder": "Einsatz zum Kopieren suchen\u2026",
 
 	// Comments
 	"comment.title":         "Kommentare",

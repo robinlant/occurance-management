@@ -11,20 +11,13 @@
             <div class="dash-occ-title">
               <span class="occ-status-dot {{.Status}}"></span>
               {{.Title}}
-              {{if eq .Status "under"}}<span class="badge badge-red" style="font-size:10px;margin-left:4px">needs {{.Needed}} more</span>{{end}}
+              {{if eq .Status "under"}}<span class="badge badge-red" style="font-size:10px;margin-left:4px">{{t $.Lang "dash.needsMore"}} {{.Needed}} {{t $.Lang "dash.more"}}</span>{{end}}
             </div>
             <div class="dash-occ-sub">{{.ParticipantCount}}/{{.MinParticipants}}&#8211;{{.MaxParticipants}} {{t $.Lang "occ.people"}}</div>
           </div>
           <div class="dash-occ-meta">
-            <div class="dash-occ-date">{{weekday .Date}}, {{formatDate .Date}}</div>
-            <div class="dash-occ-days">
-              {{$days := daysUntil .Date}}
-              {{if eq $days 0}}{{t $.Lang "dash.today"}}
-              {{else if eq $days 1}}{{t $.Lang "dash.tomorrow"}}
-              {{else if isPast .Date}}{{sub 0 $days}} days ago
-              {{else}}in {{$days}} days
-              {{end}}
-            </div>
+            <div class="dash-occ-date">{{weekdayT $.Lang .Date}}, {{formatDate .Date}}</div>
+            <div class="dash-occ-days">{{relativeDay $.Lang .Date}}</div>
           </div>
         </a>
       {{end}}
@@ -34,20 +27,20 @@
   <div class="stack" style="gap:20px">
     {{if .UserUpcoming}}
     <div class="card">
-      <div class="card-title">Your schedule</div>
+      <div class="card-title">{{t .Lang "dash.yourSchedule"}}</div>
       {{range .UserUpcoming}}
         <a href="/occurrences/{{.ID}}" class="dash-occ-item">
           <div style="min-width:0;flex:1">
             <div class="dash-occ-title">
               <span class="occ-status-dot {{.Status}}"></span>
               {{.Title}}
-              {{if eq .Status "under"}}<span class="badge badge-red" style="font-size:10px;margin-left:4px">needs {{.Needed}} more</span>{{end}}
+              {{if eq .Status "under"}}<span class="badge badge-red" style="font-size:10px;margin-left:4px">{{t $.Lang "dash.needsMore"}} {{.Needed}} {{t $.Lang "dash.more"}}</span>{{end}}
             </div>
             <div class="dash-occ-sub">{{.ParticipantCount}}/{{.MinParticipants}}&#8211;{{.MaxParticipants}} {{t $.Lang "occ.people"}}</div>
           </div>
           <div class="dash-occ-meta">
-            <div class="dash-occ-date">{{weekday .Date}}, {{formatDate .Date}}</div>
-            <div class="dash-occ-days">{{relativeDay .Date}}</div>
+            <div class="dash-occ-date">{{weekdayT $.Lang .Date}}, {{formatDate .Date}}</div>
+            <div class="dash-occ-days">{{relativeDay $.Lang .Date}}</div>
           </div>
         </a>
       {{end}}
@@ -80,7 +73,7 @@
 
     {{if and (not .UserUpcoming) (not .Leaderboard)}}
     <div class="card">
-      <p style="color:var(--text-muted);font-size:13px">No upcoming occurrences. <a href="/occurrences" style="color:var(--accent)">Browse open spots</a>.</p>
+      <p style="color:var(--text-muted);font-size:13px">{{t .Lang "dash.noUpcoming"}} <a href="/occurrences" style="color:var(--accent)">{{t .Lang "dash.browseSpots"}}</a>.</p>
     </div>
     {{end}}
   </div>
