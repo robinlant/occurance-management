@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"sort"
 	"strconv"
@@ -140,11 +141,15 @@ func (h *OccurrenceHandler) Create(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/occurrences/new")
 		return
 	}
-	if _, err := h.occurrences.CreateOccurrence(c.Request.Context(), occ); err != nil {
+	created, err := h.occurrences.CreateOccurrence(c.Request.Context(), occ)
+	if err != nil {
+		slog.Error("occurrence: create failed", "error", err)
 		SetFlash(c, "error", "Failed to create occurrence.")
 		c.Redirect(http.StatusFound, "/occurrences/new")
 		return
 	}
+	user, _ := CurrentUser(c)
+	slog.Info("occurrence_created", "user_id", user.ID, "occurrence_id", created.ID)
 	SetFlash(c, "success", "Occurrence created.")
 	c.Redirect(http.StatusFound, "/occurrences")
 }
@@ -183,11 +188,15 @@ func (h *OccurrenceHandler) Update(c *gin.Context) {
 		return
 	}
 	occ.ID = id
-	if _, err := h.occurrences.UpdateOccurrence(c.Request.Context(), occ); err != nil {
+	updated, err := h.occurrences.UpdateOccurrence(c.Request.Context(), occ)
+	if err != nil {
+		slog.Error("occurrence: update failed", "occurrence_id", id, "error", err)
 		SetFlash(c, "error", "Failed to update occurrence.")
 		c.Redirect(http.StatusFound, "/occurrences/"+strconv.FormatInt(id, 10)+"/edit")
 		return
 	}
+	user, _ := CurrentUser(c)
+	slog.Info("occurrence_updated", "user_id", user.ID, "occurrence_id", updated.ID)
 	SetFlash(c, "success", "Occurrence updated.")
 	c.Redirect(http.StatusFound, "/occurrences/"+strconv.FormatInt(id, 10))
 }
@@ -198,9 +207,12 @@ func (h *OccurrenceHandler) Delete(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
+	user, _ := CurrentUser(c)
 	if err := h.occurrences.DeleteOccurrence(c.Request.Context(), id); err != nil {
+		slog.Error("occurrence: delete failed", "user_id", user.ID, "occurrence_id", id, "error", err)
 		SetFlash(c, "error", "Failed to delete occurrence.")
 	} else {
+		slog.Info("occurrence_deleted", "user_id", user.ID, "occurrence_id", id)
 		SetFlash(c, "success", "Occurrence deleted.")
 	}
 	c.Redirect(http.StatusFound, "/occurrences")
@@ -255,6 +267,7 @@ func (h *OccurrenceHandler) SignUp(c *gin.Context) {
 	isOverMax, err := h.occurrences.SignUp(c.Request.Context(), id, user.ID)
 	if err != nil {
 		if errors.Is(err, service.ErrUserOOO) {
+			slog.Warn("signup: user is OOO", "user_id", user.ID, "occurrence_id", id)
 			c.Header("HX-Reswap", "none")
 			c.String(http.StatusConflict, "You are out of office on this date.")
 			return
@@ -265,13 +278,16 @@ func (h *OccurrenceHandler) SignUp(c *gin.Context) {
 			return
 		}
 		if errors.Is(err, service.ErrOccurrenceFull) {
+			slog.Warn("signup: occurrence full", "user_id", user.ID, "occurrence_id", id)
 			c.Header("HX-Reswap", "none")
 			c.String(http.StatusConflict, "This occurrence is full.")
 			return
 		}
+		slog.Error("signup: failed", "user_id", user.ID, "occurrence_id", id, "error", err)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
+	slog.Info("occurrence_signup", "user_id", user.ID, "occurrence_id", id)
 	h.renderParticipantList(c, id, user.ID, isOverMax)
 }
 
@@ -283,9 +299,11 @@ func (h *OccurrenceHandler) Withdraw(c *gin.Context) {
 	}
 	user, _ := CurrentUser(c)
 	if err := h.occurrences.Withdraw(c.Request.Context(), id, user.ID); err != nil {
+		slog.Error("withdraw: failed", "user_id", user.ID, "occurrence_id", id, "error", err)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
+	slog.Info("occurrence_withdraw", "user_id", user.ID, "occurrence_id", id)
 	h.renderParticipantList(c, id, user.ID, false)
 }
 
@@ -304,13 +322,16 @@ func (h *OccurrenceHandler) Assign(c *gin.Context) {
 	isOverMax, err := h.occurrences.AssignParticipant(c.Request.Context(), id, userID)
 	if err != nil {
 		if errors.Is(err, service.ErrUserOOO) {
+			slog.Warn("assign: user is OOO", "actor_user_id", currentUser.ID, "user_id", userID, "occurrence_id", id)
 			c.Header("HX-Reswap", "none")
 			c.String(http.StatusConflict, "User is out of office on this date.")
 			return
 		}
+		slog.Error("assign: failed", "actor_user_id", currentUser.ID, "user_id", userID, "occurrence_id", id, "error", err)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
+	slog.Info("participant_assigned", "actor_user_id", currentUser.ID, "user_id", userID, "occurrence_id", id)
 	h.renderParticipantList(c, id, currentUser.ID, isOverMax)
 }
 
@@ -325,11 +346,13 @@ func (h *OccurrenceHandler) RemoveParticipant(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
+	currentUser, _ := CurrentUser(c)
 	if err := h.occurrences.RemoveParticipant(c.Request.Context(), id, targetUserID); err != nil {
+		slog.Error("remove_participant: failed", "actor_user_id", currentUser.ID, "user_id", targetUserID, "occurrence_id", id, "error", err)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	currentUser, _ := CurrentUser(c)
+	slog.Info("participant_removed", "actor_user_id", currentUser.ID, "user_id", targetUserID, "occurrence_id", id)
 	h.renderParticipantList(c, id, currentUser.ID, false)
 }
 

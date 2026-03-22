@@ -3,7 +3,7 @@ package handler
 import (
 	"fmt"
 	"html/template"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
@@ -147,14 +147,14 @@ func Page(c *gin.Context, page string, data gin.H, extraPartials ...string) {
 	cacheKey := strings.Join(patterns, "|")
 	t, err := getCachedTemplate(cacheKey, patterns)
 	if err != nil {
-		log.Printf("template parse error (%s): %v", page, err)
+		slog.Error("renderer: template parse error", "page", page, "error", err)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
 	c.Status(http.StatusOK)
 	c.Header("Content-Type", "text/html; charset=utf-8")
 	if err := t.ExecuteTemplate(c.Writer, "base", data); err != nil {
-		log.Printf("template execute error (%s): %v", page, err)
+		slog.Error("renderer: template execute error", "page", page, "error", err)
 	}
 }
 
@@ -171,7 +171,7 @@ func Partial(c *gin.Context, partial string, data any) {
 	cacheKey := "partial:" + partial
 	t, err := getCachedTemplate(cacheKey, patterns)
 	if err != nil {
-		log.Printf("partial parse error (%s): %v", partial, err)
+		slog.Error("renderer: partial parse error", "partial", partial, "error", err)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
@@ -180,6 +180,6 @@ func Partial(c *gin.Context, partial string, data any) {
 	// execute the named define block (strip .html extension for name)
 	name := partial[:len(partial)-5]
 	if err := t.ExecuteTemplate(c.Writer, name, data); err != nil {
-		log.Printf("partial execute error (%s): %v", partial, err)
+		slog.Error("renderer: partial execute error", "partial", partial, "error", err)
 	}
 }

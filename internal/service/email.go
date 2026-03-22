@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"html"
-	"log"
+	"log/slog"
 	"net"
 	"net/smtp"
 	"strings"
@@ -47,7 +47,7 @@ func (s *EmailService) StartBackgroundJob(interval time.Duration) {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Printf("[email] background job panicked: %v", r)
+				slog.Error("email: background job panicked", "panic", r)
 			}
 		}()
 
@@ -63,19 +63,19 @@ func (s *EmailService) StartBackgroundJob(interval time.Duration) {
 			case <-ticker.C:
 				s.safeRunCycle()
 			case <-s.stopCh:
-				log.Println("[email] background job stopped")
+				slog.Info("email: background job stopped")
 				return
 			}
 		}
 	}()
-	log.Printf("[email] background job started (interval: %v)", interval)
+	slog.Info("email: background job started", "interval", interval)
 }
 
 // safeRunCycle runs the notification cycle with panic recovery.
 func (s *EmailService) safeRunCycle() {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("[email] notification cycle panicked: %v", r)
+			slog.Error("email: notification cycle panicked", "panic", r)
 		}
 	}()
 	s.runNotificationCycle()
@@ -93,7 +93,7 @@ func (s *EmailService) runNotificationCycle() {
 
 	config, err := s.settings.GetEmailConfig(ctx)
 	if err != nil {
-		log.Printf("[email] failed to load config: %v", err)
+		slog.Error("email: failed to load config", "error", err)
 		return
 	}
 	if !config.Enabled {
@@ -105,19 +105,19 @@ func (s *EmailService) runNotificationCycle() {
 
 	allUsers, err := s.users.FindAll(ctx)
 	if err != nil {
-		log.Printf("[email] failed to load users: %v", err)
+		slog.Error("email: failed to load users", "error", err)
 		return
 	}
 
 	allOccs, err := s.occurrences.FindAll(ctx)
 	if err != nil {
-		log.Printf("[email] failed to load occurrences: %v", err)
+		slog.Error("email: failed to load occurrences", "error", err)
 		return
 	}
 
 	counts, err := s.participations.CountAllByOccurrence(ctx)
 	if err != nil {
-		log.Printf("[email] failed to load participation counts: %v", err)
+		slog.Error("email: failed to load participation counts", "error", err)
 		return
 	}
 
@@ -155,7 +155,7 @@ func (s *EmailService) runNotificationCycle() {
 		// Check daily limit
 		sentToday, err := s.emailLog.CountSentToday(ctx, user.ID)
 		if err != nil {
-			log.Printf("[email] failed to count emails for user %d: %v", user.ID, err)
+			slog.Error("email: failed to count sent emails", "user_id", user.ID, "error", err)
 			continue
 		}
 		if sentToday >= config.MaxEmailsPerDay {
@@ -171,8 +171,9 @@ func (s *EmailService) runNotificationCycle() {
 				// Only send if we haven't sent in the last hour
 				if time.Since(lastSent) > time.Hour {
 					if err := s.sendNewOccurrenceDigest(config, user, newOccs, counts); err != nil {
-						log.Printf("[email] failed to send new occurrence digest to %s: %v", user.Email, err)
+						slog.Error("email: send new_occurrence digest failed", "user_id", user.ID, "error", err)
 					} else {
+						slog.Info("email: sent new_occurrence digest", "user_id", user.ID)
 						s.emailLog.LogSent(ctx, user.ID, "new_occurrence")
 						emailSent = true
 					}
@@ -184,7 +185,7 @@ func (s *EmailService) runNotificationCycle() {
 				lastSent, _ := s.emailLog.LastSentAt(ctx, user.ID)
 				if time.Since(lastSent) > time.Hour {
 					if err := s.sendUnfilledParticipantNotification(config, user, unfilledOccs, counts); err != nil {
-						log.Printf("[email] failed to send unfilled notification to %s: %v", user.Email, err)
+						slog.Error("email: send unfilled_participant notification failed", "user_id", user.ID, "error", err)
 					} else {
 						s.emailLog.LogSent(ctx, user.ID, "unfilled_participant")
 					}
@@ -198,7 +199,7 @@ func (s *EmailService) runNotificationCycle() {
 				lastSent, _ := s.emailLog.LastSentAt(ctx, user.ID)
 				if time.Since(lastSent) > time.Hour {
 					if err := s.sendUnfilledOrganizerNotification(config, user, unfilledOccs, counts); err != nil {
-						log.Printf("[email] failed to send unfilled organizer notification to %s: %v", user.Email, err)
+						slog.Error("email: send unfilled_organizer notification failed", "user_id", user.ID, "error", err)
 					} else {
 						s.emailLog.LogSent(ctx, user.ID, "unfilled_organizer")
 					}

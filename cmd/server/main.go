@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,11 +16,15 @@ import (
 
 	"github.com/robinlant/occurance-management/internal/domain"
 	"github.com/robinlant/occurance-management/internal/handler"
+	"github.com/robinlant/occurance-management/internal/logger"
 	"github.com/robinlant/occurance-management/internal/repository/sqlite"
 	"github.com/robinlant/occurance-management/internal/service"
 )
 
 func main() {
+	production := os.Getenv("GIN_MODE") == "release"
+	logger.Init(production)
+
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
 		dbPath = "dutyround.db"
@@ -69,15 +74,17 @@ func main() {
 	errH := handler.NewErrorHandler()
 
 	// Router
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Recovery())
+	r.Use(handler.RequestLogger())
 
 	// Session secret
 	sessionSecret := os.Getenv("SESSION_SECRET")
 	if sessionSecret == "" {
-		if os.Getenv("GIN_MODE") == "release" {
+		if production {
 			log.Fatal("SESSION_SECRET must be set in production (GIN_MODE=release)")
 		}
-		log.Println("WARNING: Using default session secret. Set SESSION_SECRET for production.")
+		slog.Warn("using default session secret — set SESSION_SECRET for production")
 		sessionSecret = "dev-secret-change-in-production"
 	}
 	store := cookie.NewStore([]byte(sessionSecret))
@@ -166,7 +173,7 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("DutyRound listening on :%s", port)
+		slog.Info("DutyRound started", "port", port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("server error: %v", err)
 		}
@@ -175,13 +182,13 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Println("Shutting down server...")
+	slog.Info("shutting down server")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatalf("server forced to shutdown: %v", err)
 	}
-	log.Println("Server exited")
+	slog.Info("server exited")
 }
 

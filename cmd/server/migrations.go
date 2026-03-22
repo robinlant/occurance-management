@@ -2,7 +2,7 @@ package main
 
 import (
 	"database/sql"
-	"log"
+	"log/slog"
 	"os"
 	"sort"
 	"strings"
@@ -52,7 +52,7 @@ func runMigrations(db *sql.DB) error {
 		if _, err := db.Exec(`INSERT INTO schema_migrations (filename) VALUES (?)`, f); err != nil {
 			return err
 		}
-		log.Printf("Applied migration: %s", f)
+		slog.Info("migration applied", "file", f)
 	}
 	return nil
 }
