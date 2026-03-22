@@ -32,6 +32,17 @@ func (r *EmailLogRepository) LastSentAt(ctx context.Context, userID int64) (time
 	return sentAt, err
 }
 
+func (r *EmailLogRepository) LastSentAtByType(ctx context.Context, userID int64, emailType string) (time.Time, error) {
+	var sentAt time.Time
+	err := r.db.QueryRowContext(ctx,
+		`SELECT sent_at FROM email_notifications_log WHERE user_id = ? AND email_type = ? ORDER BY sent_at DESC LIMIT 1`,
+		userID, emailType).Scan(&sentAt)
+	if err == sql.ErrNoRows {
+		return time.Time{}, nil
+	}
+	return sentAt, err
+}
+
 func (r *EmailLogRepository) CountSentToday(ctx context.Context, userID int64) (int, error) {
 	todayStart := time.Now().UTC().Truncate(24 * time.Hour)
 	var count int

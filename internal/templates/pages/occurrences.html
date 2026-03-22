@@ -10,7 +10,7 @@
   <a href="/occurrences{{if .ActiveGroup}}?group={{.ActiveGroup}}{{end}}"
      class="chip {{if and (not .StatusFilter) (not .HidePast)}}active{{end}}">{{t .Lang "occ.all"}}</a>
   <a href="/occurrences?hide_past=1{{if .ActiveGroup}}&group={{.ActiveGroup}}{{end}}"
-     class="chip {{if and .HidePast (not .StatusFilter)}}active{{end}}">Upcoming</a>
+     class="chip {{if and .HidePast (not .StatusFilter)}}active{{end}}">{{t .Lang "occ.upcoming"}}</a>
   <a href="/occurrences?status=under{{if .ActiveGroup}}&group={{.ActiveGroup}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
      class="chip {{if eq .StatusFilter "under"}}active{{end}}">{{t .Lang "occ.needsPeople"}}</a>
   <a href="/occurrences?status=good{{if .ActiveGroup}}&group={{.ActiveGroup}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
@@ -23,7 +23,7 @@
 {{if .GroupList}}
 <div class="filter-bar">
   <a href="/occurrences{{if .StatusFilter}}?status={{.StatusFilter}}{{if .HidePast}}&hide_past=1{{end}}{{else}}{{if .HidePast}}?hide_past=1{{end}}{{end}}"
-     class="chip {{if not .ActiveGroup}}active{{end}}">All groups</a>
+     class="chip {{if not .ActiveGroup}}active{{end}}">{{t .Lang "occ.allGroups"}}</a>
   {{range .GroupList}}
     <a href="/occurrences?group={{.ID}}{{if $.StatusFilter}}&status={{$.StatusFilter}}{{end}}{{if $.HidePast}}&hide_past=1{{end}}"
        class="chip {{if eq $.ActiveGroup .ID}}active{{end}}">{{.Name}}</a>
@@ -34,11 +34,11 @@
 <div class="occ-view-toggle" role="group" aria-label="View mode">
   <button type="button" class="btn btn-ghost btn-sm occ-view-btn active" data-view="list" aria-pressed="true" title="List view">
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/></svg>
-    List
+    {{t .Lang "occ.listView"}}
   </button>
   <button type="button" class="btn btn-ghost btn-sm occ-view-btn" data-view="card" aria-pressed="false" title="Card view">
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
-    Cards
+    {{t .Lang "occ.cardView"}}
   </button>
 </div>
 
@@ -65,7 +65,7 @@
           </div>
           <div class="occ-meta">
             <div class="occ-date">{{formatDate .Date}}</div>
-            <div class="occ-slots">{{weekday .Date}} &middot; {{relativeDay .Date}}</div>
+            <div class="occ-slots">{{weekdayT $.Lang .Date}} &middot; {{relativeDay $.Lang .Date}}</div>
             <div class="occ-slots">{{.ParticipantCount}}/{{.MinParticipants}}&#8211;{{.MaxParticipants}} {{t $.Lang "occ.people"}}</div>
           </div>
         </div>
@@ -96,7 +96,7 @@
         <div class="occ-card-footer">
           <div>
             <div class="occ-card-date">{{formatDate .Date}}</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">{{weekday .Date}} &middot; {{relativeDay .Date}}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">{{weekdayT $.Lang .Date}} &middot; {{relativeDay $.Lang .Date}}</div>
           </div>
           <span class="occ-card-slots">{{.ParticipantCount}}/{{.MinParticipants}}&#8211;{{.MaxParticipants}}</span>
         </div>

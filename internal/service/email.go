@@ -12,8 +12,14 @@ import (
 	"time"
 
 	"github.com/robinlant/occurance-management/internal/domain"
+	"github.com/robinlant/occurance-management/internal/i18n"
 	"github.com/robinlant/occurance-management/internal/repository"
 )
+
+// emailLang is the language used for email notifications sent by the background job.
+// Since there is no per-user language preference stored in the database, we default
+// to German as this is a German-company internal application.
+const emailLang = "de"
 
 type EmailService struct {
 	settings       *SettingsService
@@ -124,18 +130,7 @@ func (s *EmailService) runNotificationCycle() {
 	now := time.Now()
 	reminderDeadline := now.AddDate(0, 0, config.UpcomingReminderDays)
 
-	// Find new occurrences created in the last cycle (future occurrences with open spots)
-	var newOccs []domain.Occurrence
-	for _, o := range allOccs {
-		if o.Date.After(now) {
-			count := counts[o.ID]
-			if count < o.MaxParticipants {
-				newOccs = append(newOccs, o)
-			}
-		}
-	}
-
-	// Find upcoming occurrences that are under min_participants
+	// Find upcoming occurrences that are under min_participants within the reminder window.
 	var unfilledOccs []domain.Occurrence
 	for _, o := range allOccs {
 		if o.Date.After(now) && !o.Date.After(reminderDeadline) {
@@ -165,10 +160,28 @@ func (s *EmailService) runNotificationCycle() {
 		var emailSent bool
 
 		if user.Role == domain.RoleParticipant {
-			// Send new occurrence notifications to participants
+			// Send notifications about occurrences that are genuinely new since the last
+			// time this user was notified. Uses created_at to avoid re-notifying about
+			// old open occurrences every cycle.
+			lastNewOccSent, _ := s.emailLog.LastSentAtByType(ctx, user.ID, "new_occurrence")
+			// For users who have never been notified, use 24h ago as the threshold to
+			// avoid a flood of emails on first run after migration.
+			if lastNewOccSent.IsZero() {
+				lastNewOccSent = now.Add(-24 * time.Hour)
+			}
+
+			var newOccs []domain.Occurrence
+			for _, o := range allOccs {
+				if o.Date.After(now) && o.CreatedAt.After(lastNewOccSent) {
+					count := counts[o.ID]
+					if count < o.MaxParticipants {
+						newOccs = append(newOccs, o)
+					}
+				}
+			}
+
 			if len(newOccs) > 0 {
 				lastSent, _ := s.emailLog.LastSentAt(ctx, user.ID)
-				// Only send if we haven't sent in the last hour
 				if time.Since(lastSent) > time.Hour {
 					if err := s.sendNewOccurrenceDigest(config, user, newOccs, counts); err != nil {
 						slog.Error("email: send new_occurrence digest failed", "user_id", user.ID, "error", err)
@@ -210,20 +223,20 @@ func (s *EmailService) runNotificationCycle() {
 }
 
 func (s *EmailService) sendNewOccurrenceDigest(config EmailConfig, user domain.User, occs []domain.Occurrence, counts map[int64]int) error {
-	subject := "New occurrences available - DutyRound"
-	body := buildNewOccurrenceEmail(user.Name, occs, counts)
+	subject := i18n.T(emailLang, "email.subjectNew")
+	body := buildNewOccurrenceEmail(emailLang, user.Name, occs, counts)
 	return s.sendEmail(config, user.Email, subject, body)
 }
 
 func (s *EmailService) sendUnfilledParticipantNotification(config EmailConfig, user domain.User, occs []domain.Occurrence, counts map[int64]int) error {
-	subject := "Upcoming occurrences need people - DutyRound"
-	body := buildUnfilledParticipantEmail(user.Name, occs, counts)
+	subject := i18n.T(emailLang, "email.subjectUnfilledPart")
+	body := buildUnfilledParticipantEmail(emailLang, user.Name, occs, counts)
 	return s.sendEmail(config, user.Email, subject, body)
 }
 
 func (s *EmailService) sendUnfilledOrganizerNotification(config EmailConfig, user domain.User, occs []domain.Occurrence, counts map[int64]int) error {
-	subject := "Upcoming occurrences still have free places - DutyRound"
-	body := buildUnfilledOrganizerEmail(user.Name, occs, counts)
+	subject := i18n.T(emailLang, "email.subjectUnfilledOrg")
+	body := buildUnfilledOrganizerEmail(emailLang, user.Name, occs, counts)
 	return s.sendEmail(config, user.Email, subject, body)
 }
 
@@ -294,8 +307,8 @@ func (s *EmailService) SendTestEmail(ctx context.Context, toEmail string) error 
 		return fmt.Errorf("SMTP not configured")
 	}
 
-	subject := "DutyRound - Test Email"
-	body := buildTestEmail()
+	subject := i18n.T(emailLang, "email.testSubject")
+	body := buildTestEmail(emailLang)
 	return s.sendEmail(config, toEmail, subject, body)
 }
 
@@ -324,17 +337,17 @@ func emailWrapper(content string) string {
   </tr>
   <tr>
     <td style="padding:16px 24px;border-top:1px solid #30363d;">
-      <span style="font-size:11px;color:#8b949e;">This is an automated notification from DutyRound. You can manage your notification preferences with your administrator.</span>
+      <span style="font-size:11px;color:#8b949e;">%s</span>
     </td>
   </tr>
 </table>
 </td></tr>
 </table>
 </body>
-</html>`, content)
+</html>`, content, i18n.T(emailLang, "email.footer"))
 }
 
-func buildNewOccurrenceEmail(userName string, occs []domain.Occurrence, counts map[int64]int) string {
+func buildNewOccurrenceEmail(lang, userName string, occs []domain.Occurrence, counts map[int64]int) string {
 	var rows strings.Builder
 	for _, o := range occs {
 		count := counts[o.ID]
@@ -345,7 +358,7 @@ func buildNewOccurrenceEmail(userName string, occs []domain.Occurrence, counts m
         <td style="padding:10px 12px;border-bottom:1px solid #30363d;color:#8b949e;font-size:13px;">%s</td>
         <td style="padding:10px 12px;border-bottom:1px solid #30363d;color:#8b949e;font-size:13px;text-align:center;">%d/%d</td>
         <td style="padding:10px 12px;border-bottom:1px solid #30363d;font-size:13px;text-align:center;">
-          <span style="color:%s;font-weight:600;">%d left</span>
+          <span style="color:%s;font-weight:600;">%d %s</span>
         </td>
       </tr>`,
 			html.EscapeString(o.Title),
@@ -353,26 +366,36 @@ func buildNewOccurrenceEmail(userName string, occs []domain.Occurrence, counts m
 			count, o.MaxParticipants,
 			spotColor(spotsLeft, o.MinParticipants-count),
 			spotsLeft,
+			i18n.T(lang, "email.left"),
 		)
 	}
 
 	content := fmt.Sprintf(`
-      <p style="color:#e6edf3;font-size:15px;margin:0 0 8px;">Hi %s,</p>
-      <p style="color:#8b949e;font-size:13px;margin:0 0 20px;">New occurrences are available. Sign up if you have time!</p>
+      <p style="color:#e6edf3;font-size:15px;margin:0 0 8px;">%s %s,</p>
+      <p style="color:#8b949e;font-size:13px;margin:0 0 20px;">%s</p>
       <table width="100%%" cellpadding="0" cellspacing="0" style="border:1px solid #30363d;border-radius:6px;overflow:hidden;">
         <tr style="background:#21262d;">
-          <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">Occurrence</th>
-          <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">Date</th>
-          <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">Signed Up</th>
-          <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">Spots</th>
+          <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">%s</th>
+          <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">%s</th>
+          <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">%s</th>
+          <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">%s</th>
         </tr>
         %s
-      </table>`, html.EscapeString(userName), rows.String())
+      </table>`,
+		i18n.T(lang, "email.hi"),
+		html.EscapeString(userName),
+		i18n.T(lang, "email.newOccAvailable"),
+		i18n.T(lang, "email.headerOccurrence"),
+		i18n.T(lang, "email.headerDate"),
+		i18n.T(lang, "email.headerSignedUp"),
+		i18n.T(lang, "email.headerSpots"),
+		rows.String(),
+	)
 
 	return emailWrapper(content)
 }
 
-func buildUnfilledParticipantEmail(userName string, occs []domain.Occurrence, counts map[int64]int) string {
+func buildUnfilledParticipantEmail(lang, userName string, occs []domain.Occurrence, counts map[int64]int) string {
 	var rows strings.Builder
 	for _, o := range occs {
 		count := counts[o.ID]
@@ -383,34 +406,45 @@ func buildUnfilledParticipantEmail(userName string, occs []domain.Occurrence, co
         <td style="padding:10px 12px;border-bottom:1px solid #30363d;color:#e6edf3;font-size:13px;">%s</td>
         <td style="padding:10px 12px;border-bottom:1px solid #30363d;color:#8b949e;font-size:13px;">%s</td>
         <td style="padding:10px 12px;border-bottom:1px solid #30363d;font-size:13px;text-align:center;">
-          <span style="color:#f85149;font-weight:600;">%d needed</span>
+          <span style="color:#f85149;font-weight:600;">%d %s</span>
         </td>
-        <td style="padding:10px 12px;border-bottom:1px solid #30363d;color:#d29922;font-size:13px;text-align:center;font-weight:600;">%d days</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #30363d;color:#d29922;font-size:13px;text-align:center;font-weight:600;">%d %s</td>
       </tr>`,
 			html.EscapeString(o.Title),
 			o.Date.Format("02.01.2006 15:04"),
 			needed,
+			i18n.T(lang, "email.needed"),
 			daysUntil,
+			i18n.T(lang, "email.days"),
 		)
 	}
 
 	content := fmt.Sprintf(`
-      <p style="color:#e6edf3;font-size:15px;margin:0 0 8px;">Hi %s,</p>
-      <p style="color:#8b949e;font-size:13px;margin:0 0 20px;">The following upcoming occurrences still need people. Take one if you have time!</p>
+      <p style="color:#e6edf3;font-size:15px;margin:0 0 8px;">%s %s,</p>
+      <p style="color:#8b949e;font-size:13px;margin:0 0 20px;">%s</p>
       <table width="100%%" cellpadding="0" cellspacing="0" style="border:1px solid #30363d;border-radius:6px;overflow:hidden;">
         <tr style="background:#21262d;">
-          <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">Occurrence</th>
-          <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">Date</th>
-          <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">People Needed</th>
-          <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">Days Until</th>
+          <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">%s</th>
+          <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">%s</th>
+          <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">%s</th>
+          <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">%s</th>
         </tr>
         %s
-      </table>`, html.EscapeString(userName), rows.String())
+      </table>`,
+		i18n.T(lang, "email.hi"),
+		html.EscapeString(userName),
+		i18n.T(lang, "email.unfilledParticipantMsg"),
+		i18n.T(lang, "email.headerOccurrence"),
+		i18n.T(lang, "email.headerDate"),
+		i18n.T(lang, "email.headerPeopleNeeded"),
+		i18n.T(lang, "email.headerDaysUntil"),
+		rows.String(),
+	)
 
 	return emailWrapper(content)
 }
 
-func buildUnfilledOrganizerEmail(userName string, occs []domain.Occurrence, counts map[int64]int) string {
+func buildUnfilledOrganizerEmail(lang, userName string, occs []domain.Occurrence, counts map[int64]int) string {
 	var rows strings.Builder
 	for _, o := range occs {
 		count := counts[o.ID]
@@ -422,42 +456,58 @@ func buildUnfilledOrganizerEmail(userName string, occs []domain.Occurrence, coun
         <td style="padding:10px 12px;border-bottom:1px solid #30363d;color:#8b949e;font-size:13px;">%s</td>
         <td style="padding:10px 12px;border-bottom:1px solid #30363d;color:#8b949e;font-size:13px;text-align:center;">%d/%d</td>
         <td style="padding:10px 12px;border-bottom:1px solid #30363d;font-size:13px;text-align:center;">
-          <span style="color:#f85149;font-weight:600;">%d needed</span>
+          <span style="color:#f85149;font-weight:600;">%d %s</span>
         </td>
-        <td style="padding:10px 12px;border-bottom:1px solid #30363d;color:#d29922;font-size:13px;text-align:center;font-weight:600;">%d days</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #30363d;color:#d29922;font-size:13px;text-align:center;font-weight:600;">%d %s</td>
       </tr>`,
 			html.EscapeString(o.Title),
 			o.Date.Format("02.01.2006 15:04"),
 			count, o.MinParticipants,
 			needed,
+			i18n.T(lang, "email.needed"),
 			daysUntil,
+			i18n.T(lang, "email.days"),
 		)
 	}
 
 	content := fmt.Sprintf(`
-      <p style="color:#e6edf3;font-size:15px;margin:0 0 8px;">Hi %s,</p>
-      <p style="color:#8b949e;font-size:13px;margin:0 0 20px;">The following upcoming occurrences still have free places that need to be filled.</p>
+      <p style="color:#e6edf3;font-size:15px;margin:0 0 8px;">%s %s,</p>
+      <p style="color:#8b949e;font-size:13px;margin:0 0 20px;">%s</p>
       <table width="100%%" cellpadding="0" cellspacing="0" style="border:1px solid #30363d;border-radius:6px;overflow:hidden;">
         <tr style="background:#21262d;">
-          <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">Occurrence</th>
-          <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">Date</th>
-          <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">Signed Up</th>
-          <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">Still Needed</th>
-          <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">Days Until</th>
+          <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">%s</th>
+          <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">%s</th>
+          <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">%s</th>
+          <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">%s</th>
+          <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:0.06em;">%s</th>
         </tr>
         %s
-      </table>`, html.EscapeString(userName), rows.String())
+      </table>`,
+		i18n.T(lang, "email.hi"),
+		html.EscapeString(userName),
+		i18n.T(lang, "email.unfilledOrganizerMsg"),
+		i18n.T(lang, "email.headerOccurrence"),
+		i18n.T(lang, "email.headerDate"),
+		i18n.T(lang, "email.headerSignedUp"),
+		i18n.T(lang, "email.headerStillNeeded"),
+		i18n.T(lang, "email.headerDaysUntil"),
+		rows.String(),
+	)
 
 	return emailWrapper(content)
 }
 
-func buildTestEmail() string {
-	content := `
-      <p style="color:#e6edf3;font-size:15px;margin:0 0 8px;">Test Email</p>
-      <p style="color:#8b949e;font-size:13px;margin:0 0 20px;">If you are reading this, your DutyRound email configuration is working correctly.</p>
+func buildTestEmail(lang string) string {
+	content := fmt.Sprintf(`
+      <p style="color:#e6edf3;font-size:15px;margin:0 0 8px;">%s</p>
+      <p style="color:#8b949e;font-size:13px;margin:0 0 20px;">%s</p>
       <div style="background:#21262d;border:1px solid #30363d;border-radius:6px;padding:16px;text-align:center;">
-        <span style="color:#3fb950;font-size:14px;font-weight:600;">&#10003; SMTP configuration verified</span>
-      </div>`
+        <span style="color:#3fb950;font-size:14px;font-weight:600;">&#10003; %s</span>
+      </div>`,
+		i18n.T(lang, "email.testTitle"),
+		i18n.T(lang, "email.testBody"),
+		i18n.T(lang, "email.testVerified"),
+	)
 
 	return emailWrapper(content)
 }

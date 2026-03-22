@@ -5,9 +5,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DutyRound</title>
+  <meta name="csrf-token" content="{{.CSRFToken}}">
   <link rel="stylesheet" href="/static/css/app.css">
   <script>(function(){var t=localStorage.getItem('dr-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script>
+  document.addEventListener('htmx:configRequest', function(evt) {
+    if (evt.detail.verb !== 'get') {
+      var token = document.querySelector('meta[name="csrf-token"]');
+      if (token) { evt.detail.parameters['_csrf'] = token.getAttribute('content'); }
+    }
+  });
+  </script>
 </head>
 <body>
 <a href="#main-content" class="skip-to-content">{{t .Lang "nav.skipContent"}}</a>
@@ -96,6 +105,7 @@ document.addEventListener('click',function(e){
       {{else if eq .Flash.Type "warning"}}<div class="flash flash-warning" role="alert">&#9888; {{.Flash.Message}}<button class="flash-dismiss" onclick="this.parentElement.remove()" aria-label="Dismiss">&times;</button></div>
       {{end}}
     {{end}}
+    <div id="htmx-flash-area"></div>
     {{template "content" .}}
   </div>
 </div>
@@ -105,7 +115,20 @@ document.addEventListener('click',function(e){
 {{end}}
 <script>
 document.body.addEventListener('htmx:sendError', function() {
-  alert('Network error. Please check your connection and try again.');
+  alert('{{t .Lang "error.network"}}');
+});
+document.body.addEventListener('htmx:responseError', function(evt) {
+  var msg = evt.detail.xhr.responseText;
+  if (!msg) return;
+  var area = document.getElementById('htmx-flash-area');
+  if (!area) return;
+  var div = document.createElement('div');
+  div.className = 'flash flash-error';
+  div.setAttribute('role', 'alert');
+  div.innerHTML = '&#10005; ' + msg + '<button class="flash-dismiss" onclick="this.parentElement.remove()" aria-label="Dismiss">&times;</button>';
+  area.innerHTML = '';
+  area.appendChild(div);
+  setTimeout(function() { if (div.parentNode) div.remove(); }, 5000);
 });
 </script>
 </body>

@@ -42,12 +42,20 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	password := c.PostForm("password")
 	lang := i18n.GetLang(c)
 
+	loginError := func(reason string, args ...any) {
+		slog.Warn("login_failed", append([]any{"reason", reason, "ip", c.ClientIP()}, args...)...)
+		Page(c, "login.html", gin.H{
+			"CurrentUser": domain.User{},
+			"Flash":       &Flash{Type: "error", Message: i18n.T(lang, "flash.invalidEmailOrPassword")},
+			"Lang":        lang,
+			"Email":       email,
+		})
+	}
+
 	user, err := h.users.FindByEmail(c.Request.Context(), email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			slog.Warn("login_failed", "reason", "user_not_found", "ip", c.ClientIP())
-			SetFlash(c, "error", i18n.T(lang, "flash.invalidEmailOrPassword"))
-			c.Redirect(http.StatusFound, "/login")
+			loginError("user_not_found")
 			return
 		}
 		slog.Error("login: db error", "error", err, "ip", c.ClientIP())
@@ -56,9 +64,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-		slog.Warn("login_failed", "reason", "wrong_password", "user_id", user.ID, "ip", c.ClientIP())
-		SetFlash(c, "error", i18n.T(lang, "flash.invalidEmailOrPassword"))
-		c.Redirect(http.StatusFound, "/login")
+		loginError("wrong_password", "user_id", user.ID)
 		return
 	}
 
@@ -76,6 +82,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	}
 	s := sessions.Default(c)
 	s.Clear()
+	s.Options(sessions.Options{MaxAge: -1})
 	s.Save()
 	c.Redirect(http.StatusFound, "/login")
 }

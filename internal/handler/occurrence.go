@@ -34,6 +34,7 @@ type OccurrenceListItem struct {
 }
 
 func (h *OccurrenceHandler) List(c *gin.Context) {
+	lang := i18n.GetLang(c)
 	groups, _ := h.groups.List(c.Request.Context())
 	groupMap := make(map[int64]domain.Group, len(groups))
 	for _, g := range groups {
@@ -106,13 +107,19 @@ func (h *OccurrenceHandler) List(c *gin.Context) {
 		"StatusFilter": statusFilter,
 		"HidePast":     hidePast,
 		"ActivePage":   "occurrences",
-		"PageTitle":    "Occurrences",
+		"PageTitle":    i18n.T(lang, "title.occurrences"),
 	}))
 }
 
 func (h *OccurrenceHandler) ShowCreate(c *gin.Context) {
+	lang := i18n.GetLang(c)
 	groups, _ := h.groups.List(c.Request.Context())
-	occs, _ := h.occurrences.ListOccurrences(c.Request.Context())
+
+	// All occurrences sorted by date descending for the copy-from feature
+	allOccs, _ := h.occurrences.ListOccurrences(c.Request.Context())
+	sort.Slice(allOccs, func(i, j int) bool {
+		return allOccs[i].Date.After(allOccs[j].Date)
+	})
 
 	defaultDate := time.Now()
 	if dateStr := c.Query("date"); dateStr != "" {
@@ -128,37 +135,39 @@ func (h *OccurrenceHandler) ShowCreate(c *gin.Context) {
 		"GroupID":         int64(0),
 		"DefaultDate":     defaultDate.Format("2006-01-02T15:04"),
 		"ActivePage":      "occurrences",
-		"PageTitle":       "New Occurrence",
-		"PastOccurrences": occs,
+		"PageTitle":       i18n.T(lang, "title.newOccurrence"),
+		"PastOccurrences": allOccs,
 	}))
 }
 
 func (h *OccurrenceHandler) Create(c *gin.Context) {
-	occ, err := h.occurrenceFromForm(c)
+	lang := i18n.GetLang(c)
+	occ, err := h.occurrenceFromForm(c, lang)
 	if err != nil {
 		SetFlash(c, "error", err.Error())
 		c.Redirect(http.StatusFound, "/occurrences/new")
 		return
 	}
 	if occ.Date.Before(time.Now()) {
-		SetFlash(c, "error", "Date cannot be in the past.")
-		c.Redirect(http.StatusFound, "/occurrences/new")
-		return
-	}
-	created, err := h.occurrences.CreateOccurrence(c.Request.Context(), occ)
-	if err != nil {
-		slog.Error("occurrence: create failed", "error", err)
-		SetFlash(c, "error", "Failed to create occurrence.")
+		SetFlash(c, "error", i18n.T(lang, "flash.dateCantBePast"))
 		c.Redirect(http.StatusFound, "/occurrences/new")
 		return
 	}
 	user, _ := CurrentUser(c)
+	created, err := h.occurrences.CreateOccurrence(c.Request.Context(), occ)
+	if err != nil {
+		slog.Error("occurrence: create failed", "user_id", user.ID, "error", err)
+		SetFlash(c, "error", i18n.T(lang, "flash.failedCreateOccurrence"))
+		c.Redirect(http.StatusFound, "/occurrences/new")
+		return
+	}
 	slog.Info("occurrence_created", "user_id", user.ID, "occurrence_id", created.ID)
-	SetFlash(c, "success", "Occurrence created.")
+	SetFlash(c, "success", i18n.T(lang, "flash.occurrenceCreated"))
 	c.Redirect(http.StatusFound, "/occurrences")
 }
 
 func (h *OccurrenceHandler) ShowEdit(c *gin.Context) {
+	lang := i18n.GetLang(c)
 	id, err := pathID(c)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
@@ -166,7 +175,7 @@ func (h *OccurrenceHandler) ShowEdit(c *gin.Context) {
 	}
 	occ, err := h.occurrences.GetOccurrence(c.Request.Context(), id)
 	if err != nil {
-		c.Status(http.StatusNotFound)
+		Page(c, "error.html", pageData(c, gin.H{"Code": 404, "Message": "Occurrence not found"}))
 		return
 	}
 	groups, _ := h.groups.List(c.Request.Context())
@@ -175,17 +184,18 @@ func (h *OccurrenceHandler) ShowEdit(c *gin.Context) {
 		"Occurrence": occ,
 		"GroupID":    occ.GroupID,
 		"ActivePage": "occurrences",
-		"PageTitle":  "Edit Occurrence",
+		"PageTitle":  i18n.T(lang, "title.editOccurrence"),
 	}))
 }
 
 func (h *OccurrenceHandler) Update(c *gin.Context) {
+	lang := i18n.GetLang(c)
 	id, err := pathID(c)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-	occ, err := h.occurrenceFromForm(c)
+	occ, err := h.occurrenceFromForm(c, lang)
 	if err != nil {
 		SetFlash(c, "error", err.Error())
 		c.Redirect(http.StatusFound, "/occurrences/"+strconv.FormatInt(id, 10)+"/edit")
@@ -195,17 +205,18 @@ func (h *OccurrenceHandler) Update(c *gin.Context) {
 	updated, err := h.occurrences.UpdateOccurrence(c.Request.Context(), occ)
 	if err != nil {
 		slog.Error("occurrence: update failed", "occurrence_id", id, "error", err)
-		SetFlash(c, "error", "Failed to update occurrence.")
+		SetFlash(c, "error", i18n.T(lang, "flash.failedUpdateOccurrence"))
 		c.Redirect(http.StatusFound, "/occurrences/"+strconv.FormatInt(id, 10)+"/edit")
 		return
 	}
 	user, _ := CurrentUser(c)
 	slog.Info("occurrence_updated", "user_id", user.ID, "occurrence_id", updated.ID)
-	SetFlash(c, "success", "Occurrence updated.")
+	SetFlash(c, "success", i18n.T(lang, "flash.occurrenceUpdated"))
 	c.Redirect(http.StatusFound, "/occurrences/"+strconv.FormatInt(id, 10))
 }
 
 func (h *OccurrenceHandler) Delete(c *gin.Context) {
+	lang := i18n.GetLang(c)
 	id, err := pathID(c)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
@@ -214,10 +225,10 @@ func (h *OccurrenceHandler) Delete(c *gin.Context) {
 	user, _ := CurrentUser(c)
 	if err := h.occurrences.DeleteOccurrence(c.Request.Context(), id); err != nil {
 		slog.Error("occurrence: delete failed", "user_id", user.ID, "occurrence_id", id, "error", err)
-		SetFlash(c, "error", "Failed to delete occurrence.")
+		SetFlash(c, "error", i18n.T(lang, "flash.failedDeleteOccurrence"))
 	} else {
 		slog.Info("occurrence_deleted", "user_id", user.ID, "occurrence_id", id)
-		SetFlash(c, "success", "Occurrence deleted.")
+		SetFlash(c, "success", i18n.T(lang, "flash.occurrenceDeleted"))
 	}
 	c.Redirect(http.StatusFound, "/occurrences")
 }
@@ -230,11 +241,16 @@ func (h *OccurrenceHandler) Detail(c *gin.Context) {
 	}
 	occ, err := h.occurrences.GetOccurrence(c.Request.Context(), id)
 	if err != nil {
-		c.Status(http.StatusNotFound)
+		Page(c, "error.html", pageData(c, gin.H{"Code": 404, "Message": "Occurrence not found"}))
 		return
 	}
 	currentUser, _ := CurrentUser(c)
-	participants, _ := h.occurrences.GetParticipants(c.Request.Context(), id)
+	participants, err := h.occurrences.GetParticipants(c.Request.Context(), id)
+	if err != nil {
+		slog.Error("failed to get participants", "occurrence_id", id, "error", err)
+		Page(c, "error.html", pageData(c, gin.H{"Code": 500, "Message": "Internal error"}))
+		return
+	}
 	isSignedUp := containsUser(participants, currentUser.ID)
 	isFull := len(participants) >= occ.MaxParticipants
 	status := service.ComputeOccStatus(occ, len(participants))
@@ -247,7 +263,10 @@ func (h *OccurrenceHandler) Detail(c *gin.Context) {
 		}
 	}
 
-	comments, _ := h.comments.FindByOccurrence(c.Request.Context(), id)
+	comments, err := h.comments.FindByOccurrence(c.Request.Context(), id)
+	if err != nil {
+		slog.Error("failed to get comments", "occurrence_id", id, "error", err)
+	}
 
 	Page(c, "occurrence_detail.html", pageData(c, gin.H{
 		"Occurrence":   occ,
@@ -266,6 +285,7 @@ func (h *OccurrenceHandler) Detail(c *gin.Context) {
 // --- HTMX actions ---
 
 func (h *OccurrenceHandler) SignUp(c *gin.Context) {
+	lang := i18n.GetLang(c)
 	id, err := pathID(c)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
@@ -277,7 +297,7 @@ func (h *OccurrenceHandler) SignUp(c *gin.Context) {
 		if errors.Is(err, service.ErrUserOOO) {
 			slog.Warn("signup: user is OOO", "user_id", user.ID, "occurrence_id", id)
 			c.Header("HX-Reswap", "none")
-			c.String(http.StatusConflict, "You are out of office on this date.")
+			c.String(http.StatusConflict, i18n.T(lang, "flash.userOOOSignup"))
 			return
 		}
 		if errors.Is(err, service.ErrAlreadySignedUp) {
@@ -288,7 +308,7 @@ func (h *OccurrenceHandler) SignUp(c *gin.Context) {
 		if errors.Is(err, service.ErrOccurrenceFull) {
 			slog.Warn("signup: occurrence full", "user_id", user.ID, "occurrence_id", id)
 			c.Header("HX-Reswap", "none")
-			c.String(http.StatusConflict, "This occurrence is full.")
+			c.String(http.StatusConflict, i18n.T(lang, "flash.occurrenceFull"))
 			return
 		}
 		slog.Error("signup: failed", "user_id", user.ID, "occurrence_id", id, "error", err)
@@ -316,6 +336,7 @@ func (h *OccurrenceHandler) Withdraw(c *gin.Context) {
 }
 
 func (h *OccurrenceHandler) Assign(c *gin.Context) {
+	lang := i18n.GetLang(c)
 	id, err := pathID(c)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
@@ -332,7 +353,7 @@ func (h *OccurrenceHandler) Assign(c *gin.Context) {
 		if errors.Is(err, service.ErrUserOOO) {
 			slog.Warn("assign: user is OOO", "actor_user_id", currentUser.ID, "user_id", userID, "occurrence_id", id)
 			c.Header("HX-Reswap", "none")
-			c.String(http.StatusConflict, "User is out of office on this date.")
+			c.String(http.StatusConflict, i18n.T(lang, "flash.userOOOAssign"))
 			return
 		}
 		slog.Error("assign: failed", "actor_user_id", currentUser.ID, "user_id", userID, "occurrence_id", id, "error", err)
@@ -387,6 +408,7 @@ func (h *OccurrenceHandler) AvailableUsers(c *gin.Context) {
 }
 
 func (h *OccurrenceHandler) AddComment(c *gin.Context) {
+	lang := i18n.GetLang(c)
 	id, err := pathID(c)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
@@ -398,8 +420,10 @@ func (h *OccurrenceHandler) AddComment(c *gin.Context) {
 		h.renderCommentList(c, id)
 		return
 	}
-	if len(body) > 1000 {
-		body = body[:1000]
+	if len([]rune(body)) > 1000 {
+		c.Header("HX-Reswap", "none")
+		c.String(http.StatusBadRequest, i18n.T(lang, "flash.commentTooLong"))
+		return
 	}
 	comment, err := h.comments.Save(c.Request.Context(), domain.Comment{
 		OccurrenceID: id,
@@ -476,30 +500,34 @@ func (h *OccurrenceHandler) renderParticipantList(c *gin.Context, occID, current
 	})
 }
 
-func (h *OccurrenceHandler) occurrenceFromForm(c *gin.Context) (domain.Occurrence, error) {
-	title := c.PostForm("title")
+func (h *OccurrenceHandler) occurrenceFromForm(c *gin.Context, lang string) (domain.Occurrence, error) {
+	title := strings.TrimSpace(c.PostForm("title"))
+	if title == "" {
+		return domain.Occurrence{}, errors.New(i18n.T(lang, "flash.titleRequired"))
+	}
 	description := c.PostForm("description")
 	dateStr := c.PostForm("date")
 	minStr := c.PostForm("min_participants")
 	maxStr := c.PostForm("max_participants")
 
-	date, err := time.Parse("2006-01-02T15:04", dateStr)
+	// Parse in local timezone so the "date in the past" check is accurate
+	date, err := time.ParseInLocation("2006-01-02T15:04", dateStr, time.Local)
 	if err != nil {
-		return domain.Occurrence{}, err
+		return domain.Occurrence{}, errors.New(i18n.T(lang, "flash.invalidFormData"))
 	}
 	min, err := strconv.Atoi(minStr)
 	if err != nil {
-		return domain.Occurrence{}, err
+		return domain.Occurrence{}, errors.New(i18n.T(lang, "flash.invalidFormData"))
 	}
 	max, err := strconv.Atoi(maxStr)
 	if err != nil {
-		return domain.Occurrence{}, err
+		return domain.Occurrence{}, errors.New(i18n.T(lang, "flash.invalidFormData"))
 	}
 	if min < 1 || max < 1 {
-		return domain.Occurrence{}, errors.New("participants must be at least 1")
+		return domain.Occurrence{}, errors.New(i18n.T(lang, "flash.participantsMin"))
 	}
 	if min > max {
-		return domain.Occurrence{}, errors.New("min participants cannot exceed max")
+		return domain.Occurrence{}, errors.New(i18n.T(lang, "flash.minExceedsMax"))
 	}
 	occ := domain.Occurrence{
 		Title:           title,

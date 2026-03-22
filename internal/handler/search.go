@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -35,11 +36,13 @@ func (h *SearchHandler) Search(c *gin.Context) {
 	// Search occurrences
 	occs, err := h.occurrences.SearchOccurrences(c.Request.Context(), q, 6)
 	if err != nil {
+		slog.Error("search: occurrences query failed", "query", q, "error", err)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
 	counts, err := h.occurrences.GetParticipantCountsByOccurrence(c.Request.Context())
 	if err != nil {
+		slog.Error("search: get participant counts failed", "error", err)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
@@ -57,6 +60,7 @@ func (h *SearchHandler) Search(c *gin.Context) {
 	// Search users via SQL LIKE (no N+1)
 	userResults, err := h.users.SearchUsers(c.Request.Context(), q, 4)
 	if err != nil {
+		slog.Error("search: users query failed", "query", q, "error", err)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
