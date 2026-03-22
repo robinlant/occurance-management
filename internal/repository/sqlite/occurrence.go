@@ -16,15 +16,17 @@ func NewOccurrenceRepository(db *sql.DB) *OccurrenceRepository {
 	return &OccurrenceRepository{db: db}
 }
 
+const occurrenceCols = `id, group_id, title, description, date, min_participants, max_participants, allow_over_limit`
+
 func (r *OccurrenceRepository) FindByID(ctx context.Context, id int64) (domain.Occurrence, error) {
 	row := r.db.QueryRowContext(ctx,
-		`SELECT id, group_id, title, description, date, min_participants, max_participants FROM occurrences WHERE id = ?`, id)
+		`SELECT `+occurrenceCols+` FROM occurrences WHERE id = ?`, id)
 	return scanOccurrence(row)
 }
 
 func (r *OccurrenceRepository) FindAll(ctx context.Context) ([]domain.Occurrence, error) {
 	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, group_id, title, description, date, min_participants, max_participants FROM occurrences ORDER BY date`)
+		`SELECT `+occurrenceCols+` FROM occurrences ORDER BY date`)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +36,7 @@ func (r *OccurrenceRepository) FindAll(ctx context.Context) ([]domain.Occurrence
 
 func (r *OccurrenceRepository) FindByGroup(ctx context.Context, groupID int64) ([]domain.Occurrence, error) {
 	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, group_id, title, description, date, min_participants, max_participants FROM occurrences WHERE group_id = ? ORDER BY date`,
+		`SELECT `+occurrenceCols+` FROM occurrences WHERE group_id = ? ORDER BY date`,
 		groupID)
 	if err != nil {
 		return nil, err
@@ -46,7 +48,7 @@ func (r *OccurrenceRepository) FindByGroup(ctx context.Context, groupID int64) (
 func (r *OccurrenceRepository) FindByDate(ctx context.Context, date time.Time) ([]domain.Occurrence, error) {
 	dateStr := date.Format("2006-01-02")
 	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, group_id, title, description, date, min_participants, max_participants FROM occurrences WHERE DATE(date) = ? ORDER BY date`,
+		`SELECT `+occurrenceCols+` FROM occurrences WHERE DATE(date) = ? ORDER BY date`,
 		dateStr)
 	if err != nil {
 		return nil, err
@@ -57,7 +59,7 @@ func (r *OccurrenceRepository) FindByDate(ctx context.Context, date time.Time) (
 
 func (r *OccurrenceRepository) FindOpenSpots(ctx context.Context) ([]domain.Occurrence, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT o.id, o.group_id, o.title, o.description, o.date, o.min_participants, o.max_participants
+		SELECT o.id, o.group_id, o.title, o.description, o.date, o.min_participants, o.max_participants, o.allow_over_limit
 		FROM occurrences o
 		LEFT JOIN (
 			SELECT occurrence_id, COUNT(*) as cnt
@@ -76,7 +78,7 @@ func (r *OccurrenceRepository) FindOpenSpots(ctx context.Context) ([]domain.Occu
 
 func (r *OccurrenceRepository) FindUpcomingByUser(ctx context.Context, userID int64, from time.Time) ([]domain.Occurrence, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT o.id, o.group_id, o.title, o.description, o.date, o.min_participants, o.max_participants
+		SELECT o.id, o.group_id, o.title, o.description, o.date, o.min_participants, o.max_participants, o.allow_over_limit
 		FROM occurrences o
 		JOIN participations p ON p.occurrence_id = o.id
 		WHERE p.user_id = ? AND o.date >= ?
@@ -91,7 +93,7 @@ func (r *OccurrenceRepository) FindUpcomingByUser(ctx context.Context, userID in
 
 func (r *OccurrenceRepository) FindByTitleLike(ctx context.Context, query string, limit int) ([]domain.Occurrence, error) {
 	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, group_id, title, description, date, min_participants, max_participants FROM occurrences WHERE title LIKE ? ORDER BY date DESC LIMIT ?`,
+		`SELECT `+occurrenceCols+` FROM occurrences WHERE title LIKE ? ORDER BY date DESC LIMIT ?`,
 		"%"+query+"%", limit)
 	if err != nil {
 		return nil, err
@@ -107,8 +109,8 @@ func (r *OccurrenceRepository) Save(ctx context.Context, o domain.Occurrence) (d
 	}
 	if o.ID == 0 {
 		res, err := r.db.ExecContext(ctx,
-			`INSERT INTO occurrences (group_id, title, description, date, min_participants, max_participants) VALUES (?, ?, ?, ?, ?, ?)`,
-			groupID, o.Title, o.Description, o.Date, o.MinParticipants, o.MaxParticipants,
+			`INSERT INTO occurrences (group_id, title, description, date, min_participants, max_participants, allow_over_limit) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			groupID, o.Title, o.Description, o.Date, o.MinParticipants, o.MaxParticipants, o.AllowOverLimit,
 		)
 		if err != nil {
 			return o, err
@@ -117,8 +119,8 @@ func (r *OccurrenceRepository) Save(ctx context.Context, o domain.Occurrence) (d
 		return o, err
 	}
 	_, err := r.db.ExecContext(ctx,
-		`UPDATE occurrences SET group_id = ?, title = ?, description = ?, date = ?, min_participants = ?, max_participants = ? WHERE id = ?`,
-		groupID, o.Title, o.Description, o.Date, o.MinParticipants, o.MaxParticipants, o.ID,
+		`UPDATE occurrences SET group_id = ?, title = ?, description = ?, date = ?, min_participants = ?, max_participants = ?, allow_over_limit = ? WHERE id = ?`,
+		groupID, o.Title, o.Description, o.Date, o.MinParticipants, o.MaxParticipants, o.AllowOverLimit, o.ID,
 	)
 	return o, err
 }
@@ -135,7 +137,7 @@ type rowScanner interface {
 func scanOccurrence(row rowScanner) (domain.Occurrence, error) {
 	var o domain.Occurrence
 	var groupID sql.NullInt64
-	err := row.Scan(&o.ID, &groupID, &o.Title, &o.Description, &o.Date, &o.MinParticipants, &o.MaxParticipants)
+	err := row.Scan(&o.ID, &groupID, &o.Title, &o.Description, &o.Date, &o.MinParticipants, &o.MaxParticipants, &o.AllowOverLimit)
 	if groupID.Valid {
 		o.GroupID = groupID.Int64
 	}

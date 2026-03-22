@@ -105,6 +105,7 @@ func main() {
 	// Public
 	r.GET("/login", authH.ShowLogin)
 	r.POST("/login", authH.Login)
+	r.GET("/lang", handler.SwitchLang)
 	r.NoRoute(errH.NotFound)
 
 	// All authenticated

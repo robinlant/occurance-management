@@ -1,17 +1,27 @@
 {{define "content"}}
 <div class="card">
   <div class="filter-bar" style="margin-bottom:16px">
-    <a href="/leaderboard?from={{.StudentYearFrom}}&to={{.StudentYearTo}}"
-       class="chip {{if .StudentYearActive}}active{{end}}">Student year</a>
-    <a href="/leaderboard?from={{.ThisYearFrom}}&to={{.ThisYearTo}}"
-       class="chip {{if .ThisYearActive}}active{{end}}">This year</a>
+    <a href="/leaderboard?from={{.StudentYearFrom}}&to={{.StudentYearTo}}&role_filter={{.RoleFilter}}"
+       class="chip {{if .StudentYearActive}}active{{end}}">{{t .Lang "lb.studentYear"}}</a>
+    <a href="/leaderboard?from={{.ThisYearFrom}}&to={{.ThisYearTo}}&role_filter={{.RoleFilter}}"
+       class="chip {{if .ThisYearActive}}active{{end}}">{{t .Lang "lb.thisYear"}}</a>
     <form id="lb-form" style="display:inline-flex;align-items:center;gap:6px;margin:0" action="/leaderboard" method="get">
+      <input type="hidden" name="role_filter" value="{{.RoleFilter}}">
       <input type="date" name="from" id="lb-from" value="{{.From}}" onchange="document.getElementById('lb-form').submit()"
              style="padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;font-family:inherit;outline:none">
       <span style="color:var(--text-muted);font-size:12px">&ndash;</span>
       <input type="date" name="to" id="lb-to" value="{{.To}}" onchange="document.getElementById('lb-form').submit()"
              style="padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;font-family:inherit;outline:none">
     </form>
+  </div>
+
+  <div class="filter-bar" style="margin-bottom:16px">
+    <a href="/leaderboard?from={{.From}}&to={{.To}}&role_filter=participants"
+       class="chip {{if eq .RoleFilter "participants"}}active{{end}}">{{t .Lang "lb.participants"}}</a>
+    <a href="/leaderboard?from={{.From}}&to={{.To}}&role_filter=organizers"
+       class="chip {{if eq .RoleFilter "organizers"}}active{{end}}">{{t .Lang "lb.organizers"}}</a>
+    <a href="/leaderboard?from={{.From}}&to={{.To}}&role_filter=all"
+       class="chip {{if eq .RoleFilter "all"}}active{{end}}">{{t .Lang "lb.all"}}</a>
   </div>
 
   {{template "leaderboard_table" .}}

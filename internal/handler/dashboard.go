@@ -67,11 +67,12 @@ func (h *DashboardHandler) Show(c *gin.Context) {
 		"PageTitle":       i18n.T(lang, "title.dashboard"),
 	}
 
-	if currentUser.Role == domain.RoleParticipant {
+	if currentUser.Role == domain.RoleParticipant || currentUser.Role == domain.RoleOrganizer {
 		upcoming, _ := h.occurrences.GetUpcomingForUser(c.Request.Context(), currentUser.ID)
 		data["UserUpcoming"] = upcoming
-	} else {
-		top, err := h.occurrences.GetLeaderboard(c.Request.Context(), time.Time{}, time.Time{})
+	}
+	if currentUser.Role == domain.RoleOrganizer || currentUser.Role == domain.RoleAdmin {
+		top, err := h.occurrences.GetLeaderboard(c.Request.Context(), time.Time{}, time.Time{}, []domain.Role{domain.RoleParticipant})
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return

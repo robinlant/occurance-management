@@ -2,22 +2,22 @@
 <div class="grid-3" style="margin-bottom:20px">
   <div class="stat-card">
     <div class="stat-value">{{.Stats.Total}}</div>
-    <div class="stat-label">Total participations</div>
+    <div class="stat-label">{{t .Lang "profile.totalParticipations"}}</div>
   </div>
   <div class="stat-card">
     <div class="stat-value">{{.Stats.CurrentStreak}}</div>
-    <div class="stat-label">Current streak (months)</div>
+    <div class="stat-label">{{t .Lang "profile.currentStreak"}}</div>
   </div>
   <div class="stat-card">
     <div class="stat-value">{{.Stats.LongestStreak}}</div>
-    <div class="stat-label">Longest streak (months)</div>
+    <div class="stat-label">{{t .Lang "profile.longestStreak"}}</div>
   </div>
 </div>
 
 <div class="card" style="margin-bottom:20px">
-  <div class="card-title">Activity — last 12 months</div>
+  <div class="card-title">{{t .Lang "profile.activity"}}</div>
   <div class="heatmap-meta">
-    <span class="heatmap-avg">{{.Stats.Average}} per month</span>
+    <span class="heatmap-avg">{{.Stats.Average}} {{t .Lang "profile.perMonth"}}</span>
   </div>
   <div class="heatmap-scroll">
     <div class="heatmap-grid" style="grid-template-columns:repeat({{.WeekCount}},14px)">
@@ -27,17 +27,17 @@
     </div>
   </div>
   <div class="heatmap-legend">
-    <span class="heatmap-legend-label">None</span>
+    <span class="heatmap-legend-label">{{t .Lang "profile.less"}}</span>
     <div class="heatmap-cell level-0"></div>
     <div class="heatmap-cell level-4"></div>
-    <span class="heatmap-legend-label">Active</span>
+    <span class="heatmap-legend-label">{{t .Lang "profile.more"}}</span>
   </div>
 </div>
 
 <div class="grid-2">
   <div class="stack">
     <div class="card">
-      <div class="card-title">Account</div>
+      <div class="card-title">{{t .Lang "profile.account"}}</div>
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
         <div class="user-avatar" style="width:48px;height:48px;font-size:20px">
           {{initial .CurrentUser.Name}}
@@ -51,17 +51,17 @@
     </div>
 
     <div class="card">
-      <div class="card-title">Change password</div>
+      <div class="card-title">{{t .Lang "profile.changePassword"}}</div>
       <form method="POST" action="/profile/password" class="row">
         <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
-        <input type="password" name="password" id="profile-password" placeholder="New password" required minlength="8" style="flex:1">
-        <button type="submit" class="btn btn-primary btn-sm">Save</button>
+        <input type="password" name="password" id="profile-password" placeholder="{{t .Lang "profile.newPassword"}}" required minlength="8" style="flex:1">
+        <button type="submit" class="btn btn-primary btn-sm">{{t .Lang "profile.save"}}</button>
       </form>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-title">Out of office</div>
+    <div class="card-title">{{t .Lang "profile.outOfOffice"}}</div>
 
     <div id="ooo-list" style="margin-bottom:16px">
       {{template "ooo_list" .}}
@@ -75,15 +75,15 @@
           class="stack-sm">
       <div class="grid-2">
         <div class="form-group">
-          <label for="ooo-from">From</label>
+          <label for="ooo-from">{{t .Lang "profile.from"}}</label>
           <input type="date" name="from" id="ooo-from" required>
         </div>
         <div class="form-group">
-          <label for="ooo-to">To</label>
+          <label for="ooo-to">{{t .Lang "profile.to"}}</label>
           <input type="date" name="to" id="ooo-to" required>
         </div>
       </div>
-      <button type="submit" class="btn btn-primary btn-sm">Add period</button>
+      <button type="submit" class="btn btn-primary btn-sm">{{t .Lang "profile.addPeriod"}}</button>
       <div id="ooo-error"></div>
     </form>
   </div>

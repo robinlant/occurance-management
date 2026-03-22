@@ -17,10 +17,10 @@
         </div>
         {{if or (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
           <div class="row">
-            <a href="/occurrences/{{.Occurrence.ID}}/edit" class="btn btn-ghost btn-sm">Edit</a>
-            <form method="POST" action="/occurrences/{{.Occurrence.ID}}/delete" onsubmit="return confirm('Are you sure you want to delete this occurrence?')">
+            <a href="/occurrences/{{.Occurrence.ID}}/edit" class="btn btn-ghost btn-sm">{{t .Lang "occ.edit"}}</a>
+            <form method="POST" action="/occurrences/{{.Occurrence.ID}}/delete" onsubmit="return confirm('{{t .Lang "occ.confirmDelete"}}')">
               <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
-              <button class="btn btn-danger btn-sm">Delete</button>
+              <button class="btn btn-danger btn-sm">{{t .Lang "occ.delete"}}</button>
             </form>
           </div>
         {{end}}
@@ -34,12 +34,12 @@
 
   {{if or (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
     <div class="card">
-      <div class="card-title">Assign participant</div>
+      <div class="card-title">{{t .Lang "occ.assignParticipant"}}</div>
       <div id="available-users"
         hx-get="/occurrences/{{.Occurrence.ID}}/available"
         hx-trigger="load"
         hx-swap="innerHTML">
-        <p style="color:var(--text-muted);font-size:12px">Loading&#8230;</p>
+        <p style="color:var(--text-muted);font-size:12px">{{t .Lang "occ.loading"}}</p>
       </div>
     </div>
   {{end}}

@@ -59,6 +59,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	s := sessions.Default(c)
+	s.Clear()
 	s.Set(sessionUserID, user.ID)
 	s.Save()
 	c.Redirect(http.StatusFound, "/")

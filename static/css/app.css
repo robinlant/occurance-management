@@ -976,7 +976,8 @@ a:hover .occ-item { background: var(--hover-bg); }
   transition: background 0.1s;
 }
 .custom-select-option:last-child { border-bottom: none; }
-.custom-select-option:hover { background: var(--bg-hover); }
+.custom-select-option:hover,
+.custom-select-option.kb-active { background: var(--bg-hover); }
 
 /* ── Search section label ────────────────── */
 .search-section-label {

@@ -25,6 +25,7 @@
                data-min="{{.MinParticipants}}"
                data-max="{{.MaxParticipants}}"
                data-group-id="{{.GroupID}}"
+               data-allow-over-limit="{{.AllowOverLimit}}"
                onclick="selectCopy(this)">
             <span>{{.Title}}</span>
             <span style="color:var(--text-muted);font-size:11px">{{formatDateTime .Date}}</span>
@@ -42,24 +43,24 @@
     <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
 
     <div class="form-group">
-      <label for="occ-title">Title</label>
+      <label for="occ-title">{{t .Lang "form.title"}}</label>
       <input type="text" name="title" id="occ-title" required
         value="{{if .Occurrence}}{{.Occurrence.Title}}{{end}}"
         placeholder="e.g. Versandaktion M&#228;rz">
     </div>
 
     <div class="form-group">
-      <label for="occ-desc">Description</label>
+      <label for="occ-desc">{{t .Lang "form.description"}}</label>
       <textarea name="description" id="occ-desc" placeholder="Optional details&#8230;" style="min-height:96px">{{if .Occurrence}}{{.Occurrence.Description}}{{end}}</textarea>
     </div>
 
     <div class="form-group">
-      <label for="group-search">Group (optional)</label>
+      <label for="group-search">{{t .Lang "form.group"}}</label>
       <input type="hidden" name="group_id" id="group-id-input"
         value="{{if .Occurrence}}{{if .GroupID}}{{.GroupID}}{{end}}{{end}}">
       <div class="custom-select-wrap">
         <input type="text" class="custom-select-input" id="group-search"
-               placeholder="Select group..."
+               placeholder="{{t .Lang "form.selectGroup"}}"
                autocomplete="off"
                value="{{if .Occurrence}}{{range .Groups}}{{if eq .ID $.GroupID}}{{.Name}}{{end}}{{end}}{{end}}"
                onfocus="openGroupDropdown()"
@@ -67,7 +68,7 @@
         <div class="custom-select-dropdown" id="group-dropdown">
           <div class="custom-select-option" data-value="" data-name=""
                onclick="selectGroup(this)">
-            <span style="color:var(--text-muted)">&#8212; none &#8212;</span>
+            <span style="color:var(--text-muted)">{{t .Lang "form.none"}}</span>
           </div>
           {{range .Groups}}
             <div class="custom-select-option" data-value="{{.ID}}" data-name="{{.Name}}"
@@ -80,7 +81,7 @@
     </div>
 
     <div class="form-group">
-      <label for="occ-date">Date &amp; Time</label>
+      <label for="occ-date">{{t .Lang "form.dateTime"}}</label>
       <input type="datetime-local" name="date" id="occ-date" required
         value="{{if .Occurrence}}{{.Occurrence.Date.Format "2006-01-02T15:04"}}{{else}}{{.DefaultDate}}{{end}}"
         {{if not .Occurrence}}data-enforce-future="1"{{end}}>
@@ -88,22 +89,31 @@
 
     <div class="grid-2">
       <div class="form-group">
-        <label for="occ-min">Min participants</label>
+        <label for="occ-min">{{t .Lang "form.minParticipants"}}</label>
         <input type="number" name="min_participants" id="occ-min" min="1" required
           value="{{if .Occurrence}}{{.Occurrence.MinParticipants}}{{else}}1{{end}}"
           oninput="syncMinMax()">
       </div>
       <div class="form-group">
-        <label for="occ-max">Max participants</label>
+        <label for="occ-max">{{t .Lang "form.maxParticipants"}}</label>
         <input type="number" name="max_participants" id="occ-max" min="1" required
           value="{{if .Occurrence}}{{.Occurrence.MaxParticipants}}{{else}}1{{end}}"
           oninput="syncMinMax()">
       </div>
     </div>
 
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" name="allow_over_limit" id="occ-over-limit"
+          {{if .Occurrence}}{{if .Occurrence.AllowOverLimit}}checked{{end}}{{end}}
+          style="width:auto;accent-color:var(--accent);">
+        <span style="font-size:13px;font-weight:500;color:var(--text);">{{t .Lang "form.allowOverLimit"}}</span>
+      </label>
+    </div>
+
     <div class="row" style="margin-top:4px">
-      <button type="submit" class="btn btn-primary">{{if .Occurrence}}Save changes{{else}}Create{{end}}</button>
-      <a href="/occurrences" class="btn btn-ghost">Cancel</a>
+      <button type="submit" class="btn btn-primary">{{if .Occurrence}}{{t .Lang "form.saveChanges"}}{{else}}{{t .Lang "form.create"}}{{end}}</button>
+      <a href="/occurrences" class="btn btn-ghost">{{t .Lang "form.cancel"}}</a>
     </div>
   </form>
 </div>
@@ -152,6 +162,7 @@ function selectCopy(el) {
   var min     = el.getAttribute('data-min')      || '';
   var max     = el.getAttribute('data-max')      || '';
   var groupId = el.getAttribute('data-group-id') || '';
+  var allowOverLimit = el.getAttribute('data-allow-over-limit') || '';
 
   if (title) document.getElementById('occ-title').value = title;
   if (desc !== null) document.getElementById('occ-desc').value = desc;
@@ -178,6 +189,9 @@ function selectCopy(el) {
       dateEl.value = datePart + 'T' + time;
     }
   }
+
+  var overLimitEl = document.getElementById('occ-over-limit');
+  if (overLimitEl) overLimitEl.checked = (allowOverLimit === 'true');
 
   document.getElementById('copy-search').value = title;
   document.getElementById('copy-dropdown').classList.remove('open');
@@ -207,6 +221,45 @@ document.addEventListener('DOMContentLoaded', function() {
                + 'T' + pad(now.getHours()) + ':' + pad(now.getMinutes());
     dateEl.min = minStr;
   }
+});
+
+// ── Keyboard navigation for dropdowns ────────────────────────
+function setupKeyboardNav(inputId, dropdownId, selectFn) {
+  var input = document.getElementById(inputId);
+  if (!input) return;
+  input.addEventListener('keydown', function(e) {
+    var dd = document.getElementById(dropdownId);
+    if (!dd || !dd.classList.contains('open')) return;
+    var items = Array.from(dd.querySelectorAll('.custom-select-option')).filter(function(el) {
+      return el.style.display !== 'none';
+    });
+    if (!items.length) return;
+    var active = dd.querySelector('.custom-select-option.kb-active');
+    var idx = active ? items.indexOf(active) : -1;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (active) active.classList.remove('kb-active');
+      idx = (idx + 1) % items.length;
+      items[idx].classList.add('kb-active');
+      items[idx].scrollIntoView({block:'nearest'});
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (active) active.classList.remove('kb-active');
+      idx = idx <= 0 ? items.length - 1 : idx - 1;
+      items[idx].classList.add('kb-active');
+      items[idx].scrollIntoView({block:'nearest'});
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (active) { selectFn(active); }
+      else if (items.length) { selectFn(items[0]); }
+    } else if (e.key === 'Escape') {
+      dd.classList.remove('open');
+    }
+  });
+}
+document.addEventListener('DOMContentLoaded', function() {
+  setupKeyboardNav('copy-search', 'copy-dropdown', selectCopy);
+  setupKeyboardNav('group-search', 'group-dropdown', selectGroup);
 });
 
 // ── Close dropdowns on outside click ────────────────────────

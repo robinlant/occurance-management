@@ -31,6 +31,7 @@ type Occurrence struct {
 	Date            time.Time
 	MinParticipants int
 	MaxParticipants int
+	AllowOverLimit  bool
 }
 
 type Participation struct {

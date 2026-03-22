@@ -2,16 +2,13 @@
 <div id="participant-section" class="card">
   <div class="row-between" style="margin-bottom:12px">
     <div class="card-title" style="margin-bottom:0">
-      Participants
+      {{t .Lang "occ.participants"}}
       <span style="font-weight:400;color:var(--text-muted)">{{len .Participants}} / {{.Occurrence.MaxParticipants}}</span>
     </div>
-    {{if .IsOverMax}}
-      <span class="badge badge-yellow">&#9888; over max</span>
-    {{end}}
   </div>
 
   {{if not .Participants}}
-    <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px">No participants yet.</p>
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px">{{t .Lang "occ.noParticipants"}}</p>
   {{else}}
     <div style="margin-bottom:12px">
       {{range .Participants}}
@@ -21,24 +18,36 @@
             <button class="btn btn-danger btn-sm"
               hx-post="/occurrences/{{$.Occurrence.ID}}/remove/{{.ID}}"
               hx-target="#participant-section"
-              hx-swap="outerHTML">remove</button>
+              hx-swap="outerHTML">{{t $.Lang "occ.remove"}}</button>
           {{end}}
         </div>
       {{end}}
     </div>
   {{end}}
 
-  {{if eq .CurrentUser.Role "participant"}}
+  {{if or (eq .CurrentUser.Role "participant") (eq .CurrentUser.Role "organizer")}}
     {{if .IsSignedUp}}
       <button class="btn btn-ghost"
         hx-post="/occurrences/{{.Occurrence.ID}}/withdraw"
         hx-target="#participant-section"
-        hx-swap="outerHTML">Withdraw</button>
+        hx-swap="outerHTML">{{t .Lang "occ.withdraw"}}</button>
     {{else}}
-      <button class="btn btn-primary"
-        hx-post="/occurrences/{{.Occurrence.ID}}/signup"
-        hx-target="#participant-section"
-        hx-swap="outerHTML">Sign up</button>
+      {{if .IsFull}}
+        {{if .Occurrence.AllowOverLimit}}
+          <p style="color:var(--warning);font-size:12px;margin-bottom:8px">&#9888; {{t .Lang "occ.overLimitWarning"}}</p>
+          <button class="btn btn-primary"
+            hx-post="/occurrences/{{.Occurrence.ID}}/signup"
+            hx-target="#participant-section"
+            hx-swap="outerHTML">{{t .Lang "occ.signupOverLimit"}}</button>
+        {{else}}
+          <span class="badge badge-yellow" style="font-size:12px">{{t .Lang "occ.full"}}</span>
+        {{end}}
+      {{else}}
+        <button class="btn btn-primary"
+          hx-post="/occurrences/{{.Occurrence.ID}}/signup"
+          hx-target="#participant-section"
+          hx-swap="outerHTML">{{t .Lang "occ.signup"}}</button>
+      {{end}}
     {{end}}
   {{end}}
 </div>

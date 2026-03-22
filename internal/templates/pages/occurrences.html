@@ -1,6 +1,6 @@
 {{define "topbar-actions"}}
   {{if or (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
-    <a href="/occurrences/new" class="btn btn-primary btn-sm">+ New occurrence</a>
+    <a href="/occurrences/new" class="btn btn-primary btn-sm">{{t .Lang "occ.new"}}</a>
   {{end}}
 {{end}}
 {{define "content"}}
@@ -8,15 +8,15 @@
 {{/* Status filter chips */}}
 <div class="filter-bar" style="margin-bottom:8px">
   <a href="/occurrences{{if .ActiveGroup}}?group={{.ActiveGroup}}{{end}}"
-     class="chip {{if and (not .StatusFilter) (not .HidePast)}}active{{end}}">All</a>
+     class="chip {{if and (not .StatusFilter) (not .HidePast)}}active{{end}}">{{t .Lang "occ.all"}}</a>
   <a href="/occurrences?hide_past=1{{if .ActiveGroup}}&group={{.ActiveGroup}}{{end}}"
      class="chip {{if and .HidePast (not .StatusFilter)}}active{{end}}">Upcoming</a>
   <a href="/occurrences?status=under{{if .ActiveGroup}}&group={{.ActiveGroup}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
-     class="chip {{if eq .StatusFilter "under"}}active{{end}}">Needs people</a>
+     class="chip {{if eq .StatusFilter "under"}}active{{end}}">{{t .Lang "occ.needsPeople"}}</a>
   <a href="/occurrences?status=good{{if .ActiveGroup}}&group={{.ActiveGroup}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
-     class="chip {{if eq .StatusFilter "good"}}active{{end}}">Filled</a>
+     class="chip {{if eq .StatusFilter "good"}}active{{end}}">{{t .Lang "occ.filled"}}</a>
   <a href="/occurrences?status=over{{if .ActiveGroup}}&group={{.ActiveGroup}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
-     class="chip {{if eq .StatusFilter "over"}}active{{end}}">Over-staffed</a>
+     class="chip {{if eq .StatusFilter "over"}}active{{end}}">{{t .Lang "occ.overStaffed"}}</a>
 </div>
 
 {{/* Group filter chips */}}
@@ -45,7 +45,7 @@
 <!-- List view -->
 <div class="card occ-list-view">
   {{if not .Occurrences}}
-    <p style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px">No occurrences{{if .ActiveGroup}} in this group{{end}}.</p>
+    <p style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px">{{t .Lang "occ.none"}}{{if .ActiveGroup}} {{t .Lang "occ.noneInGroup"}}{{end}}.</p>
   {{else}}
     {{range .Occurrences}}
       {{$group := index $.Groups .GroupID}}
@@ -56,17 +56,17 @@
               <span class="occ-status-dot {{.Status}}"></span>
               {{.Title}}
               {{if $group.ID}}<span class="badge badge-accent">{{$group.Name}}</span>{{end}}
-              {{if isPast .Date}}<span class="badge badge-gray">past</span>{{end}}
-              {{if eq .Status "under"}}<span class="badge badge-red">needs people</span>
-              {{else if eq .Status "good"}}<span class="badge badge-green">filled</span>
-              {{else if eq .Status "over"}}<span class="badge badge-yellow">over-staffed</span>{{end}}
+              {{if isPast .Date}}<span class="badge badge-gray">{{t $.Lang "occ.past"}}</span>{{end}}
+              {{if eq .Status "under"}}<span class="badge badge-red">{{t $.Lang "occ.needsPeople"}}</span>
+              {{else if eq .Status "good"}}<span class="badge badge-green">{{t $.Lang "occ.filled"}}</span>
+              {{else if eq .Status "over"}}<span class="badge badge-yellow">{{t $.Lang "occ.overStaffed"}}</span>{{end}}
             </div>
             {{if .Description}}<div class="occ-desc">{{.Description}}</div>{{end}}
           </div>
           <div class="occ-meta">
             <div class="occ-date">{{formatDate .Date}}</div>
             <div class="occ-slots">{{weekday .Date}} &middot; {{relativeDay .Date}}</div>
-            <div class="occ-slots">{{.ParticipantCount}}/{{.MinParticipants}}&#8211;{{.MaxParticipants}} people</div>
+            <div class="occ-slots">{{.ParticipantCount}}/{{.MinParticipants}}&#8211;{{.MaxParticipants}} {{t $.Lang "occ.people"}}</div>
           </div>
         </div>
       </a>
@@ -77,7 +77,7 @@
 <!-- Card view -->
 <div class="occ-card-grid" style="display:none">
   {{if not .Occurrences}}
-    <p class="occ-card-grid-empty" style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px">No occurrences{{if .ActiveGroup}} in this group{{end}}.</p>
+    <p class="occ-card-grid-empty" style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px">{{t .Lang "occ.none"}}{{if .ActiveGroup}} {{t .Lang "occ.noneInGroup"}}{{end}}.</p>
   {{else}}
     {{range .Occurrences}}
       {{$group := index $.Groups .GroupID}}
@@ -87,10 +87,10 @@
         </div>
         <div class="occ-card-badges">
           {{if $group.ID}}<span class="badge badge-accent">{{$group.Name}}</span>{{end}}
-          {{if isPast .Date}}<span class="badge badge-gray">past</span>{{end}}
-          {{if eq .Status "under"}}<span class="badge badge-red">needs people</span>
-          {{else if eq .Status "good"}}<span class="badge badge-green">filled</span>
-          {{else if eq .Status "over"}}<span class="badge badge-yellow">over-staffed</span>{{end}}
+          {{if isPast .Date}}<span class="badge badge-gray">{{t $.Lang "occ.past"}}</span>{{end}}
+          {{if eq .Status "under"}}<span class="badge badge-red">{{t $.Lang "occ.needsPeople"}}</span>
+          {{else if eq .Status "good"}}<span class="badge badge-green">{{t $.Lang "occ.filled"}}</span>
+          {{else if eq .Status "over"}}<span class="badge badge-yellow">{{t $.Lang "occ.overStaffed"}}</span>{{end}}
         </div>
         {{if .Description}}<div class="occ-card-desc">{{.Description}}</div>{{end}}
         <div class="occ-card-footer">

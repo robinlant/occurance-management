@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/robinlant/occurance-management/internal/domain"
 	"github.com/robinlant/occurance-management/internal/service"
 )
 
@@ -27,7 +28,14 @@ func (h *LeaderboardHandler) Show(c *gin.Context) {
 		from, to = syFrom, syTo
 	}
 
-	entries, err := h.occurrences.GetLeaderboard(c.Request.Context(), from, to)
+	// Role filter: "participants" (default), "organizers", "all"
+	roleFilter := c.Query("role_filter")
+	if roleFilter == "" {
+		roleFilter = "participants"
+	}
+	roles := leaderboardRoles(roleFilter)
+
+	entries, err := h.occurrences.GetLeaderboard(c.Request.Context(), from, to, roles)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
@@ -64,6 +72,7 @@ func (h *LeaderboardHandler) Show(c *gin.Context) {
 		"ThisYearTo":        tyToStr,
 		"StudentYearActive": fromStr == syFromStr && toStr == syToStr,
 		"ThisYearActive":    fromStr == tyFromStr && toStr == tyToStr,
+		"RoleFilter":        roleFilter,
 		"ActivePage":        "leaderboard",
 		"PageTitle":         "Leaderboard",
 	}
@@ -73,6 +82,17 @@ func (h *LeaderboardHandler) Show(c *gin.Context) {
 		return
 	}
 	Page(c, "leaderboard.html", pageData(c, data), "leaderboard_table.html")
+}
+
+func leaderboardRoles(filter string) []domain.Role {
+	switch filter {
+	case "organizers":
+		return []domain.Role{domain.RoleOrganizer}
+	case "all":
+		return []domain.Role{domain.RoleParticipant, domain.RoleOrganizer}
+	default:
+		return []domain.Role{domain.RoleParticipant}
+	}
 }
 
 func studentYearDates(now time.Time) (time.Time, time.Time) {

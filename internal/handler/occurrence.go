@@ -220,7 +220,7 @@ func (h *OccurrenceHandler) Detail(c *gin.Context) {
 	currentUser, _ := CurrentUser(c)
 	participants, _ := h.occurrences.GetParticipants(c.Request.Context(), id)
 	isSignedUp := containsUser(participants, currentUser.ID)
-	isOverMax := len(participants) >= occ.MaxParticipants
+	isFull := len(participants) >= occ.MaxParticipants
 
 	var group *domain.Group
 	if occ.GroupID != 0 {
@@ -235,7 +235,7 @@ func (h *OccurrenceHandler) Detail(c *gin.Context) {
 		"Group":        group,
 		"Participants": participants,
 		"IsSignedUp":   isSignedUp,
-		"IsOverMax":    isOverMax,
+		"IsFull":       isFull,
 		"ActivePage":   "occurrences",
 		"PageTitle":    occ.Title,
 	}), "participant_list.html")
@@ -260,6 +260,11 @@ func (h *OccurrenceHandler) SignUp(c *gin.Context) {
 		if errors.Is(err, service.ErrAlreadySignedUp) {
 			c.Header("HX-Reswap", "none")
 			c.Status(http.StatusConflict)
+			return
+		}
+		if errors.Is(err, service.ErrOccurrenceFull) {
+			c.Header("HX-Reswap", "none")
+			c.String(http.StatusConflict, "This occurrence is full.")
 			return
 		}
 		c.Status(http.StatusInternalServerError)
@@ -359,7 +364,7 @@ func (h *OccurrenceHandler) renderParticipantList(c *gin.Context, occID, current
 		"Participants": participants,
 		"CurrentUser":  currentUser,
 		"IsSignedUp":   containsUser(participants, currentUserID),
-		"IsOverMax":    isOverMax || len(participants) >= occ.MaxParticipants,
+		"IsFull":       isOverMax || len(participants) >= occ.MaxParticipants,
 	})
 }
 
@@ -394,6 +399,7 @@ func (h *OccurrenceHandler) occurrenceFromForm(c *gin.Context) (domain.Occurrenc
 		Date:            date,
 		MinParticipants: min,
 		MaxParticipants: max,
+		AllowOverLimit:  c.PostForm("allow_over_limit") == "on",
 	}
 	if groupIDStr := c.PostForm("group_id"); groupIDStr != "" {
 		gid, err := strconv.ParseInt(groupIDStr, 10, 64)
