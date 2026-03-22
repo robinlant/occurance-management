@@ -115,17 +115,10 @@ func (h *OccurrenceHandler) ShowCreate(c *gin.Context) {
 	lang := i18n.GetLang(c)
 	groups, _ := h.groups.List(c.Request.Context())
 
-	// Fetch past occurrences only (sorted most recent first) for the copy-from feature
+	// All occurrences sorted by date descending for the copy-from feature
 	allOccs, _ := h.occurrences.ListOccurrences(c.Request.Context())
-	now := time.Now()
-	var pastOccs []domain.Occurrence
-	for _, o := range allOccs {
-		if o.Date.Before(now) {
-			pastOccs = append(pastOccs, o)
-		}
-	}
-	sort.Slice(pastOccs, func(i, j int) bool {
-		return pastOccs[i].Date.After(pastOccs[j].Date)
+	sort.Slice(allOccs, func(i, j int) bool {
+		return allOccs[i].Date.After(allOccs[j].Date)
 	})
 
 	defaultDate := time.Now()
@@ -143,7 +136,7 @@ func (h *OccurrenceHandler) ShowCreate(c *gin.Context) {
 		"DefaultDate":     defaultDate.Format("2006-01-02T15:04"),
 		"ActivePage":      "occurrences",
 		"PageTitle":       i18n.T(lang, "title.newOccurrence"),
-		"PastOccurrences": pastOccs,
+		"PastOccurrences": allOccs,
 	}))
 }
 

@@ -329,9 +329,9 @@ var en = map[string]string{
 	"occ.cardView":  "Cards",
 
 	// Occurrence form extra
-	"form.copyFromExisting":      "Copy from existing",
-	"form.copyFromExistingLabel": "Pre-fill title, description, time &amp; participant limits from an existing occurrence",
-	"form.copySearchPlaceholder": "Search occurrences to copy from\u2026",
+	"form.copyFromExisting":      "Use as template",
+	"form.copyFromExistingLabel": "Pre-fill title, description, time &amp; participant limits from another occurrence",
+	"form.copySearchPlaceholder": "Search occurrences\u2026",
 
 	// Comments
 	"comment.title":         "Comments",
@@ -655,9 +655,9 @@ var de = map[string]string{
 	"occ.cardView":  "Karten",
 
 	// Occurrence form extra
-	"form.copyFromExisting":      "Von bestehendem Einsatz kopieren",
-	"form.copyFromExistingLabel": "Titel, Beschreibung, Uhrzeit &amp; Teilnehmerlimits aus einem bestehenden Einsatz \u00fcbernehmen",
-	"form.copySearchPlaceholder": "Einsatz zum Kopieren suchen\u2026",
+	"form.copyFromExisting":      "Als Vorlage verwenden",
+	"form.copyFromExistingLabel": "Titel, Beschreibung, Uhrzeit &amp; Teilnehmerlimits aus einem anderen Einsatz \u00fcbernehmen",
+	"form.copySearchPlaceholder": "Einsatz suchen\u2026",
 
 	// Comments
 	"comment.title":         "Kommentare",
