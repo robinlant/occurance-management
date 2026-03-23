@@ -62,14 +62,14 @@ var en = map[string]string{
 	"error.network": "Network error. Please check your connection and try again.",
 
 	// Occurrences page
-	"occ.all":           "All",
+	"occ.all":           "All statuses",
 	"occ.new":           "+ New occurrence",
 	"occ.none":          "No occurrences",
 	"occ.noneInGroup":   "in this group",
 	"occ.past":          "past",
-	"occ.needsPeople":   "needs people",
-	"occ.filled":        "filled",
-	"occ.overStaffed":   "over-staffed",
+	"occ.needsPeople":   "Needs people",
+	"occ.filled":        "Filled",
+	"occ.overStaffed":   "Over-staffed",
 	"occ.people":        "people",
 	"occ.overMax":       "over max",
 
@@ -104,7 +104,7 @@ var en = map[string]string{
 	"form.cancel":          "Cancel",
 
 	// Calendar
-	"cal.allEvents":   "All events",
+	"cal.allEvents":   "All statuses",
 	"cal.needsPeople": "Needs people",
 	"cal.filled":      "Filled",
 	"cal.overStaffed": "Over-staffed",
@@ -389,14 +389,14 @@ var de = map[string]string{
 	"error.network": "Netzwerkfehler. Bitte pr\u00fcfen Sie Ihre Verbindung.",
 
 	// Occurrences page
-	"occ.all":           "Alle",
+	"occ.all":           "Alle Status",
 	"occ.new":           "+ Neuer Einsatz",
 	"occ.none":          "Keine Eins\u00e4tze",
 	"occ.noneInGroup":   "in dieser Gruppe",
 	"occ.past":          "vergangen",
-	"occ.needsPeople":   "braucht Leute",
-	"occ.filled":        "besetzt",
-	"occ.overStaffed":   "\u00fcberbesetzt",
+	"occ.needsPeople":   "Braucht Leute",
+	"occ.filled":        "Besetzt",
+	"occ.overStaffed":   "\u00dcberbesetzt",
 	"occ.people":        "Personen",
 	"occ.overMax":       "\u00fcber Maximum",
 
@@ -431,7 +431,7 @@ var de = map[string]string{
 	"form.cancel":          "Abbrechen",
 
 	// Calendar
-	"cal.allEvents":   "Alle Termine",
+	"cal.allEvents":   "Alle Status",
 	"cal.needsPeople": "Braucht Leute",
 	"cal.filled":      "Besetzt",
 	"cal.overStaffed": "\u00dcberbesetzt",
