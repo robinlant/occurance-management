@@ -5,7 +5,7 @@
   <a href="/calendar?month={{formatMonth .Month}}{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}"
      class="chip {{if and (not .StatusFilter) (not .HidePast)}}active{{end}}">{{t .Lang "cal.allEvents"}}</a>
   <a href="/calendar?month={{formatMonth .Month}}&hide_past=1{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}"
-     class="chip {{if and .HidePast (not .StatusFilter)}}active{{end}}">Upcoming</a>
+     class="chip {{if and .HidePast (not .StatusFilter)}}active{{end}}">{{t .Lang "occ.upcoming"}}</a>
   <a href="/calendar?month={{formatMonth .Month}}&status=under{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
      class="chip {{if eq .StatusFilter "under"}}active{{end}}">{{t .Lang "cal.needsPeople"}}</a>
   <a href="/calendar?month={{formatMonth .Month}}&status=good{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
@@ -18,7 +18,7 @@
 {{if .GroupList}}
 <div class="filter-bar">
   <a href="/calendar?month={{formatMonth .Month}}{{if .StatusFilter}}&status={{.StatusFilter}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
-     class="chip {{if not .GroupFilter}}active{{end}}">All groups</a>
+     class="chip {{if not .GroupFilter}}active{{end}}">{{t .Lang "cal.allGroups"}}</a>
   {{range .GroupList}}
     <a href="/calendar?month={{formatMonth $.Month}}&group={{.ID}}{{if $.StatusFilter}}&status={{$.StatusFilter}}{{end}}{{if $.HidePast}}&hide_past=1{{end}}"
        class="chip {{if eq $.GroupFilter .ID}}active{{end}}">{{.Name}}</a>
@@ -59,7 +59,7 @@
               {{if lt $i 3}}
                 <a href="/occurrences/{{$o.ID}}"
                    class="cal-event-pill status-{{$o.Status}}{{if isPast $o.Date}} past{{end}}"
-                   title="{{$o.Title}} ({{$o.ParticipantCount}}/{{$o.MaxParticipants}} people)"
+                   title="{{$o.Title}} ({{$o.ParticipantCount}}/{{$o.MaxParticipants}} {{t $.Lang "occ.people"}})"
                    onclick="event.stopPropagation()">
                   <span class="cal-event-name">{{$o.Title}}</span>
                   <span class="cal-event-time">{{formatTime $o.Date}}</span>

@@ -84,7 +84,8 @@
       <label for="occ-date">{{t .Lang "form.dateTime"}}</label>
       <input type="datetime-local" name="date" id="occ-date" required
         value="{{if .Occurrence}}{{.Occurrence.Date.Format "2006-01-02T15:04"}}{{else}}{{.DefaultDate}}{{end}}"
-        {{if not .Occurrence}}data-enforce-future="1"{{end}}>
+        {{if not .Occurrence}}data-warn-past="1"{{end}}>
+      <small id="past-date-warning" style="display:none;color:var(--warning);margin-top:4px;">&#9888; {{t .Lang "form.pastDateWarning"}}</small>
     </div>
 
     <div class="grid-2">
@@ -212,14 +213,17 @@ function syncMinMax() {
 // Initialise constraints on load
 document.addEventListener('DOMContentLoaded', function() {
   syncMinMax();
-  // Enforce future-only date on create form
+  // Warn when a past date is selected on create form
   var dateEl = document.getElementById('occ-date');
-  if (dateEl && dateEl.dataset.enforceFuture) {
-    var now = new Date();
-    var pad = function(n) { return String(n).padStart(2, '0'); };
-    var minStr = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate())
-               + 'T' + pad(now.getHours()) + ':' + pad(now.getMinutes());
-    dateEl.min = minStr;
+  if (dateEl && dateEl.dataset.warnPast) {
+    var warning = document.getElementById('past-date-warning');
+    function checkPastDate() {
+      if (!dateEl.value) { warning.style.display = 'none'; return; }
+      var selected = new Date(dateEl.value);
+      warning.style.display = selected < new Date() ? 'block' : 'none';
+    }
+    dateEl.addEventListener('change', checkPastDate);
+    checkPastDate();
   }
 });
 

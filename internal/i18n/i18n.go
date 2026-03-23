@@ -62,14 +62,14 @@ var en = map[string]string{
 	"error.network": "Network error. Please check your connection and try again.",
 
 	// Occurrences page
-	"occ.all":           "All",
+	"occ.all":           "All statuses",
 	"occ.new":           "+ New occurrence",
 	"occ.none":          "No occurrences",
 	"occ.noneInGroup":   "in this group",
 	"occ.past":          "past",
-	"occ.needsPeople":   "needs people",
-	"occ.filled":        "filled",
-	"occ.overStaffed":   "over-staffed",
+	"occ.needsPeople":   "Needs people",
+	"occ.filled":        "Filled",
+	"occ.overStaffed":   "Over-staffed",
 	"occ.people":        "people",
 	"occ.overMax":       "over max",
 
@@ -97,6 +97,7 @@ var en = map[string]string{
 	"form.selectGroup":     "Select group...",
 	"form.none":            "\u2014 none \u2014",
 	"form.dateTime":        "Date & Time",
+	"form.pastDateWarning": "This date is in the past.",
 	"form.minParticipants": "Min participants",
 	"form.maxParticipants": "Max participants",
 	"form.saveChanges":     "Save changes",
@@ -104,7 +105,7 @@ var en = map[string]string{
 	"form.cancel":          "Cancel",
 
 	// Calendar
-	"cal.allEvents":   "All events",
+	"cal.allEvents":   "All statuses",
 	"cal.needsPeople": "Needs people",
 	"cal.filled":      "Filled",
 	"cal.overStaffed": "Over-staffed",
@@ -171,6 +172,7 @@ var en = map[string]string{
 	"lb.all":              "All",
 	"lb.allGroups":        "All groups",
 	"lb.export":           "Export CSV",
+	"lb.dateRangeError":   "Start date must be before end date.",
 
 	// Groups
 	"groups.createGroup":    "Create group",
@@ -275,6 +277,8 @@ var en = map[string]string{
 	"flash.userOOOSignup":           "You are out of office on this date.",
 	"flash.userOOOAssign":           "User is out of office on this date.",
 	"flash.dateCantBePast":          "Date cannot be in the past.",
+	"flash.occurrenceCreatedInPast": "Occurrence created, but note: the date is in the past.",
+	"flash.dateRangeReversed":       "Start date must be before end date.",
 	"flash.titleRequired":           "Title is required.",
 	"flash.participantsMin":         "Participants must be at least 1.",
 	"flash.minExceedsMax":           "Min participants cannot exceed max.",
@@ -389,14 +393,14 @@ var de = map[string]string{
 	"error.network": "Netzwerkfehler. Bitte pr\u00fcfen Sie Ihre Verbindung.",
 
 	// Occurrences page
-	"occ.all":           "Alle",
+	"occ.all":           "Alle Status",
 	"occ.new":           "+ Neuer Einsatz",
 	"occ.none":          "Keine Eins\u00e4tze",
 	"occ.noneInGroup":   "in dieser Gruppe",
 	"occ.past":          "vergangen",
-	"occ.needsPeople":   "braucht Leute",
-	"occ.filled":        "besetzt",
-	"occ.overStaffed":   "\u00fcberbesetzt",
+	"occ.needsPeople":   "Braucht Leute",
+	"occ.filled":        "Besetzt",
+	"occ.overStaffed":   "\u00dcberbesetzt",
 	"occ.people":        "Personen",
 	"occ.overMax":       "\u00fcber Maximum",
 
@@ -424,6 +428,7 @@ var de = map[string]string{
 	"form.selectGroup":     "Gruppe ausw\u00e4hlen...",
 	"form.none":            "\u2014 keine \u2014",
 	"form.dateTime":        "Datum & Uhrzeit",
+	"form.pastDateWarning": "Dieses Datum liegt in der Vergangenheit.",
 	"form.minParticipants": "Min. Teilnehmer",
 	"form.maxParticipants": "Max. Teilnehmer",
 	"form.saveChanges":     "\u00c4nderungen speichern",
@@ -431,7 +436,7 @@ var de = map[string]string{
 	"form.cancel":          "Abbrechen",
 
 	// Calendar
-	"cal.allEvents":   "Alle Termine",
+	"cal.allEvents":   "Alle Status",
 	"cal.needsPeople": "Braucht Leute",
 	"cal.filled":      "Besetzt",
 	"cal.overStaffed": "\u00dcberbesetzt",
@@ -498,6 +503,7 @@ var de = map[string]string{
 	"lb.all":              "Alle",
 	"lb.allGroups":        "Alle Gruppen",
 	"lb.export":           "CSV exportieren",
+	"lb.dateRangeError":   "Das Startdatum muss vor dem Enddatum liegen.",
 
 	// Groups
 	"groups.createGroup":    "Gruppe erstellen",
@@ -602,6 +608,8 @@ var de = map[string]string{
 	"flash.userOOOSignup":           "Sie sind an diesem Datum abwesend.",
 	"flash.userOOOAssign":           "Benutzer ist an diesem Datum abwesend.",
 	"flash.dateCantBePast":          "Das Datum darf nicht in der Vergangenheit liegen.",
+	"flash.occurrenceCreatedInPast": "Einsatz erstellt, aber Achtung: Das Datum liegt in der Vergangenheit.",
+	"flash.dateRangeReversed":       "Das Startdatum muss vor dem Enddatum liegen.",
 	"flash.titleRequired":           "Titel ist erforderlich.",
 	"flash.participantsMin":         "Teilnehmer m\u00fcssen mindestens 1 sein.",
 	"flash.minExceedsMax":           "Mindestteilnehmer darf Maximum nicht \u00fcberschreiten.",

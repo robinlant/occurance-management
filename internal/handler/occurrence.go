@@ -148,11 +148,7 @@ func (h *OccurrenceHandler) Create(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/occurrences/new")
 		return
 	}
-	if occ.Date.Before(time.Now()) {
-		SetFlash(c, "error", i18n.T(lang, "flash.dateCantBePast"))
-		c.Redirect(http.StatusFound, "/occurrences/new")
-		return
-	}
+	pastDate := occ.Date.Before(time.Now())
 	user, _ := CurrentUser(c)
 	created, err := h.occurrences.CreateOccurrence(c.Request.Context(), occ)
 	if err != nil {
@@ -162,7 +158,11 @@ func (h *OccurrenceHandler) Create(c *gin.Context) {
 		return
 	}
 	slog.Info("occurrence_created", "user_id", user.ID, "occurrence_id", created.ID)
-	SetFlash(c, "success", i18n.T(lang, "flash.occurrenceCreated"))
+	if pastDate {
+		SetFlash(c, "warning", i18n.T(lang, "flash.occurrenceCreatedInPast"))
+	} else {
+		SetFlash(c, "success", i18n.T(lang, "flash.occurrenceCreated"))
+	}
 	c.Redirect(http.StatusFound, "/occurrences")
 }
 

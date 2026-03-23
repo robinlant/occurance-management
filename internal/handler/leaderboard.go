@@ -31,8 +31,11 @@ func (h *LeaderboardHandler) Show(c *gin.Context) {
 	syFrom, syTo := studentYearDates(now)
 	tyFrom, tyTo := thisYearDates(now)
 
-	from, to := parseDateRange(c)
-	if from.IsZero() && to.IsZero() {
+	from, to, reversed := parseDateRange(c)
+	if reversed {
+		SetFlash(c, "error", i18n.T(lang, "flash.dateRangeReversed"))
+		from, to = syFrom, syTo
+	} else if from.IsZero() && to.IsZero() {
 		from, to = syFrom, syTo
 	}
 
@@ -129,13 +132,11 @@ func thisYearDates(now time.Time) (time.Time, time.Time) {
 	return from, to
 }
 
-func parseDateRange(c *gin.Context) (time.Time, time.Time) {
-	from, _ := time.ParseInLocation("2006-01-02", c.Query("from"), time.Local)
-	to, _ := time.ParseInLocation("2006-01-02", c.Query("to"), time.Local)
-	if !from.IsZero() && !to.IsZero() && from.After(to) {
-		from, to = to, from
-	}
-	return from, to
+func parseDateRange(c *gin.Context) (from, to time.Time, reversed bool) {
+	from, _ = time.ParseInLocation("2006-01-02", c.Query("from"), time.Local)
+	to, _ = time.ParseInLocation("2006-01-02", c.Query("to"), time.Local)
+	reversed = !from.IsZero() && !to.IsZero() && from.After(to)
+	return from, to, reversed
 }
 
 func formatDateInput(t time.Time) string {
@@ -147,7 +148,13 @@ func formatDateInput(t time.Time) string {
 
 // Export generates a pivot-style CSV: rows = occurrences, columns = users.
 func (h *LeaderboardHandler) Export(c *gin.Context) {
-	from, to := parseDateRange(c)
+	lang := i18n.GetLang(c)
+	from, to, reversed := parseDateRange(c)
+	if reversed {
+		SetFlash(c, "error", i18n.T(lang, "flash.dateRangeReversed"))
+		c.Redirect(http.StatusFound, "/leaderboard")
+		return
+	}
 	if from.IsZero() || to.IsZero() {
 		from, _ = studentYearDates(time.Now())
 		_, to = studentYearDates(time.Now())
