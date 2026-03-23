@@ -172,6 +172,7 @@ var en = map[string]string{
 	"lb.all":              "All",
 	"lb.allGroups":        "All groups",
 	"lb.export":           "Export CSV",
+	"lb.dateRangeError":   "Start date must be before end date.",
 
 	// Groups
 	"groups.createGroup":    "Create group",
@@ -277,6 +278,7 @@ var en = map[string]string{
 	"flash.userOOOAssign":           "User is out of office on this date.",
 	"flash.dateCantBePast":          "Date cannot be in the past.",
 	"flash.occurrenceCreatedInPast": "Occurrence created, but note: the date is in the past.",
+	"flash.dateRangeReversed":       "Start date must be before end date.",
 	"flash.titleRequired":           "Title is required.",
 	"flash.participantsMin":         "Participants must be at least 1.",
 	"flash.minExceedsMax":           "Min participants cannot exceed max.",
@@ -501,6 +503,7 @@ var de = map[string]string{
 	"lb.all":              "Alle",
 	"lb.allGroups":        "Alle Gruppen",
 	"lb.export":           "CSV exportieren",
+	"lb.dateRangeError":   "Das Startdatum muss vor dem Enddatum liegen.",
 
 	// Groups
 	"groups.createGroup":    "Gruppe erstellen",
@@ -606,6 +609,7 @@ var de = map[string]string{
 	"flash.userOOOAssign":           "Benutzer ist an diesem Datum abwesend.",
 	"flash.dateCantBePast":          "Das Datum darf nicht in der Vergangenheit liegen.",
 	"flash.occurrenceCreatedInPast": "Einsatz erstellt, aber Achtung: Das Datum liegt in der Vergangenheit.",
+	"flash.dateRangeReversed":       "Das Startdatum muss vor dem Enddatum liegen.",
 	"flash.titleRequired":           "Titel ist erforderlich.",
 	"flash.participantsMin":         "Teilnehmer m\u00fcssen mindestens 1 sein.",
 	"flash.minExceedsMax":           "Mindestteilnehmer darf Maximum nicht \u00fcberschreiten.",
