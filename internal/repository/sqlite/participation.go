@@ -69,7 +69,7 @@ func (r *ParticipationRepository) CountByUserInRange(ctx context.Context, userID
 		FROM participations p
 		JOIN occurrences o ON o.id = p.occurrence_id
 		WHERE p.user_id = ? AND o.date >= ? AND o.date <= ?`,
-		userID, from, to,
+		userID, from.Format("2006-01-02"), to.Format("2006-01-02"),
 	).Scan(&count)
 	return count, err
 }
@@ -99,7 +99,7 @@ func (r *ParticipationRepository) CountByUserGroupedByDate(ctx context.Context, 
 		FROM participations p
 		JOIN occurrences o ON o.id = p.occurrence_id
 		WHERE p.user_id = ? AND o.date >= ? AND o.date <= ?
-		GROUP BY d`, userID, from, to)
+		GROUP BY d`, userID, from.Format("2006-01-02"), to.Format("2006-01-02"))
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +123,7 @@ func (r *ParticipationRepository) ExistsForUserInDateRange(ctx context.Context, 
 		FROM participations p
 		JOIN occurrences o ON o.id = p.occurrence_id
 		WHERE p.user_id = ? AND o.date >= ? AND o.date <= ?`,
-		userID, from, to,
+		userID, from.Format("2006-01-02"), to.Format("2006-01-02"),
 	).Scan(&count)
 	return count > 0, err
 }
@@ -175,7 +175,7 @@ func (r *ParticipationRepository) LeaderboardAll(ctx context.Context, roles []do
 func (r *ParticipationRepository) LeaderboardInRange(ctx context.Context, from, to time.Time, roles []domain.Role, groupID int64) ([]repository.LeaderboardRow, error) {
 	placeholders, roleArgs := roleFilterArgs(roles)
 	joinSQL := "LEFT JOIN participations p ON p.user_id = u.id AND p.occurrence_id IN (SELECT id FROM occurrences WHERE date >= ? AND date <= ?"
-	joinArgs := []any{from, to}
+	joinArgs := []any{from.Format("2006-01-02"), to.Format("2006-01-02")}
 	if groupID > 0 {
 		joinSQL += " AND group_id = ?"
 		joinArgs = append(joinArgs, groupID)
@@ -231,6 +231,38 @@ func (r *ParticipationRepository) CountAndInsert(ctx context.Context, occurrence
 	}
 
 	return isOverMax, tx.Commit()
+}
+
+func (r *ParticipationRepository) ExportInRange(ctx context.Context, from, to time.Time, roles []domain.Role, groupID int64) ([]repository.ExportRow, error) {
+	placeholders, roleArgs := roleFilterArgs(roles)
+	whereSQL := "WHERE o.date >= ? AND o.date <= ? AND u.role IN (" + placeholders + ")"
+	args := []any{from.Format("2006-01-02"), to.Format("2006-01-02")}
+	args = append(args, roleArgs...)
+	if groupID > 0 {
+		whereSQL += " AND o.group_id = ?"
+		args = append(args, groupID)
+	}
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT o.date, o.title, COALESCE(g.name, ''), u.name, u.email
+		FROM participations p
+		JOIN occurrences o ON o.id = p.occurrence_id
+		JOIN users u ON u.id = p.user_id
+		LEFT JOIN groups g ON g.id = o.group_id
+		`+whereSQL+`
+		ORDER BY o.date, o.title, u.name`, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var list []repository.ExportRow
+	for rows.Next() {
+		var row repository.ExportRow
+		if err := rows.Scan(&row.OccurrenceDate, &row.OccurrenceTitle, &row.GroupName, &row.UserName, &row.UserEmail); err != nil {
+			return nil, err
+		}
+		list = append(list, row)
+	}
+	return list, rows.Err()
 }
 
 func scanLeaderboardRows(rows *sql.Rows) ([]repository.LeaderboardRow, error) {

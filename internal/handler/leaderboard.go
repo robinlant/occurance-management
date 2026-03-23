@@ -1,8 +1,11 @@
 package handler
 
 import (
+	"encoding/csv"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -129,6 +132,9 @@ func thisYearDates(now time.Time) (time.Time, time.Time) {
 func parseDateRange(c *gin.Context) (time.Time, time.Time) {
 	from, _ := time.ParseInLocation("2006-01-02", c.Query("from"), time.Local)
 	to, _ := time.ParseInLocation("2006-01-02", c.Query("to"), time.Local)
+	if !from.IsZero() && !to.IsZero() && from.After(to) {
+		from, to = to, from
+	}
 	return from, to
 }
 
@@ -137,4 +143,104 @@ func formatDateInput(t time.Time) string {
 		return ""
 	}
 	return t.Format("2006-01-02")
+}
+
+// Export generates a pivot-style CSV: rows = occurrences, columns = users.
+func (h *LeaderboardHandler) Export(c *gin.Context) {
+	from, to := parseDateRange(c)
+	if from.IsZero() || to.IsZero() {
+		from, _ = studentYearDates(time.Now())
+		_, to = studentYearDates(time.Now())
+	}
+
+	roleFilter := c.Query("role_filter")
+	if roleFilter == "" {
+		roleFilter = "participants"
+	}
+	roles := leaderboardRoles(roleFilter)
+
+	groupIDStr := c.Query("group")
+	groupID, _ := strconv.ParseInt(groupIDStr, 10, 64)
+
+	rows, err := h.occurrences.GetExportData(c.Request.Context(), from, to, roles, groupID)
+	if err != nil {
+		slog.Error("export: query failed", "error", err)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	// Get all users matching filters (including those with 0 participations).
+	entries, err := h.occurrences.GetLeaderboard(c.Request.Context(), from, to, roles, groupID)
+	if err != nil {
+		slog.Error("export: leaderboard query failed", "error", err)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	// Build pivot: collect unique users and occurrences, then mark participation.
+	type occKey struct {
+		Date  string
+		Title string
+		Group string
+	}
+
+	// User list from leaderboard (includes 0-count users), sorted alphabetically.
+	var userOrder []string
+	totals := make(map[string]int)
+	for _, e := range entries {
+		userOrder = append(userOrder, e.User.Name)
+		totals[e.User.Name] = e.Count
+	}
+	sort.Strings(userOrder)
+
+	occSet := map[occKey]bool{}
+	var occOrder []occKey
+	participated := map[occKey]map[string]bool{}
+
+	for _, r := range rows {
+		dateStr := r.OccurrenceDate.Format("02.01.2006")
+		key := occKey{Date: dateStr, Title: r.OccurrenceTitle, Group: r.GroupName}
+		if !occSet[key] {
+			occSet[key] = true
+			occOrder = append(occOrder, key)
+			participated[key] = map[string]bool{}
+		}
+		participated[key][r.UserName] = true
+	}
+
+	// Write CSV with BOM for Excel compatibility.
+	filename := fmt.Sprintf("dutyround-export-%s-%s.csv", from.Format("2006-01-02"), to.Format("2006-01-02"))
+	c.Header("Content-Disposition", "attachment; filename=\""+filename+"\"")
+	c.Header("Content-Type", "text/csv; charset=utf-8")
+	// UTF-8 BOM so Excel interprets encoding correctly.
+	c.Writer.Write([]byte{0xEF, 0xBB, 0xBF})
+
+	w := csv.NewWriter(c.Writer)
+	w.Comma = ';'
+
+	// Header row: Date | Occurrence | Group | User1 | User2 | ...
+	header := append([]string{"Date", "Occurrence", "Group"}, userOrder...)
+	w.Write(header)
+
+	// Totals row right under header.
+	totalRow := []string{"", "Total", ""}
+	for _, user := range userOrder {
+		totalRow = append(totalRow, strconv.Itoa(totals[user]))
+	}
+	w.Write(totalRow)
+
+	// Data rows.
+	for _, occ := range occOrder {
+		row := []string{occ.Date, occ.Title, occ.Group}
+		for _, user := range userOrder {
+			if participated[occ][user] {
+				row = append(row, "x")
+			} else {
+				row = append(row, "")
+			}
+		}
+		w.Write(row)
+	}
+
+	w.Flush()
 }

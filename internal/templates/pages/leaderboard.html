@@ -1,20 +1,27 @@
 {{define "content"}}
 
 {{/* Date range filter chips */}}
-<div class="filter-bar" style="margin-bottom:8px">
-  <a href="/leaderboard?from={{.StudentYearFrom}}&to={{.StudentYearTo}}&role_filter={{.RoleFilter}}&group={{.ActiveGroup}}"
-     class="chip {{if .StudentYearActive}}active{{end}}">{{t .Lang "lb.studentYear"}}</a>
-  <a href="/leaderboard?from={{.ThisYearFrom}}&to={{.ThisYearTo}}&role_filter={{.RoleFilter}}&group={{.ActiveGroup}}"
-     class="chip {{if .ThisYearActive}}active{{end}}">{{t .Lang "lb.thisYear"}}</a>
-  <form id="lb-form" style="display:inline-flex;align-items:center;gap:6px;margin:0" action="/leaderboard" method="get">
-    <input type="hidden" name="role_filter" value="{{.RoleFilter}}">
-    <input type="hidden" name="group" value="{{.ActiveGroup}}">
-    <input type="date" name="from" id="lb-from" value="{{.From}}" onchange="document.getElementById('lb-form').submit()"
-           style="padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;font-family:inherit;outline:none">
-    <span style="color:var(--text-muted);font-size:12px">&ndash;</span>
-    <input type="date" name="to" id="lb-to" value="{{.To}}" onchange="document.getElementById('lb-form').submit()"
-           style="padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;font-family:inherit;outline:none">
-  </form>
+<div class="filter-bar" style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+    <a href="/leaderboard?from={{.StudentYearFrom}}&to={{.StudentYearTo}}&role_filter={{.RoleFilter}}&group={{.ActiveGroup}}"
+       class="chip {{if .StudentYearActive}}active{{end}}">{{t .Lang "lb.studentYear"}}</a>
+    <a href="/leaderboard?from={{.ThisYearFrom}}&to={{.ThisYearTo}}&role_filter={{.RoleFilter}}&group={{.ActiveGroup}}"
+       class="chip {{if .ThisYearActive}}active{{end}}">{{t .Lang "lb.thisYear"}}</a>
+    <form id="lb-form" style="display:inline-flex;align-items:center;gap:6px;margin:0" action="/leaderboard" method="get">
+      <input type="hidden" name="role_filter" value="{{.RoleFilter}}">
+      <input type="hidden" name="group" value="{{.ActiveGroup}}">
+      <input type="date" name="from" id="lb-from" value="{{.From}}" onchange="document.getElementById('lb-form').submit()"
+             style="padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;font-family:inherit;outline:none">
+      <span style="color:var(--text-muted);font-size:12px">&ndash;</span>
+      <input type="date" name="to" id="lb-to" value="{{.To}}" onchange="document.getElementById('lb-form').submit()"
+             style="padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;font-family:inherit;outline:none">
+    </form>
+  </div>
+  <a href="/leaderboard/export?from={{.From}}&to={{.To}}&role_filter={{.RoleFilter}}&group={{.ActiveGroup}}"
+     class="chip" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;white-space:nowrap">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    {{t .Lang "lb.export"}}
+  </a>
 </div>
 
 {{/* Role filter chips */}}
