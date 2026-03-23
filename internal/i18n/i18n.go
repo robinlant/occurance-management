@@ -170,6 +170,7 @@ var en = map[string]string{
 	"lb.organizers":       "Organizers",
 	"lb.all":              "All",
 	"lb.allGroups":        "All groups",
+	"lb.export":           "Export CSV",
 
 	// Groups
 	"groups.createGroup":    "Create group",
@@ -496,6 +497,7 @@ var de = map[string]string{
 	"lb.organizers":       "Organisatoren",
 	"lb.all":              "Alle",
 	"lb.allGroups":        "Alle Gruppen",
+	"lb.export":           "CSV exportieren",
 
 	// Groups
 	"groups.createGroup":    "Gruppe erstellen",

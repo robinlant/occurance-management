@@ -49,6 +49,7 @@ type ParticipationRepository interface {
 	ExistsForUserInDateRange(ctx context.Context, userID int64, from, to time.Time) (bool, error)
 	LeaderboardAll(ctx context.Context, roles []domain.Role, groupID int64) ([]LeaderboardRow, error)
 	LeaderboardInRange(ctx context.Context, from, to time.Time, roles []domain.Role, groupID int64) ([]LeaderboardRow, error)
+	ExportInRange(ctx context.Context, from, to time.Time, roles []domain.Role, groupID int64) ([]ExportRow, error)
 	CountAndInsert(ctx context.Context, occurrenceID, userID int64, maxParticipants int) (isOverMax bool, err error)
 	Save(ctx context.Context, p domain.Participation) (domain.Participation, error)
 	Delete(ctx context.Context, id int64) error
@@ -62,6 +63,15 @@ type LeaderboardRow struct {
 	Email  string
 	Role   domain.Role
 	Count  int
+}
+
+// ExportRow is a pre-joined row for detailed participation export.
+type ExportRow struct {
+	OccurrenceDate  time.Time
+	OccurrenceTitle string
+	GroupName       string
+	UserName        string
+	UserEmail       string
 }
 
 type OutOfOfficeRepository interface {

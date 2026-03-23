@@ -202,6 +202,11 @@ func (s *OccurrenceService) GetLeaderboard(ctx context.Context, from, to time.Ti
 	return entries, nil
 }
 
+// GetExportData returns detailed participation rows for CSV export.
+func (s *OccurrenceService) GetExportData(ctx context.Context, from, to time.Time, roles []domain.Role, groupID int64) ([]repository.ExportRow, error) {
+	return s.participations.ExportInRange(ctx, from, to, roles, groupID)
+}
+
 // GetParticipationCount returns the total participation count for a user.
 func (s *OccurrenceService) GetParticipationCount(ctx context.Context, userID int64) (int, error) {
 	return s.participations.CountByUser(ctx, userID)

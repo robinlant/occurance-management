@@ -128,6 +128,7 @@ func main() {
 	protected.POST("/occurrences/:id/comments", occH.AddComment)
 	protected.POST("/occurrences/:id/comments/:cid/delete", occH.DeleteComment)
 	protected.GET("/leaderboard", lbH.Show)
+	protected.GET("/leaderboard/export", lbH.Export)
 	protected.GET("/profile", profH.Show)
 	protected.POST("/profile/password", profH.ChangePassword)
 	protected.POST("/profile/ooo", profH.AddOOO)
