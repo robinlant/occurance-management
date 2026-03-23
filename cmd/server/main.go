@@ -93,7 +93,7 @@ func main() {
 		HttpOnly: true,
 		MaxAge:   86400 * 7,
 		SameSite: http.SameSiteLaxMode,
-		Secure:   os.Getenv("GIN_MODE") == "release",
+		Secure:   true,
 	})
 	r.Use(sessions.Sessions("dutyround", store))
 
