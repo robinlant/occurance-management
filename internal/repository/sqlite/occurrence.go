@@ -102,6 +102,22 @@ func (r *OccurrenceRepository) FindByTitleLike(ctx context.Context, query string
 	return scanOccurrences(rows)
 }
 
+func (r *OccurrenceRepository) FindInRange(ctx context.Context, from, to time.Time, groupID int64) ([]domain.Occurrence, error) {
+	query := `SELECT ` + occurrenceCols + ` FROM occurrences WHERE date >= ? AND date <= ?`
+	args := []any{from.Format("2006-01-02"), to.Format("2006-01-02")}
+	if groupID > 0 {
+		query += " AND group_id = ?"
+		args = append(args, groupID)
+	}
+	query += " ORDER BY date, title"
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanOccurrences(rows)
+}
+
 func (r *OccurrenceRepository) Save(ctx context.Context, o domain.Occurrence) (domain.Occurrence, error) {
 	var groupID sql.NullInt64
 	if o.GroupID != 0 {
