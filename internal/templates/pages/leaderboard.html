@@ -41,7 +41,7 @@
   </a>
 </div>
 
-{{/* Role filter chips */}}
+{{/* Role + Group filter chips on one row */}}
 <div class="filter-bar" style="margin-bottom:8px">
   <a href="/leaderboard?from={{.From}}&to={{.To}}&role_filter=participants&group={{.ActiveGroup}}"
      class="chip {{if eq .RoleFilter "participants"}}active{{end}}">{{t .Lang "lb.participants"}}</a>
@@ -49,19 +49,16 @@
      class="chip {{if eq .RoleFilter "organizers"}}active{{end}}">{{t .Lang "lb.organizers"}}</a>
   <a href="/leaderboard?from={{.From}}&to={{.To}}&role_filter=all&group={{.ActiveGroup}}"
      class="chip {{if eq .RoleFilter "all"}}active{{end}}">{{t .Lang "lb.all"}}</a>
-</div>
-
-{{/* Group filter chips */}}
-{{if .Groups}}
-<div class="filter-bar">
+  {{if .Groups}}
+  <span style="width:1px;height:20px;background:var(--border);margin:0 4px"></span>
   <a href="/leaderboard?from={{.From}}&to={{.To}}&role_filter={{.RoleFilter}}"
      class="chip {{if eq .ActiveGroup 0}}active{{end}}">{{t .Lang "lb.allGroups"}}</a>
   {{range .Groups}}
   <a href="/leaderboard?from={{$.From}}&to={{$.To}}&role_filter={{$.RoleFilter}}&group={{.ID}}"
      class="chip {{if eq $.ActiveGroup .ID}}active{{end}}">{{.Name}}</a>
   {{end}}
+  {{end}}
 </div>
-{{end}}
 
 <div class="card" style="margin-top:16px">
   {{template "leaderboard_table" .}}
