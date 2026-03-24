@@ -184,6 +184,21 @@ func (h *LeaderboardHandler) Export(c *gin.Context) {
 		return
 	}
 
+	// Get ALL occurrences in range (even those with no participants).
+	allOccs, err := h.occurrences.GetOccurrencesInRange(c.Request.Context(), from, to, groupID)
+	if err != nil {
+		slog.Error("export: occurrences query failed", "error", err)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	// Build group name map.
+	allGroups, _ := h.groups.List(c.Request.Context())
+	groupNames := make(map[int64]string, len(allGroups))
+	for _, g := range allGroups {
+		groupNames[g.ID] = g.Name
+	}
+
 	// Build pivot: collect unique users and occurrences, then mark participation.
 	type occKey struct {
 		Date  string
@@ -200,16 +215,20 @@ func (h *LeaderboardHandler) Export(c *gin.Context) {
 	}
 	sort.Strings(userOrder)
 
-	occSet := map[occKey]bool{}
+	// Build occurrence rows from ALL occurrences (not just those with participations).
 	var occOrder []occKey
 	participated := map[occKey]map[string]bool{}
+	for _, o := range allOccs {
+		key := occKey{Date: o.Date.Format("02.01.2006"), Title: o.Title, Group: groupNames[o.GroupID]}
+		occOrder = append(occOrder, key)
+		participated[key] = map[string]bool{}
+	}
 
+	// Mark participations.
 	for _, r := range rows {
 		dateStr := r.OccurrenceDate.Format("02.01.2006")
 		key := occKey{Date: dateStr, Title: r.OccurrenceTitle, Group: r.GroupName}
-		if !occSet[key] {
-			occSet[key] = true
-			occOrder = append(occOrder, key)
+		if participated[key] == nil {
 			participated[key] = map[string]bool{}
 		}
 		participated[key][r.UserName] = true
@@ -223,7 +242,6 @@ func (h *LeaderboardHandler) Export(c *gin.Context) {
 	c.Writer.Write([]byte{0xEF, 0xBB, 0xBF})
 
 	w := csv.NewWriter(c.Writer)
-	w.Comma = ';'
 
 	// Header row: Date | Occurrence | Group | User1 | User2 | ...
 	header := append([]string{"Date", "Occurrence", "Group"}, userOrder...)
