@@ -18,6 +18,32 @@
   --sidebar-w: 220px;
   --topbar-h: 56px;
   --hover-bg: rgba(255,255,255,0.03);
+
+  /* Group colors */
+  --group-red: #f85149;
+  --group-red-bg: rgba(248,81,73,0.12);
+  --group-red-border: rgba(248,81,73,0.25);
+  --group-orange: #f0883e;
+  --group-orange-bg: rgba(240,136,62,0.12);
+  --group-orange-border: rgba(240,136,62,0.25);
+  --group-yellow: #d29922;
+  --group-yellow-bg: rgba(210,153,34,0.12);
+  --group-yellow-border: rgba(210,153,34,0.25);
+  --group-green: #3fb950;
+  --group-green-bg: rgba(63,185,80,0.12);
+  --group-green-border: rgba(63,185,80,0.25);
+  --group-teal: #2ea6a6;
+  --group-teal-bg: rgba(46,166,166,0.12);
+  --group-teal-border: rgba(46,166,166,0.25);
+  --group-blue: #58a6ff;
+  --group-blue-bg: rgba(88,166,255,0.12);
+  --group-blue-border: rgba(88,166,255,0.25);
+  --group-purple: #bc8cff;
+  --group-purple-bg: rgba(188,140,255,0.12);
+  --group-purple-border: rgba(188,140,255,0.25);
+  --group-pink: #f778ba;
+  --group-pink-bg: rgba(247,120,186,0.12);
+  --group-pink-border: rgba(247,120,186,0.25);
 }
 
 /* ── Light theme ────────────────────────── */
@@ -40,6 +66,32 @@
   --sidebar-w: 220px;
   --topbar-h: 56px;
   --hover-bg: rgba(0,0,0,0.03);
+
+  /* Group colors */
+  --group-red: #cf222e;
+  --group-red-bg: rgba(207,34,46,0.08);
+  --group-red-border: rgba(207,34,46,0.2);
+  --group-orange: #bc4c00;
+  --group-orange-bg: rgba(188,76,0,0.08);
+  --group-orange-border: rgba(188,76,0,0.2);
+  --group-yellow: #9a6700;
+  --group-yellow-bg: rgba(154,103,0,0.08);
+  --group-yellow-border: rgba(154,103,0,0.2);
+  --group-green: #1a7f37;
+  --group-green-bg: rgba(26,127,55,0.08);
+  --group-green-border: rgba(26,127,55,0.2);
+  --group-teal: #0e7c7c;
+  --group-teal-bg: rgba(14,124,124,0.08);
+  --group-teal-border: rgba(14,124,124,0.2);
+  --group-blue: #0969da;
+  --group-blue-bg: rgba(9,105,218,0.08);
+  --group-blue-border: rgba(9,105,218,0.2);
+  --group-purple: #8250df;
+  --group-purple-bg: rgba(130,80,223,0.08);
+  --group-purple-border: rgba(130,80,223,0.2);
+  --group-pink: #bf3989;
+  --group-pink-bg: rgba(191,57,137,0.08);
+  --group-pink-border: rgba(191,57,137,0.2);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -361,6 +413,67 @@ select option { background: var(--bg-card); color: var(--text); }
 .badge-red    { background: rgba(255,71,87,0.1); color: var(--danger); }
 .badge-yellow { background: rgba(255,214,10,0.1); color: var(--warning); }
 .badge-gray   { background: var(--bg-hover); color: var(--text-muted); }
+
+/* Group color badges */
+.badge-group-red    { background: var(--group-red-bg);    color: var(--group-red);    border: 1px solid var(--group-red-border); }
+.badge-group-orange { background: var(--group-orange-bg); color: var(--group-orange); border: 1px solid var(--group-orange-border); }
+.badge-group-yellow { background: var(--group-yellow-bg); color: var(--group-yellow); border: 1px solid var(--group-yellow-border); }
+.badge-group-green  { background: var(--group-green-bg);  color: var(--group-green);  border: 1px solid var(--group-green-border); }
+.badge-group-teal   { background: var(--group-teal-bg);   color: var(--group-teal);   border: 1px solid var(--group-teal-border); }
+.badge-group-blue   { background: var(--group-blue-bg);   color: var(--group-blue);   border: 1px solid var(--group-blue-border); }
+.badge-group-purple { background: var(--group-purple-bg); color: var(--group-purple); border: 1px solid var(--group-purple-border); }
+.badge-group-pink   { background: var(--group-pink-bg);   color: var(--group-pink);   border: 1px solid var(--group-pink-border); }
+
+/* ── Color picker (groups) ─────────────── */
+.group-create-form {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.color-pick-wrap {
+  position: relative; display: inline-flex;
+}
+.color-pick-btn {
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--text-muted); cursor: pointer; padding: 4px 6px;
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; transition: border-color .15s, color .15s;
+}
+.color-pick-btn:hover {
+  border-color: var(--text-muted); color: var(--text);
+}
+.color-pick-preview {
+  width: 12px; height: 12px; border-radius: 50%;
+}
+.color-pick-dropdown {
+  position: absolute; top: calc(100% + 4px); left: 0;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 8px;
+  display: none; gap: 6px; flex-wrap: wrap; width: 140px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25); z-index: 50;
+}
+.color-pick-dropdown.open { display: flex; }
+.color-swatch {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer; transition: border-color .15s, transform .15s;
+  position: relative; padding: 0;
+}
+.color-swatch:hover { transform: scale(1.15); }
+.color-swatch input[type="radio"] {
+  position: absolute; opacity: 0; width: 0; height: 0;
+}
+.color-swatch.selected,
+.color-swatch:has(input:checked) {
+  border-color: var(--text);
+  transform: scale(1.15);
+}
+.color-swatch[data-color="red"]    { background: var(--group-red); }
+.color-swatch[data-color="orange"] { background: var(--group-orange); }
+.color-swatch[data-color="yellow"] { background: var(--group-yellow); }
+.color-swatch[data-color="green"]  { background: var(--group-green); }
+.color-swatch[data-color="teal"]   { background: var(--group-teal); }
+.color-swatch[data-color="blue"]   { background: var(--group-blue); }
+.color-swatch[data-color="purple"] { background: var(--group-purple); }
+.color-swatch[data-color="pink"]   { background: var(--group-pink); }
 
 /* ── Filter chips ───────────────────────── */
 .filter-bar {

@@ -55,7 +55,7 @@
             <div class="occ-title">
               <span class="occ-status-dot {{.Status}}"></span>
               {{.Title}}
-              {{if $group.ID}}<span class="badge badge-accent">{{$group.Name}}</span>{{end}}
+              {{if $group.ID}}<span class="badge {{if $group.Color}}badge-group-{{$group.Color}}{{else}}badge-accent{{end}}">{{$group.Name}}</span>{{end}}
               {{if isPast .Date}}<span class="badge badge-gray">{{t $.Lang "occ.past"}}</span>{{end}}
               {{if eq .Status "under"}}<span class="badge badge-red">{{t $.Lang "occ.needsPeople"}}</span>
               {{else if eq .Status "good"}}<span class="badge badge-green">{{t $.Lang "occ.filled"}}</span>
@@ -86,7 +86,7 @@
           <span class="occ-card-title">{{.Title}}</span>
         </div>
         <div class="occ-card-badges">
-          {{if $group.ID}}<span class="badge badge-accent">{{$group.Name}}</span>{{end}}
+          {{if $group.ID}}<span class="badge {{if $group.Color}}badge-group-{{$group.Color}}{{else}}badge-accent{{end}}">{{$group.Name}}</span>{{end}}
           {{if isPast .Date}}<span class="badge badge-gray">{{t $.Lang "occ.past"}}</span>{{end}}
           {{if eq .Status "under"}}<span class="badge badge-red">{{t $.Lang "occ.needsPeople"}}</span>
           {{else if eq .Status "good"}}<span class="badge badge-green">{{t $.Lang "occ.filled"}}</span>

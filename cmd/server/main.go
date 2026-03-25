@@ -150,6 +150,7 @@ func main() {
 	staff.GET("/occurrences/:id/available", occH.AvailableUsers)
 	staff.GET("/groups", grpH.List)
 	staff.POST("/groups", grpH.Create)
+	staff.POST("/groups/:id/color", grpH.UpdateColor)
 	staff.POST("/groups/:id/delete", grpH.Delete)
 
 	// Admin only
