@@ -109,6 +109,7 @@ var funcMap = template.FuncMap{
 		}
 		return t.Weekday().String()
 	},
+	"list": func(args ...string) []string { return args },
 }
 
 // templateCache caches parsed templates to avoid re-parsing on every request.

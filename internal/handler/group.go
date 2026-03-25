@@ -40,14 +40,33 @@ func (h *GroupHandler) Create(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/groups")
 		return
 	}
+	color := c.PostForm("color")
 	actor, _ := CurrentUser(c)
-	created, err := h.groups.Create(c.Request.Context(), name)
+	created, err := h.groups.Create(c.Request.Context(), name, color)
 	if err != nil {
 		slog.Error("group: create failed", "actor_user_id", actor.ID, "name", name, "error", err)
 		SetFlash(c, "error", i18n.T(lang, "flash.failedCreateGroup"))
 	} else {
 		slog.Info("group_created", "actor_user_id", actor.ID, "group_id", created.ID)
 		SetFlash(c, "success", i18n.T(lang, "flash.groupCreated"))
+	}
+	c.Redirect(http.StatusFound, "/groups")
+}
+
+func (h *GroupHandler) UpdateColor(c *gin.Context) {
+	lang := i18n.GetLang(c)
+	id, err := pathID(c)
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	color := c.PostForm("color")
+	actor, _ := CurrentUser(c)
+	if err := h.groups.UpdateColor(c.Request.Context(), id, color); err != nil {
+		slog.Error("group: update color failed", "actor_user_id", actor.ID, "group_id", id, "error", err)
+		SetFlash(c, "error", i18n.T(lang, "flash.failedUpdateGroup"))
+	} else {
+		slog.Info("group_color_updated", "actor_user_id", actor.ID, "group_id", id, "color", color)
 	}
 	c.Redirect(http.StatusFound, "/groups")
 }

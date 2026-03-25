@@ -19,8 +19,9 @@ type User struct {
 }
 
 type Group struct {
-	ID   int64
-	Name string
+	ID    int64
+	Name  string
+	Color string // theme color name: red, orange, yellow, green, teal, blue, purple, pink
 }
 
 type Occurrence struct {

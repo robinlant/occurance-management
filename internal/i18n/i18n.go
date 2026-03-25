@@ -182,6 +182,7 @@ var en = map[string]string{
 	"groups.noGroups":       "No groups yet.",
 	"groups.confirmDelete":  "Are you sure you want to delete the group",
 	"groups.cannotBeUndone": "This cannot be undone.",
+	"groups.color":          "Color",
 
 	// Users admin
 	"users.allUsers":       "All users",
@@ -262,6 +263,7 @@ var en = map[string]string{
 	"flash.failedCreateGroup":       "Failed to create group.",
 	"flash.groupCreated":            "Group created.",
 	"flash.failedDeleteGroup":       "Failed to delete group.",
+	"flash.failedUpdateGroup":       "Failed to update group.",
 	"flash.groupDeleted":            "Group deleted.",
 	"flash.failedCreateUser":        "Failed to create user.",
 	"flash.userCreated":             "User created.",
@@ -513,6 +515,7 @@ var de = map[string]string{
 	"groups.noGroups":       "Noch keine Gruppen.",
 	"groups.confirmDelete":  "Sind Sie sicher, dass Sie die Gruppe l\u00f6schen m\u00f6chten:",
 	"groups.cannotBeUndone": "Dies kann nicht r\u00fcckg\u00e4ngig gemacht werden.",
+	"groups.color":          "Farbe",
 
 	// Users admin
 	"users.allUsers":       "Alle Benutzer",
@@ -593,6 +596,7 @@ var de = map[string]string{
 	"flash.failedCreateGroup":       "Gruppe konnte nicht erstellt werden.",
 	"flash.groupCreated":            "Gruppe erstellt.",
 	"flash.failedDeleteGroup":       "Gruppe konnte nicht gel\u00f6scht werden.",
+	"flash.failedUpdateGroup":       "Gruppe konnte nicht aktualisiert werden.",
 	"flash.groupDeleted":            "Gruppe gel\u00f6scht.",
 	"flash.failedCreateUser":        "Benutzer konnte nicht erstellt werden.",
 	"flash.userCreated":             "Benutzer erstellt.",
