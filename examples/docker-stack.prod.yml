@@ -1,18 +1,10 @@
-networks:
-  traefik_public:
-    driver: overlay
-    attachable: true
-
-volumes:
-  dutyround_data:
-
 services:
   traefik:
     image: traefik:v3.0
     command:
       - --providers.swarm=true
       - --providers.swarm.exposedbydefault=false
-      - --providers.swarm.network=traefik_public
+      - --providers.swarm.network=traefik
       - --entrypoints.web.address=:80
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
@@ -30,28 +22,28 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
-      - traefik_public
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
+      - traefik
 
   app:
     image: ghcr.io/robinlant/occurance-management:latest
     environment:
       - GIN_MODE=release
       - SESSION_SECRET=change-me-use-a-long-random-secret
-      - DB_PATH=/data/dutyround.db
     volumes:
       - dutyround_data:/data
     networks:
-      - traefik_public
+      - traefik
     deploy:
       labels:
         - traefik.enable=true
-        # Replace example.com with your actual domain
-        - traefik.http.routers.dutyround.rule=Host(`example.com`)
+        - traefik.http.routers.dutyround.rule=PathPrefix(`/`)
         - traefik.http.routers.dutyround.entrypoints=websecure
-        # Traefik will use a self-signed cert by default when no cert provider is configured
         - traefik.http.routers.dutyround.tls=true
         - traefik.http.services.dutyround.loadbalancer.server.port=8080
+
+networks:
+  traefik:
+    driver: overlay
+
+volumes:
+  dutyround_data:
