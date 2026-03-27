@@ -1,6 +1,8 @@
+# This configuration uses https but without a domain name so user will have to click through warning in the browser
+
 services:
   traefik:
-    image: traefik:v3.0
+    image: traefik:v3.6
     command:
       - --providers.swarm=true
       - --providers.swarm.exposedbydefault=false
@@ -23,6 +25,10 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - traefik
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
 
   app:
     image: ghcr.io/robinlant/occurance-management:latest
@@ -36,6 +42,7 @@ services:
     deploy:
       labels:
         - traefik.enable=true
+        - traefik.docker.network=traefik
         - traefik.http.routers.dutyround.rule=PathPrefix(`/`)
         - traefik.http.routers.dutyround.entrypoints=websecure
         - traefik.http.routers.dutyround.tls=true
