@@ -1,0 +1,13 @@
+services:
+  app:
+    image: ghcr.io/robinlant/occurance-management:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_PATH=/data/dutyround.db
+      # GIN_MODE defaults to debug — SESSION_SECRET is optional, a default is used
+    volumes:
+      - dutyround_data:/data
+
+volumes:
+  dutyround_data:

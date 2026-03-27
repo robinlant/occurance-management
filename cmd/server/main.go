@@ -93,7 +93,7 @@ func main() {
 		HttpOnly: true,
 		MaxAge:   86400 * 7,
 		SameSite: http.SameSiteLaxMode,
-		Secure:   true,
+		Secure:   production,
 	})
 	r.Use(sessions.Sessions("dutyround", store))
 
