@@ -31,3 +31,13 @@ Thumbs.db
 **/.playwright-mcp
 *.png
 test-data
+
+# Node / Playwright
+node_modules/
+package.json
+package-lock.json
+playwright.config.ts
+test-results/
+
+# Test binary
+dutyround-test-bin

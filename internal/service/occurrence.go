@@ -139,6 +139,10 @@ func (s *OccurrenceService) GetUpcomingForUser(ctx context.Context, userID int64
 	return s.occurrences.FindUpcomingByUser(ctx, userID, time.Now())
 }
 
+func (s *OccurrenceService) GetAllForUser(ctx context.Context, userID int64) ([]domain.Occurrence, error) {
+	return s.occurrences.FindAllByUser(ctx, userID)
+}
+
 // GetParticipants returns users participating in an occurrence (single JOIN query, no N+1).
 func (s *OccurrenceService) GetParticipants(ctx context.Context, occurrenceID int64) ([]domain.User, error) {
 	return s.participations.FindUsersByOccurrence(ctx, occurrenceID)

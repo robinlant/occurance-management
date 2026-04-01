@@ -91,6 +91,20 @@ func (r *OccurrenceRepository) FindUpcomingByUser(ctx context.Context, userID in
 	return scanOccurrences(rows)
 }
 
+func (r *OccurrenceRepository) FindAllByUser(ctx context.Context, userID int64) ([]domain.Occurrence, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT o.id, o.group_id, o.title, o.description, o.date, o.min_participants, o.max_participants, o.allow_over_limit, o.created_at
+		FROM occurrences o
+		JOIN participations p ON p.occurrence_id = o.id
+		WHERE p.user_id = ?
+		ORDER BY o.date`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanOccurrences(rows)
+}
+
 func (r *OccurrenceRepository) FindByTitleLike(ctx context.Context, query string, limit int) ([]domain.Occurrence, error) {
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT `+occurrenceCols+` FROM occurrences WHERE title LIKE ? ORDER BY date DESC LIMIT ?`,

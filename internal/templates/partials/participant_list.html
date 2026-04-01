@@ -13,7 +13,7 @@
     <div style="margin-bottom:12px">
       {{range .Participants}}
         <div class="participant-row">
-          <span style="font-size:13px">{{.Name}}</span>
+          <a href="/profile/{{.ID}}" style="font-size:13px;color:inherit;text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">{{.Name}}</a>
           {{if or (eq $.CurrentUser.Role "organizer") (eq $.CurrentUser.Role "admin")}}
             <button class="btn btn-danger btn-sm"
               hx-post="/occurrences/{{$.Occurrence.ID}}/remove/{{.ID}}"

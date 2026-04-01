@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -33,10 +34,11 @@ type ProfileStats struct {
 type ProfileHandler struct {
 	users       *service.UserService
 	occurrences *service.OccurrenceService
+	groups      *service.GroupService
 }
 
-func NewProfileHandler(users *service.UserService, occ *service.OccurrenceService) *ProfileHandler {
-	return &ProfileHandler{users: users, occurrences: occ}
+func NewProfileHandler(users *service.UserService, occ *service.OccurrenceService, grp *service.GroupService) *ProfileHandler {
+	return &ProfileHandler{users: users, occurrences: occ, groups: grp}
 }
 
 func (h *ProfileHandler) Show(c *gin.Context) {
@@ -50,12 +52,16 @@ func (h *ProfileHandler) Show(c *gin.Context) {
 	heatmap, weekCount := buildHeatmap(activityMap, ooos, from, now)
 	stats := computeProfileStats(activityMap, from, now)
 
+	occItems, groupMap := h.buildUserOccurrences(c, user.ID)
+
 	Page(c, "profile.html", pageData(c, gin.H{
 		"OOOs":             ooos,
 		"IsCurrentlyOOO":   isCurrentlyOOO(ooos),
 		"Heatmap":          heatmap,
 		"WeekCount":        weekCount,
 		"Stats":            stats,
+		"Occurrences":      occItems,
+		"Groups":           groupMap,
 		"ActivePage":       "profile",
 		"PageTitle":        "Profile",
 	}), "ooo_list.html")
@@ -91,6 +97,8 @@ func (h *ProfileHandler) ShowPublic(c *gin.Context) {
 
 	totalCount, _ := h.occurrences.GetParticipationCount(c.Request.Context(), user.ID)
 
+	occItems, groupMap := h.buildUserOccurrences(c, user.ID)
+
 	Page(c, "user_profile.html", pageData(c, gin.H{
 		"ProfileUser":    user,
 		"OOOs":           ooos,
@@ -99,6 +107,8 @@ func (h *ProfileHandler) ShowPublic(c *gin.Context) {
 		"WeekCount":      weekCount,
 		"Stats":          stats,
 		"TotalCount":     totalCount,
+		"Occurrences":    occItems,
+		"Groups":         groupMap,
 		"ActivePage":     "",
 		"PageTitle":      user.Name,
 	}))
@@ -187,6 +197,42 @@ func (h *ProfileHandler) DeleteOOO(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
+
+func (h *ProfileHandler) buildUserOccurrences(c *gin.Context, userID int64) ([]OccurrenceListItem, map[int64]domain.Group) {
+	occs, _ := h.occurrences.GetAllForUser(c.Request.Context(), userID)
+	counts, _ := h.occurrences.GetParticipantCountsByOccurrence(c.Request.Context())
+	groups, _ := h.groups.List(c.Request.Context())
+
+	groupMap := make(map[int64]domain.Group, len(groups))
+	for _, g := range groups {
+		groupMap[g.ID] = g
+	}
+
+	now := time.Now()
+	items := make([]OccurrenceListItem, 0, len(occs))
+	for _, o := range occs {
+		count := counts[o.ID]
+		items = append(items, OccurrenceListItem{
+			Occurrence:       o,
+			ParticipantCount: count,
+			Status:           service.ComputeOccStatus(o, count),
+		})
+	}
+
+	sort.SliceStable(items, func(i, j int) bool {
+		iPast := items[i].Date.Before(now)
+		jPast := items[j].Date.Before(now)
+		if iPast != jPast {
+			return !iPast
+		}
+		if iPast {
+			return items[i].Date.After(items[j].Date)
+		}
+		return items[i].Date.Before(items[j].Date)
+	})
+
+	return items, groupMap
+}
 
 func buildHeatmap(activityMap map[string]int, ooos []domain.OutOfOffice, from, to time.Time) ([]HeatmapCell, int) {
 	// Start from Monday on or before `from`
