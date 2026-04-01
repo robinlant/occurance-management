@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"crypto/rand"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"sort"
@@ -48,7 +50,7 @@ func (h *OccurrenceHandler) List(c *gin.Context) {
 		}
 	}
 	statusFilter := c.Query("status") // "under" | "good" | "over"
-	hidePast := c.Query("hide_past") == "1"
+	hidePast := c.Query("hide_past") != "0"
 
 	var occs []domain.Occurrence
 	var err error
@@ -148,17 +150,60 @@ func (h *OccurrenceHandler) Create(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/occurrences/new")
 		return
 	}
-	pastDate := occ.Date.Before(time.Now())
 	user, _ := CurrentUser(c)
-	created, err := h.occurrences.CreateOccurrence(c.Request.Context(), occ)
-	if err != nil {
-		slog.Error("occurrence: create failed", "user_id", user.ID, "error", err)
+
+	// Parse recurrence fields
+	repeat := c.PostForm("repeat") // "", "daily", "weekly", "biweekly", "monthly"
+	untilStr := c.PostForm("repeat_until")
+
+	dates := []time.Time{occ.Date}
+	if repeat != "" && untilStr != "" {
+		until, err := time.ParseInLocation("2006-01-02", untilStr, time.Local)
+		if err != nil {
+			SetFlash(c, "error", i18n.T(lang, "flash.invalidFormData"))
+			c.Redirect(http.StatusFound, "/occurrences/new")
+			return
+		}
+		until = time.Date(until.Year(), until.Month(), until.Day(), 23, 59, 59, 0, until.Location())
+		if until.Before(occ.Date) {
+			SetFlash(c, "error", i18n.T(lang, "flash.untilBeforeDate"))
+			c.Redirect(http.StatusFound, "/occurrences/new")
+			return
+		}
+		dates = generateRecurrenceDates(occ.Date, until, repeat)
+		if len(dates) > 365 {
+			dates = dates[:365]
+		}
+	}
+
+	var recurrenceID string
+	if len(dates) > 1 {
+		recurrenceID = newRecurrenceID()
+	}
+
+	createdCount := 0
+	for _, d := range dates {
+		o := occ
+		o.Date = d
+		o.RecurrenceID = recurrenceID
+		_, err := h.occurrences.CreateOccurrence(c.Request.Context(), o)
+		if err != nil {
+			slog.Error("occurrence: create failed", "user_id", user.ID, "date", d, "error", err)
+			continue
+		}
+		createdCount++
+	}
+
+	if createdCount == 0 {
 		SetFlash(c, "error", i18n.T(lang, "flash.failedCreateOccurrence"))
 		c.Redirect(http.StatusFound, "/occurrences/new")
 		return
 	}
-	slog.Info("occurrence_created", "user_id", user.ID, "occurrence_id", created.ID)
-	if pastDate {
+
+	slog.Info("occurrences_created", "user_id", user.ID, "count", createdCount, "recurrence_id", recurrenceID)
+	if createdCount > 1 {
+		SetFlash(c, "success", fmt.Sprintf("%d %s", createdCount, i18n.T(lang, "flash.occurrencesCreatedRecurring")))
+	} else if occ.Date.Before(time.Now()) {
 		SetFlash(c, "warning", i18n.T(lang, "flash.occurrenceCreatedInPast"))
 	} else {
 		SetFlash(c, "success", i18n.T(lang, "flash.occurrenceCreated"))
@@ -557,4 +602,34 @@ func containsUser(users []domain.User, userID int64) bool {
 		}
 	}
 	return false
+}
+
+func generateRecurrenceDates(start, until time.Time, repeat string) []time.Time {
+	dates := []time.Time{start}
+	cur := start
+	for {
+		switch repeat {
+		case "daily":
+			cur = cur.AddDate(0, 0, 1)
+		case "weekly":
+			cur = cur.AddDate(0, 0, 7)
+		case "biweekly":
+			cur = cur.AddDate(0, 0, 14)
+		case "monthly":
+			cur = cur.AddDate(0, 1, 0)
+		default:
+			return dates
+		}
+		if cur.After(until) {
+			break
+		}
+		dates = append(dates, cur)
+	}
+	return dates
+}
+
+func newRecurrenceID() string {
+	b := make([]byte, 16)
+	_, _ = rand.Read(b)
+	return fmt.Sprintf("%x", b)
 }

@@ -112,6 +112,24 @@
       </label>
     </div>
 
+    {{if not .Occurrence}}
+    <hr style="border:none;border-top:1px solid var(--border);margin:4px 0">
+    <div class="form-group">
+      <label for="occ-repeat">{{t .Lang "form.repeat"}}</label>
+      <select name="repeat" id="occ-repeat" onchange="toggleRepeatUntil()">
+        <option value="">{{t .Lang "form.repeatNone"}}</option>
+        <option value="daily">{{t .Lang "form.repeatDaily"}}</option>
+        <option value="weekly">{{t .Lang "form.repeatWeekly"}}</option>
+        <option value="biweekly">{{t .Lang "form.repeatBiweekly"}}</option>
+        <option value="monthly">{{t .Lang "form.repeatMonthly"}}</option>
+      </select>
+    </div>
+    <div class="form-group" id="repeat-until-group" style="display:none">
+      <label for="occ-repeat-until">{{t .Lang "form.repeatUntil"}}</label>
+      <input type="date" name="repeat_until" id="occ-repeat-until">
+    </div>
+    {{end}}
+
     <div class="row" style="margin-top:4px">
       <button type="submit" class="btn btn-primary">{{if .Occurrence}}{{t .Lang "form.saveChanges"}}{{else}}{{t .Lang "form.create"}}{{end}}</button>
       <a href="/occurrences" class="btn btn-ghost">{{t .Lang "form.cancel"}}</a>
@@ -196,6 +214,26 @@ function selectCopy(el) {
 
   document.getElementById('copy-search').value = title;
   document.getElementById('copy-dropdown').classList.remove('open');
+}
+
+// ── Repeat / Until toggle ────────────────────────────────────
+function toggleRepeatUntil() {
+  var sel = document.getElementById('occ-repeat');
+  var grp = document.getElementById('repeat-until-group');
+  if (!sel || !grp) return;
+  grp.style.display = sel.value ? '' : 'none';
+  if (sel.value) {
+    var untilEl = document.getElementById('occ-repeat-until');
+    if (untilEl && !untilEl.value) {
+      // Default to 3 months from date
+      var dateEl = document.getElementById('occ-date');
+      if (dateEl && dateEl.value) {
+        var d = new Date(dateEl.value);
+        d.setMonth(d.getMonth() + 3);
+        untilEl.value = d.toISOString().split('T')[0];
+      }
+    }
+  }
 }
 
 // ── Min/Max cross-validation ─────────────────────────────────

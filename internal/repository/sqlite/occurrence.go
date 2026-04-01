@@ -16,7 +16,7 @@ func NewOccurrenceRepository(db *sql.DB) *OccurrenceRepository {
 	return &OccurrenceRepository{db: db}
 }
 
-const occurrenceCols = `id, group_id, title, description, date, min_participants, max_participants, allow_over_limit, created_at`
+const occurrenceCols = `id, group_id, title, description, date, min_participants, max_participants, allow_over_limit, recurrence_id, created_at`
 
 func (r *OccurrenceRepository) FindByID(ctx context.Context, id int64) (domain.Occurrence, error) {
 	row := r.db.QueryRowContext(ctx,
@@ -59,7 +59,7 @@ func (r *OccurrenceRepository) FindByDate(ctx context.Context, date time.Time) (
 
 func (r *OccurrenceRepository) FindOpenSpots(ctx context.Context) ([]domain.Occurrence, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT o.id, o.group_id, o.title, o.description, o.date, o.min_participants, o.max_participants, o.allow_over_limit, o.created_at
+		SELECT o.id, o.group_id, o.title, o.description, o.date, o.min_participants, o.max_participants, o.allow_over_limit, o.recurrence_id, o.created_at
 		FROM occurrences o
 		LEFT JOIN (
 			SELECT occurrence_id, COUNT(*) as cnt
@@ -78,7 +78,7 @@ func (r *OccurrenceRepository) FindOpenSpots(ctx context.Context) ([]domain.Occu
 
 func (r *OccurrenceRepository) FindUpcomingByUser(ctx context.Context, userID int64, from time.Time) ([]domain.Occurrence, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT o.id, o.group_id, o.title, o.description, o.date, o.min_participants, o.max_participants, o.allow_over_limit, o.created_at
+		SELECT o.id, o.group_id, o.title, o.description, o.date, o.min_participants, o.max_participants, o.allow_over_limit, o.recurrence_id, o.created_at
 		FROM occurrences o
 		JOIN participations p ON p.occurrence_id = o.id
 		WHERE p.user_id = ? AND o.date >= ?
@@ -93,7 +93,7 @@ func (r *OccurrenceRepository) FindUpcomingByUser(ctx context.Context, userID in
 
 func (r *OccurrenceRepository) FindAllByUser(ctx context.Context, userID int64) ([]domain.Occurrence, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT o.id, o.group_id, o.title, o.description, o.date, o.min_participants, o.max_participants, o.allow_over_limit, o.created_at
+		SELECT o.id, o.group_id, o.title, o.description, o.date, o.min_participants, o.max_participants, o.allow_over_limit, o.recurrence_id, o.created_at
 		FROM occurrences o
 		JOIN participations p ON p.occurrence_id = o.id
 		WHERE p.user_id = ?
@@ -139,8 +139,8 @@ func (r *OccurrenceRepository) Save(ctx context.Context, o domain.Occurrence) (d
 	}
 	if o.ID == 0 {
 		res, err := r.db.ExecContext(ctx,
-			`INSERT INTO occurrences (group_id, title, description, date, min_participants, max_participants, allow_over_limit) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-			groupID, o.Title, o.Description, o.Date, o.MinParticipants, o.MaxParticipants, o.AllowOverLimit,
+			`INSERT INTO occurrences (group_id, title, description, date, min_participants, max_participants, allow_over_limit, recurrence_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			groupID, o.Title, o.Description, o.Date, o.MinParticipants, o.MaxParticipants, o.AllowOverLimit, o.RecurrenceID,
 		)
 		if err != nil {
 			return o, err
@@ -149,8 +149,8 @@ func (r *OccurrenceRepository) Save(ctx context.Context, o domain.Occurrence) (d
 		return o, err
 	}
 	_, err := r.db.ExecContext(ctx,
-		`UPDATE occurrences SET group_id = ?, title = ?, description = ?, date = ?, min_participants = ?, max_participants = ?, allow_over_limit = ? WHERE id = ?`,
-		groupID, o.Title, o.Description, o.Date, o.MinParticipants, o.MaxParticipants, o.AllowOverLimit, o.ID,
+		`UPDATE occurrences SET group_id = ?, title = ?, description = ?, date = ?, min_participants = ?, max_participants = ?, allow_over_limit = ?, recurrence_id = ? WHERE id = ?`,
+		groupID, o.Title, o.Description, o.Date, o.MinParticipants, o.MaxParticipants, o.AllowOverLimit, o.RecurrenceID, o.ID,
 	)
 	return o, err
 }
@@ -167,7 +167,7 @@ type rowScanner interface {
 func scanOccurrence(row rowScanner) (domain.Occurrence, error) {
 	var o domain.Occurrence
 	var groupID sql.NullInt64
-	err := row.Scan(&o.ID, &groupID, &o.Title, &o.Description, &o.Date, &o.MinParticipants, &o.MaxParticipants, &o.AllowOverLimit, &o.CreatedAt)
+	err := row.Scan(&o.ID, &groupID, &o.Title, &o.Description, &o.Date, &o.MinParticipants, &o.MaxParticipants, &o.AllowOverLimit, &o.RecurrenceID, &o.CreatedAt)
 	if groupID.Valid {
 		o.GroupID = groupID.Int64
 	}

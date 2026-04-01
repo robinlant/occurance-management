@@ -33,6 +33,7 @@ type Occurrence struct {
 	MinParticipants int
 	MaxParticipants int
 	AllowOverLimit  bool
+	RecurrenceID    string
 	CreatedAt       time.Time
 }
 

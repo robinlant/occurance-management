@@ -292,8 +292,10 @@ var en = map[string]string{
 	"flash.emailAlreadyInUse":       "That email is already in use.",
 	"flash.failedUpdateEmail":       "Failed to update email.",
 	"flash.emailUpdated":            "Email updated.",
-	"flash.commentTooLong":          "Comment must be 1000 characters or fewer.",
-	"flash.oooConflictDetail":       "You are signed up for one or more occurrences during this period. Please withdraw from them first.",
+	"flash.commentTooLong":              "Comment must be 1000 characters or fewer.",
+	"flash.oooConflictDetail":           "You are signed up for one or more occurrences during this period. Please withdraw from them first.",
+	"flash.untilBeforeDate":             "Repeat-until date must be after the occurrence date.",
+	"flash.occurrencesCreatedRecurring": "occurrences created.",
 
 	// Page titles
 	"title.dashboard":      "Dashboard",
@@ -343,6 +345,16 @@ var en = map[string]string{
 	"form.copyFromExisting":      "Use as template",
 	"form.copyFromExistingLabel": "Pre-fill title, description, time & participant limits from another occurrence",
 	"form.copySearchPlaceholder": "Search occurrences\u2026",
+
+	// Recurrence
+	"form.repeat":         "Repeat",
+	"form.repeatNone":     "Does not repeat",
+	"form.repeatDaily":    "Daily",
+	"form.repeatWeekly":   "Weekly",
+	"form.repeatBiweekly": "Every 2 weeks",
+	"form.repeatMonthly":  "Monthly",
+	"form.repeatUntil":    "Repeat until",
+	"occ.recurring":       "Recurring",
 
 	// Comments
 	"comment.title":         "Comments",
@@ -629,8 +641,10 @@ var de = map[string]string{
 	"flash.emailAlreadyInUse":       "Diese E-Mail-Adresse wird bereits verwendet.",
 	"flash.failedUpdateEmail":       "E-Mail-Adresse konnte nicht aktualisiert werden.",
 	"flash.emailUpdated":            "E-Mail-Adresse aktualisiert.",
-	"flash.commentTooLong":          "Kommentar darf maximal 1000 Zeichen lang sein.",
-	"flash.oooConflictDetail":       "Sie sind f\u00fcr einen oder mehrere Eins\u00e4tze in diesem Zeitraum eingetragen. Bitte tragen Sie sich zuerst aus.",
+	"flash.commentTooLong":              "Kommentar darf maximal 1000 Zeichen lang sein.",
+	"flash.oooConflictDetail":           "Sie sind f\u00fcr einen oder mehrere Eins\u00e4tze in diesem Zeitraum eingetragen. Bitte tragen Sie sich zuerst aus.",
+	"flash.untilBeforeDate":             "Das Enddatum der Wiederholung muss nach dem Einsatzdatum liegen.",
+	"flash.occurrencesCreatedRecurring": "Eins\u00e4tze erstellt.",
 
 	// Page titles
 	"title.dashboard":      "Dashboard",
@@ -680,6 +694,16 @@ var de = map[string]string{
 	"form.copyFromExisting":      "Als Vorlage verwenden",
 	"form.copyFromExistingLabel": "Titel, Beschreibung, Uhrzeit & Teilnehmerlimits aus einem anderen Einsatz \u00fcbernehmen",
 	"form.copySearchPlaceholder": "Einsatz suchen\u2026",
+
+	// Recurrence
+	"form.repeat":         "Wiederholung",
+	"form.repeatNone":     "Keine Wiederholung",
+	"form.repeatDaily":    "T\u00e4glich",
+	"form.repeatWeekly":   "W\u00f6chentlich",
+	"form.repeatBiweekly": "Alle 2 Wochen",
+	"form.repeatMonthly":  "Monatlich",
+	"form.repeatUntil":    "Wiederholen bis",
+	"occ.recurring":       "Wiederkehrend",
 
 	// Comments
 	"comment.title":         "Kommentare",

@@ -233,6 +233,92 @@ func TestFindAllByUser_MultipleUsersIsolation(t *testing.T) {
 	}
 }
 
+// ---------- RecurrenceID round-trip ----------
+
+func TestSaveAndFindByID_RecurrenceIDPreserved(t *testing.T) {
+	db := setupTestDB(t)
+	occRepo := sqlite.NewOccurrenceRepository(db)
+
+	recID := "abc123def456"
+	saved, err := occRepo.Save(context.Background(), domain.Occurrence{
+		Title:           "Recurring Shift",
+		Description:     "desc",
+		Date:            time.Date(2026, 4, 1, 8, 0, 0, 0, time.UTC),
+		MinParticipants: 1,
+		MaxParticipants: 5,
+		RecurrenceID:    recID,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	found, err := occRepo.FindByID(context.Background(), saved.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if found.RecurrenceID != recID {
+		t.Errorf("RecurrenceID: want %q, got %q", recID, found.RecurrenceID)
+	}
+}
+
+func TestSaveAndFindByID_EmptyRecurrenceID(t *testing.T) {
+	db := setupTestDB(t)
+	occRepo := sqlite.NewOccurrenceRepository(db)
+
+	saved, err := occRepo.Save(context.Background(), domain.Occurrence{
+		Title:           "Single Shift",
+		Description:     "desc",
+		Date:            time.Date(2026, 4, 2, 8, 0, 0, 0, time.UTC),
+		MinParticipants: 1,
+		MaxParticipants: 5,
+		RecurrenceID:    "",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	found, err := occRepo.FindByID(context.Background(), saved.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if found.RecurrenceID != "" {
+		t.Errorf("RecurrenceID: want empty, got %q", found.RecurrenceID)
+	}
+}
+
+func TestFindAll_RecurrenceIDPreservedInList(t *testing.T) {
+	db := setupTestDB(t)
+	occRepo := sqlite.NewOccurrenceRepository(db)
+
+	recID := "shared-recurrence-id"
+	for i := 0; i < 3; i++ {
+		_, err := occRepo.Save(context.Background(), domain.Occurrence{
+			Title:           "Recurring",
+			Description:     "desc",
+			Date:            time.Date(2026, 4, 1+i, 8, 0, 0, 0, time.UTC),
+			MinParticipants: 1,
+			MaxParticipants: 5,
+			RecurrenceID:    recID,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	all, err := occRepo.FindAll(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(all) != 3 {
+		t.Fatalf("expected 3 occurrences, got %d", len(all))
+	}
+	for i, o := range all {
+		if o.RecurrenceID != recID {
+			t.Errorf("occurrence[%d] RecurrenceID: want %q, got %q", i, recID, o.RecurrenceID)
+		}
+	}
+}
+
 func TestFindAllByUser_IncludesPastAndFuture(t *testing.T) {
 	db := setupTestDB(t)
 	occRepo := sqlite.NewOccurrenceRepository(db)

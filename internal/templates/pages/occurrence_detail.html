@@ -8,6 +8,7 @@
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
             <h2 style="font-size:16px;font-weight:600">{{.Occurrence.Title}}</h2>
             {{if .Group}}<span class="badge {{if .Group.Color}}badge-group-{{.Group.Color}}{{else}}badge-accent{{end}}">{{.Group.Name}}</span>{{end}}
+            {{if .Occurrence.RecurrenceID}}<span class="badge badge-blue">{{t .Lang "occ.recurring"}}</span>{{end}}
             {{if isPast .Occurrence.Date}}<span class="badge badge-gray">{{t .Lang "occ.past"}}</span>{{end}}
             {{if eq .Status "under"}}<span class="badge badge-red">{{t .Lang "occ.needsPeople"}}</span>
             {{else if eq .Status "good"}}<span class="badge badge-green">{{t .Lang "occ.filled"}}</span>
