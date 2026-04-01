@@ -67,7 +67,7 @@ func main() {
 	occH := handler.NewOccurrenceHandler(occSvc, groupSvc, commentRepo)
 	grpH := handler.NewGroupHandler(groupSvc)
 	usrH := handler.NewUserAdminHandler(userSvc)
-	profH := handler.NewProfileHandler(userSvc, occSvc)
+	profH := handler.NewProfileHandler(userSvc, occSvc, groupSvc)
 	lbH := handler.NewLeaderboardHandler(occSvc, groupSvc)
 	calH := handler.NewCalendarHandler(occSvc, groupSvc)
 	searchH := handler.NewSearchHandler(occSvc, userSvc)

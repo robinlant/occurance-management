@@ -157,6 +157,10 @@ var en = map[string]string{
 	"profile.ooo":                 "OOO",
 	"profile.currentlyOOO":        "Currently OOO",
 	"profile.userInfo":            "User info",
+	"profile.occurrences":         "Your occurrences",
+	"profile.noOccurrences":       "No occurrences yet.",
+	"profile.occurrencesOther":    "Occurrences",
+	"profile.noOccurrencesOther":  "No occurrences yet.",
 
 	// Leaderboard
 	"lb.from":             "From",
@@ -490,6 +494,10 @@ var de = map[string]string{
 	"profile.ooo":                 "Abwesend",
 	"profile.currentlyOOO":        "Derzeit abwesend",
 	"profile.userInfo":            "Benutzerinfo",
+	"profile.occurrences":         "Deine Einsätze",
+	"profile.noOccurrences":       "Noch keine Einsätze.",
+	"profile.occurrencesOther":    "Einsätze",
+	"profile.noOccurrencesOther":  "Noch keine Einsätze.",
 
 	// Leaderboard
 	"lb.from":             "Von",
