@@ -224,12 +224,21 @@ func (h *OccurrenceHandler) ShowEdit(c *gin.Context) {
 		return
 	}
 	groups, _ := h.groups.List(c.Request.Context())
+
+	var seriesCount int
+	if occ.RecurrenceID != "" {
+		siblings, _ := h.occurrences.GetSeriesSiblings(c.Request.Context(), occ.RecurrenceID)
+		seriesCount = len(siblings)
+	}
+
 	Page(c, "occurrence_form.html", pageData(c, gin.H{
-		"Groups":     groups,
-		"Occurrence": occ,
-		"GroupID":    occ.GroupID,
-		"ActivePage": "occurrences",
-		"PageTitle":  i18n.T(lang, "title.editOccurrence"),
+		"Groups":      groups,
+		"Occurrence":  occ,
+		"GroupID":     occ.GroupID,
+		"ActivePage":  "occurrences",
+		"PageTitle":   i18n.T(lang, "title.editOccurrence"),
+		"IsRecurring": occ.RecurrenceID != "",
+		"SeriesCount": seriesCount,
 	}))
 }
 
@@ -247,6 +256,48 @@ func (h *OccurrenceHandler) Update(c *gin.Context) {
 		return
 	}
 	occ.ID = id
+	existing, err := h.occurrences.GetOccurrence(c.Request.Context(), id)
+	if err != nil {
+		slog.Error("occurrence: fetch for update failed", "occurrence_id", id, "error", err)
+		SetFlash(c, "error", i18n.T(lang, "flash.failedUpdateOccurrence"))
+		c.Redirect(http.StatusFound, "/occurrences/"+strconv.FormatInt(id, 10)+"/edit")
+		return
+	}
+	occ.RecurrenceID = existing.RecurrenceID
+
+	editScope := c.PostForm("edit_scope") // "single", "future", "all"
+
+	if editScope == "future" && existing.RecurrenceID != "" {
+		count, err := h.occurrences.UpdateSeriesFromDate(c.Request.Context(), occ, existing.RecurrenceID, existing.Date)
+		if err != nil {
+			slog.Error("occurrence: series update (future) failed", "occurrence_id", id, "error", err)
+			SetFlash(c, "error", i18n.T(lang, "flash.failedUpdateOccurrence"))
+			c.Redirect(http.StatusFound, "/occurrences/"+strconv.FormatInt(id, 10)+"/edit")
+			return
+		}
+		user, _ := CurrentUser(c)
+		slog.Info("occurrence_series_updated_future", "user_id", user.ID, "occurrence_id", id, "count", count)
+		SetFlash(c, "success", fmt.Sprintf("%d %s", count, i18n.T(lang, "flash.seriesUpdated")))
+		c.Redirect(http.StatusFound, "/occurrences")
+		return
+	}
+
+	if editScope == "all" && existing.RecurrenceID != "" {
+		count, err := h.occurrences.UpdateEntireSeries(c.Request.Context(), occ, existing.RecurrenceID)
+		if err != nil {
+			slog.Error("occurrence: series update (all) failed", "occurrence_id", id, "error", err)
+			SetFlash(c, "error", i18n.T(lang, "flash.failedUpdateOccurrence"))
+			c.Redirect(http.StatusFound, "/occurrences/"+strconv.FormatInt(id, 10)+"/edit")
+			return
+		}
+		user, _ := CurrentUser(c)
+		slog.Info("occurrence_series_updated_all", "user_id", user.ID, "occurrence_id", id, "count", count)
+		SetFlash(c, "success", fmt.Sprintf("%d %s", count, i18n.T(lang, "flash.seriesUpdated")))
+		c.Redirect(http.StatusFound, "/occurrences")
+		return
+	}
+
+	// Default: single update
 	updated, err := h.occurrences.UpdateOccurrence(c.Request.Context(), occ)
 	if err != nil {
 		slog.Error("occurrence: update failed", "occurrence_id", id, "error", err)
@@ -268,6 +319,38 @@ func (h *OccurrenceHandler) Delete(c *gin.Context) {
 		return
 	}
 	user, _ := CurrentUser(c)
+
+	deleteScope := c.PostForm("delete_scope") // "single", "future", "all"
+
+	occ, fetchErr := h.occurrences.GetOccurrence(c.Request.Context(), id)
+
+	if deleteScope == "future" && fetchErr == nil && occ.RecurrenceID != "" {
+		count, err := h.occurrences.DeleteSeriesFromDate(c.Request.Context(), occ.RecurrenceID, occ.Date)
+		if err != nil {
+			slog.Error("occurrence: series delete (future) failed", "user_id", user.ID, "occurrence_id", id, "error", err)
+			SetFlash(c, "error", i18n.T(lang, "flash.failedDeleteOccurrence"))
+		} else {
+			slog.Info("occurrence_series_deleted_future", "user_id", user.ID, "occurrence_id", id, "count", count)
+			SetFlash(c, "success", fmt.Sprintf("%d %s", count, i18n.T(lang, "flash.seriesDeleted")))
+		}
+		c.Redirect(http.StatusFound, "/occurrences")
+		return
+	}
+
+	if deleteScope == "all" && fetchErr == nil && occ.RecurrenceID != "" {
+		_, err := h.occurrences.DeleteEntireSeries(c.Request.Context(), occ.RecurrenceID)
+		if err != nil {
+			slog.Error("occurrence: series delete (all) failed", "user_id", user.ID, "occurrence_id", id, "error", err)
+			SetFlash(c, "error", i18n.T(lang, "flash.failedDeleteOccurrence"))
+		} else {
+			slog.Info("occurrence_series_deleted_all", "user_id", user.ID, "occurrence_id", id)
+			SetFlash(c, "success", i18n.T(lang, "flash.seriesDeletedAll"))
+		}
+		c.Redirect(http.StatusFound, "/occurrences")
+		return
+	}
+
+	// Default: single delete
 	if err := h.occurrences.DeleteOccurrence(c.Request.Context(), id); err != nil {
 		slog.Error("occurrence: delete failed", "user_id", user.ID, "occurrence_id", id, "error", err)
 		SetFlash(c, "error", i18n.T(lang, "flash.failedDeleteOccurrence"))
@@ -313,6 +396,17 @@ func (h *OccurrenceHandler) Detail(c *gin.Context) {
 		slog.Error("failed to get comments", "occurrence_id", id, "error", err)
 	}
 
+	var seriesCount, futureCount int
+	if occ.RecurrenceID != "" {
+		siblings, _ := h.occurrences.GetSeriesSiblings(c.Request.Context(), occ.RecurrenceID)
+		seriesCount = len(siblings)
+		for _, s := range siblings {
+			if !s.Date.Before(occ.Date) {
+				futureCount++
+			}
+		}
+	}
+
 	Page(c, "occurrence_detail.html", pageData(c, gin.H{
 		"Occurrence":   occ,
 		"Group":        group,
@@ -324,6 +418,9 @@ func (h *OccurrenceHandler) Detail(c *gin.Context) {
 		"PageTitle":    occ.Title,
 		"Comments":     comments,
 		"OccurrenceID": id,
+		"IsRecurring":  occ.RecurrenceID != "" && seriesCount > 1,
+		"SeriesCount":  seriesCount,
+		"FutureCount":  futureCount,
 	}), "participant_list.html", "comment_list.html")
 }
 

@@ -242,6 +242,80 @@ func ComputeOccStatus(o domain.Occurrence, count int) string {
 	return "good"
 }
 
+// --- Series (bulk recurrence) operations ---
+
+func (s *OccurrenceService) GetSeriesSiblings(ctx context.Context, recurrenceID string) ([]domain.Occurrence, error) {
+	if recurrenceID == "" {
+		return nil, nil
+	}
+	return s.occurrences.FindByRecurrenceID(ctx, recurrenceID)
+}
+
+func (s *OccurrenceService) UpdateSeriesFromDate(ctx context.Context, templateOcc domain.Occurrence, recurrenceID string, fromDate time.Time) (int, error) {
+	if recurrenceID == "" {
+		return 0, nil
+	}
+	siblings, err := s.occurrences.FindByRecurrenceID(ctx, recurrenceID)
+	if err != nil {
+		return 0, err
+	}
+	count := 0
+	for _, sib := range siblings {
+		if sib.Date.Before(fromDate) {
+			continue
+		}
+		sib.Title = templateOcc.Title
+		sib.Description = templateOcc.Description
+		sib.GroupID = templateOcc.GroupID
+		sib.MinParticipants = templateOcc.MinParticipants
+		sib.MaxParticipants = templateOcc.MaxParticipants
+		sib.AllowOverLimit = templateOcc.AllowOverLimit
+		if _, err := s.occurrences.Save(ctx, sib); err != nil {
+			return count, err
+		}
+		count++
+	}
+	return count, nil
+}
+
+func (s *OccurrenceService) UpdateEntireSeries(ctx context.Context, templateOcc domain.Occurrence, recurrenceID string) (int, error) {
+	if recurrenceID == "" {
+		return 0, nil
+	}
+	siblings, err := s.occurrences.FindByRecurrenceID(ctx, recurrenceID)
+	if err != nil {
+		return 0, err
+	}
+	count := 0
+	for _, sib := range siblings {
+		sib.Title = templateOcc.Title
+		sib.Description = templateOcc.Description
+		sib.GroupID = templateOcc.GroupID
+		sib.MinParticipants = templateOcc.MinParticipants
+		sib.MaxParticipants = templateOcc.MaxParticipants
+		sib.AllowOverLimit = templateOcc.AllowOverLimit
+		if _, err := s.occurrences.Save(ctx, sib); err != nil {
+			return count, err
+		}
+		count++
+	}
+	return count, nil
+}
+
+func (s *OccurrenceService) DeleteSeriesFromDate(ctx context.Context, recurrenceID string, fromDate time.Time) (int64, error) {
+	if recurrenceID == "" {
+		return 0, nil
+	}
+	return s.occurrences.DeleteByRecurrenceIDFromDate(ctx, recurrenceID, fromDate)
+}
+
+func (s *OccurrenceService) DeleteEntireSeries(ctx context.Context, recurrenceID string) (int64, error) {
+	if recurrenceID == "" {
+		return 0, nil
+	}
+	return s.occurrences.DeleteByRecurrenceID(ctx, recurrenceID)
+}
+
 // --- Helpers ---
 
 func (s *OccurrenceService) checkOOO(ctx context.Context, userID int64, date time.Time) error {

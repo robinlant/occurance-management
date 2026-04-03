@@ -155,9 +155,45 @@ func (r *OccurrenceRepository) Save(ctx context.Context, o domain.Occurrence) (d
 	return o, err
 }
 
+func (r *OccurrenceRepository) FindByRecurrenceID(ctx context.Context, recurrenceID string) ([]domain.Occurrence, error) {
+	if recurrenceID == "" {
+		return []domain.Occurrence{}, nil
+	}
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT `+occurrenceCols+` FROM occurrences WHERE recurrence_id = ? ORDER BY date`,
+		recurrenceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanOccurrences(rows)
+}
+
 func (r *OccurrenceRepository) Delete(ctx context.Context, id int64) error {
 	_, err := r.db.ExecContext(ctx, `DELETE FROM occurrences WHERE id = ?`, id)
 	return err
+}
+
+func (r *OccurrenceRepository) DeleteByRecurrenceID(ctx context.Context, recurrenceID string) (int64, error) {
+	if recurrenceID == "" {
+		return 0, nil
+	}
+	res, err := r.db.ExecContext(ctx, `DELETE FROM occurrences WHERE recurrence_id = ?`, recurrenceID)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
+
+func (r *OccurrenceRepository) DeleteByRecurrenceIDFromDate(ctx context.Context, recurrenceID string, fromDate time.Time) (int64, error) {
+	if recurrenceID == "" {
+		return 0, nil
+	}
+	res, err := r.db.ExecContext(ctx, `DELETE FROM occurrences WHERE recurrence_id = ? AND date >= ?`, recurrenceID, fromDate)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
 }
 
 type rowScanner interface {

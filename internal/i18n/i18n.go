@@ -89,6 +89,14 @@ var en = map[string]string{
 	"occ.assign":            "Assign",
 	"occ.done":              "done",
 
+	// Series delete
+	"occ.deleteSeriesTitle":    "Delete from series",
+	"occ.deleteOnlyThis":       "Delete only this occurrence",
+	"occ.deleteThisAndFuture":  "Delete this and all future",
+	"occ.deleteEntireSeries":   "Delete entire series",
+	"occ.confirmDeleteFuture":  "This will delete this occurrence and all future ones in the series. Continue?",
+	"occ.confirmDeleteAll":     "This will permanently delete ALL occurrences in this series, including past ones and their participation records. This cannot be undone. Are you sure?",
+
 	// Occurrence form
 	"form.title":           "Title",
 	"form.description":     "Description",
@@ -103,6 +111,14 @@ var en = map[string]string{
 	"form.saveChanges":     "Save changes",
 	"form.create":          "Create",
 	"form.cancel":          "Cancel",
+
+	// Series edit scope
+	"form.editScope":       "Apply changes to",
+	"form.editScopeSingle": "Only this occurrence",
+	"form.editScopeFuture": "This and all future occurrences",
+	"form.editScopeAll":    "All occurrences in series",
+	"form.editScopeHint":   "Date changes only apply to this occurrence",
+	"form.inSeries":        "in series",
 
 	// Calendar
 	"cal.allEvents":   "All statuses",
@@ -296,6 +312,10 @@ var en = map[string]string{
 	"flash.oooConflictDetail":           "You are signed up for one or more occurrences during this period. Please withdraw from them first.",
 	"flash.untilBeforeDate":             "Repeat-until date must be after the occurrence date.",
 	"flash.occurrencesCreatedRecurring": "occurrences created.",
+	"flash.seriesUpdated":    "occurrences updated.",
+	"flash.seriesDeleted":    "occurrences deleted from series.",
+	"flash.seriesDeletedAll": "Entire series deleted.",
+	"flash.notRecurring":     "This occurrence is not part of a series.",
 
 	// Page titles
 	"title.dashboard":      "Dashboard",
@@ -438,6 +458,14 @@ var de = map[string]string{
 	"occ.assign":            "Zuweisen",
 	"occ.done":              "erledigt",
 
+	// Series delete
+	"occ.deleteSeriesTitle":    "Aus Serie l\u00f6schen",
+	"occ.deleteOnlyThis":       "Nur diesen Einsatz l\u00f6schen",
+	"occ.deleteThisAndFuture":  "Diesen und alle zuk\u00fcnftigen l\u00f6schen",
+	"occ.deleteEntireSeries":   "Gesamte Serie l\u00f6schen",
+	"occ.confirmDeleteFuture":  "Dies l\u00f6scht diesen Einsatz und alle zuk\u00fcnftigen in der Serie. Fortfahren?",
+	"occ.confirmDeleteAll":     "Dies l\u00f6scht ALLE Eins\u00e4tze dieser Serie unwiderruflich, einschlie\u00dflich vergangener Eins\u00e4tze und deren Teilnahmeeintr\u00e4ge. Sind Sie sicher?",
+
 	// Occurrence form
 	"form.title":           "Titel",
 	"form.description":     "Beschreibung",
@@ -452,6 +480,14 @@ var de = map[string]string{
 	"form.saveChanges":     "\u00c4nderungen speichern",
 	"form.create":          "Erstellen",
 	"form.cancel":          "Abbrechen",
+
+	// Series edit scope
+	"form.editScope":       "\u00c4nderungen anwenden auf",
+	"form.editScopeSingle": "Nur diesen Einsatz",
+	"form.editScopeFuture": "Diesen und alle zuk\u00fcnftigen Eins\u00e4tze",
+	"form.editScopeAll":    "Alle Eins\u00e4tze der Serie",
+	"form.editScopeHint":   "Datums\u00e4nderungen gelten nur f\u00fcr diesen Einsatz",
+	"form.inSeries":        "in der Serie",
 
 	// Calendar
 	"cal.allEvents":   "Alle Status",
@@ -645,6 +681,10 @@ var de = map[string]string{
 	"flash.oooConflictDetail":           "Sie sind f\u00fcr einen oder mehrere Eins\u00e4tze in diesem Zeitraum eingetragen. Bitte tragen Sie sich zuerst aus.",
 	"flash.untilBeforeDate":             "Das Enddatum der Wiederholung muss nach dem Einsatzdatum liegen.",
 	"flash.occurrencesCreatedRecurring": "Eins\u00e4tze erstellt.",
+	"flash.seriesUpdated":    "Eins\u00e4tze aktualisiert.",
+	"flash.seriesDeleted":    "Eins\u00e4tze aus der Serie gel\u00f6scht.",
+	"flash.seriesDeletedAll": "Gesamte Serie gel\u00f6scht.",
+	"flash.notRecurring":     "Dieser Einsatz geh\u00f6rt nicht zu einer Serie.",
 
 	// Page titles
 	"title.dashboard":      "Dashboard",

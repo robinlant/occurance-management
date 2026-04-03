@@ -130,6 +130,30 @@
     </div>
     {{end}}
 
+    {{if and .Occurrence .IsRecurring}}
+    <hr style="border:none;border-top:1px solid var(--border);margin:4px 0">
+    <div class="form-group">
+      <label style="font-weight:500;margin-bottom:8px;display:block">{{t .Lang "form.editScope"}}</label>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+          <input type="radio" name="edit_scope" value="single" checked style="width:auto;accent-color:var(--accent)">
+          {{t .Lang "form.editScopeSingle"}}
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+          <input type="radio" name="edit_scope" value="future" style="width:auto;accent-color:var(--accent)">
+          {{t .Lang "form.editScopeFuture"}}
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+          <input type="radio" name="edit_scope" value="all" style="width:auto;accent-color:var(--accent)">
+          {{t .Lang "form.editScopeAll"}}
+        </label>
+      </div>
+      <small style="color:var(--text-muted);margin-top:4px;display:block">
+        {{t .Lang "form.editScopeHint"}} ({{.SeriesCount}} {{t .Lang "form.inSeries"}})
+      </small>
+    </div>
+    {{end}}
+
     <div class="row" style="margin-top:4px">
       <button type="submit" class="btn btn-primary">{{if .Occurrence}}{{t .Lang "form.saveChanges"}}{{else}}{{t .Lang "form.create"}}{{end}}</button>
       <a href="/occurrences" class="btn btn-ghost">{{t .Lang "form.cancel"}}</a>

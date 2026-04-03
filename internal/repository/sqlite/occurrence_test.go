@@ -291,7 +291,7 @@ func TestFindAll_RecurrenceIDPreservedInList(t *testing.T) {
 	occRepo := sqlite.NewOccurrenceRepository(db)
 
 	recID := "shared-recurrence-id"
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		_, err := occRepo.Save(context.Background(), domain.Occurrence{
 			Title:           "Recurring",
 			Description:     "desc",
@@ -315,6 +315,197 @@ func TestFindAll_RecurrenceIDPreservedInList(t *testing.T) {
 	for i, o := range all {
 		if o.RecurrenceID != recID {
 			t.Errorf("occurrence[%d] RecurrenceID: want %q, got %q", i, recID, o.RecurrenceID)
+		}
+	}
+}
+
+// ---------- RecurrenceID preservation during updates ----------
+
+func TestSave_UpdatePreservesRecurrenceID(t *testing.T) {
+	db := setupTestDB(t)
+	occRepo := sqlite.NewOccurrenceRepository(db)
+
+	recID := "recurrence-preserve-test"
+	saved, err := occRepo.Save(context.Background(), domain.Occurrence{
+		Title:           "Original Title",
+		Description:     "original desc",
+		Date:            time.Date(2026, 4, 1, 8, 0, 0, 0, time.UTC),
+		MinParticipants: 1,
+		MaxParticipants: 5,
+		RecurrenceID:    recID,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Update the occurrence: change title and description, but keep RecurrenceID.
+	saved.Title = "Updated Title"
+	saved.Description = "updated desc"
+	// RecurrenceID is still recID on the struct — verify Save preserves it.
+	_, err = occRepo.Save(context.Background(), saved)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	found, err := occRepo.FindByID(context.Background(), saved.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if found.Title != "Updated Title" {
+		t.Errorf("Title: want %q, got %q", "Updated Title", found.Title)
+	}
+	if found.Description != "updated desc" {
+		t.Errorf("Description: want %q, got %q", "updated desc", found.Description)
+	}
+	if found.RecurrenceID != recID {
+		t.Errorf("RecurrenceID: want %q, got %q — update must preserve recurrence_id", recID, found.RecurrenceID)
+	}
+}
+
+func TestSave_UpdateWithEmptyRecurrenceIDOverwrites(t *testing.T) {
+	db := setupTestDB(t)
+	occRepo := sqlite.NewOccurrenceRepository(db)
+
+	recID := "will-be-wiped"
+	saved, err := occRepo.Save(context.Background(), domain.Occurrence{
+		Title:           "Recurring Shift",
+		Description:     "desc",
+		Date:            time.Date(2026, 4, 1, 8, 0, 0, 0, time.UTC),
+		MinParticipants: 1,
+		MaxParticipants: 5,
+		RecurrenceID:    recID,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify the recurrence_id was stored.
+	before, err := occRepo.FindByID(context.Background(), saved.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if before.RecurrenceID != recID {
+		t.Fatalf("setup: RecurrenceID want %q, got %q", recID, before.RecurrenceID)
+	}
+
+	// Simulate the bug: update with RecurrenceID="" (what happens when the
+	// handler builds a struct from form data without preserving RecurrenceID).
+	saved.RecurrenceID = ""
+	saved.Title = "Edited Shift"
+	_, err = occRepo.Save(context.Background(), saved)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	after, err := occRepo.FindByID(context.Background(), saved.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The raw repo overwrites recurrence_id with whatever the struct contains.
+	// This documents WHY the handler must fetch the existing occurrence and
+	// copy RecurrenceID before calling Save.
+	if after.RecurrenceID != "" {
+		t.Errorf("RecurrenceID: want empty (raw repo overwrites), got %q", after.RecurrenceID)
+	}
+	if after.Title != "Edited Shift" {
+		t.Errorf("Title: want %q, got %q", "Edited Shift", after.Title)
+	}
+}
+
+func TestSave_UpdateNonRecurringStaysNonRecurring(t *testing.T) {
+	db := setupTestDB(t)
+	occRepo := sqlite.NewOccurrenceRepository(db)
+
+	saved, err := occRepo.Save(context.Background(), domain.Occurrence{
+		Title:           "Single Event",
+		Description:     "desc",
+		Date:            time.Date(2026, 4, 10, 9, 0, 0, 0, time.UTC),
+		MinParticipants: 2,
+		MaxParticipants: 10,
+		RecurrenceID:    "",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Update the occurrence — change title, leave RecurrenceID empty.
+	saved.Title = "Single Event (edited)"
+	saved.MaxParticipants = 8
+	_, err = occRepo.Save(context.Background(), saved)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	found, err := occRepo.FindByID(context.Background(), saved.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if found.RecurrenceID != "" {
+		t.Errorf("RecurrenceID: want empty (non-recurring), got %q", found.RecurrenceID)
+	}
+	if found.Title != "Single Event (edited)" {
+		t.Errorf("Title: want %q, got %q", "Single Event (edited)", found.Title)
+	}
+	if found.MaxParticipants != 8 {
+		t.Errorf("MaxParticipants: want 8, got %d", found.MaxParticipants)
+	}
+}
+
+func TestSave_UpdateSiblingDoesNotAffectOthers(t *testing.T) {
+	db := setupTestDB(t)
+	occRepo := sqlite.NewOccurrenceRepository(db)
+
+	recID := "shared-siblings"
+	var siblings [3]domain.Occurrence
+	for i := range 3 {
+		o, err := occRepo.Save(context.Background(), domain.Occurrence{
+			Title:           "Sibling Shift",
+			Description:     "desc",
+			Date:            time.Date(2026, 4, 1+i*7, 8, 0, 0, 0, time.UTC),
+			MinParticipants: 1,
+			MaxParticipants: 5,
+			RecurrenceID:    recID,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		siblings[i] = o
+	}
+
+	// Update only the second sibling: change title, keep RecurrenceID.
+	siblings[1].Title = "Updated Sibling"
+	siblings[1].Description = "updated desc"
+	_, err := occRepo.Save(context.Background(), siblings[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify the updated sibling has the new title and still has its recurrence_id.
+	updated, err := occRepo.FindByID(context.Background(), siblings[1].ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if updated.Title != "Updated Sibling" {
+		t.Errorf("updated sibling Title: want %q, got %q", "Updated Sibling", updated.Title)
+	}
+	if updated.RecurrenceID != recID {
+		t.Errorf("updated sibling RecurrenceID: want %q, got %q", recID, updated.RecurrenceID)
+	}
+
+	// Verify the other two siblings are completely untouched.
+	for _, idx := range []int{0, 2} {
+		other, err := occRepo.FindByID(context.Background(), siblings[idx].ID)
+		if err != nil {
+			t.Fatalf("sibling[%d]: %v", idx, err)
+		}
+		if other.Title != "Sibling Shift" {
+			t.Errorf("sibling[%d] Title: want %q, got %q", idx, "Sibling Shift", other.Title)
+		}
+		if other.Description != "desc" {
+			t.Errorf("sibling[%d] Description: want %q, got %q", idx, "desc", other.Description)
+		}
+		if other.RecurrenceID != recID {
+			t.Errorf("sibling[%d] RecurrenceID: want %q, got %q", idx, recID, other.RecurrenceID)
 		}
 	}
 }
