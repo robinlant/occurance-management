@@ -112,6 +112,48 @@
       </label>
     </div>
 
+    {{if not .Occurrence}}
+    <hr style="border:none;border-top:1px solid var(--border);margin:4px 0">
+    <div class="form-group">
+      <label for="occ-repeat">{{t .Lang "form.repeat"}}</label>
+      <select name="repeat" id="occ-repeat" onchange="toggleRepeatUntil()">
+        <option value="">{{t .Lang "form.repeatNone"}}</option>
+        <option value="daily">{{t .Lang "form.repeatDaily"}}</option>
+        <option value="weekly">{{t .Lang "form.repeatWeekly"}}</option>
+        <option value="biweekly">{{t .Lang "form.repeatBiweekly"}}</option>
+        <option value="monthly">{{t .Lang "form.repeatMonthly"}}</option>
+      </select>
+    </div>
+    <div class="form-group" id="repeat-until-group" style="display:none">
+      <label for="occ-repeat-until">{{t .Lang "form.repeatUntil"}}</label>
+      <input type="date" name="repeat_until" id="occ-repeat-until">
+    </div>
+    {{end}}
+
+    {{if and .Occurrence .IsRecurring}}
+    <hr style="border:none;border-top:1px solid var(--border);margin:4px 0">
+    <div class="form-group">
+      <label style="font-weight:500;margin-bottom:8px;display:block">{{t .Lang "form.editScope"}}</label>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+          <input type="radio" name="edit_scope" value="single" checked style="width:auto;accent-color:var(--accent)">
+          {{t .Lang "form.editScopeSingle"}}
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+          <input type="radio" name="edit_scope" value="future" style="width:auto;accent-color:var(--accent)">
+          {{t .Lang "form.editScopeFuture"}}
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+          <input type="radio" name="edit_scope" value="all" style="width:auto;accent-color:var(--accent)">
+          {{t .Lang "form.editScopeAll"}}
+        </label>
+      </div>
+      <small style="color:var(--text-muted);margin-top:4px;display:block">
+        {{t .Lang "form.editScopeHint"}} ({{.SeriesCount}} {{t .Lang "form.inSeries"}})
+      </small>
+    </div>
+    {{end}}
+
     <div class="row" style="margin-top:4px">
       <button type="submit" class="btn btn-primary">{{if .Occurrence}}{{t .Lang "form.saveChanges"}}{{else}}{{t .Lang "form.create"}}{{end}}</button>
       <a href="/occurrences" class="btn btn-ghost">{{t .Lang "form.cancel"}}</a>
@@ -196,6 +238,26 @@ function selectCopy(el) {
 
   document.getElementById('copy-search').value = title;
   document.getElementById('copy-dropdown').classList.remove('open');
+}
+
+// ── Repeat / Until toggle ────────────────────────────────────
+function toggleRepeatUntil() {
+  var sel = document.getElementById('occ-repeat');
+  var grp = document.getElementById('repeat-until-group');
+  if (!sel || !grp) return;
+  grp.style.display = sel.value ? '' : 'none';
+  if (sel.value) {
+    var untilEl = document.getElementById('occ-repeat-until');
+    if (untilEl && !untilEl.value) {
+      // Default to 3 months from date
+      var dateEl = document.getElementById('occ-date');
+      if (dateEl && dateEl.value) {
+        var d = new Date(dateEl.value);
+        d.setMonth(d.getMonth() + 3);
+        untilEl.value = d.toISOString().split('T')[0];
+      }
+    }
+  }
 }
 
 // ── Min/Max cross-validation ─────────────────────────────────

@@ -412,6 +412,7 @@ select option { background: var(--bg-card); color: var(--text); }
 .badge-green  { background: rgba(0,255,135,0.1); color: var(--success); }
 .badge-red    { background: rgba(255,71,87,0.1); color: var(--danger); }
 .badge-yellow { background: rgba(255,214,10,0.1); color: var(--warning); }
+.badge-blue   { background: rgba(56,147,255,0.1); color: #3893ff; }
 .badge-gray   { background: var(--bg-hover); color: var(--text-muted); }
 
 /* Group color badges */

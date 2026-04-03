@@ -34,8 +34,11 @@ type OccurrenceRepository interface {
 	FindAllByUser(ctx context.Context, userID int64) ([]domain.Occurrence, error)
 	FindByTitleLike(ctx context.Context, query string, limit int) ([]domain.Occurrence, error)
 	FindInRange(ctx context.Context, from, to time.Time, groupID int64) ([]domain.Occurrence, error)
+	FindByRecurrenceID(ctx context.Context, recurrenceID string) ([]domain.Occurrence, error)
 	Save(ctx context.Context, occurrence domain.Occurrence) (domain.Occurrence, error)
 	Delete(ctx context.Context, id int64) error
+	DeleteByRecurrenceID(ctx context.Context, recurrenceID string) (int64, error)
+	DeleteByRecurrenceIDFromDate(ctx context.Context, recurrenceID string, fromDate time.Time) (int64, error)
 }
 
 type ParticipationRepository interface {
