@@ -55,7 +55,7 @@
      class="chip {{if eq .ActiveGroup 0}}active{{end}}">{{t .Lang "lb.allGroups"}}</a>
   {{range .Groups}}
   <a href="/leaderboard?from={{$.From}}&to={{$.To}}&role_filter={{$.RoleFilter}}&group={{.ID}}"
-     class="chip {{if eq $.ActiveGroup .ID}}active{{end}}">{{.Name}}</a>
+     class="chip {{if .Color}}chip-group-{{.Color}}{{end}} {{if eq $.ActiveGroup .ID}}active{{end}}">{{.Name}}</a>
   {{end}}
   {{end}}
 </div>

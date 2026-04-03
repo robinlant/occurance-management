@@ -499,6 +499,34 @@ select option { background: var(--bg-card); color: var(--text); }
 .chip:hover { background: var(--bg-hover); color: var(--text); border-color: var(--text-muted); }
 .chip.active { background: var(--accent-light); color: var(--accent); border-color: rgba(255,68,68,0.3); }
 
+/* Group color chips (filter bars) */
+.chip.chip-group-red    { color: var(--group-red);    border-color: var(--group-red-border); }
+.chip.chip-group-orange { color: var(--group-orange); border-color: var(--group-orange-border); }
+.chip.chip-group-yellow { color: var(--group-yellow); border-color: var(--group-yellow-border); }
+.chip.chip-group-green  { color: var(--group-green);  border-color: var(--group-green-border); }
+.chip.chip-group-teal   { color: var(--group-teal);   border-color: var(--group-teal-border); }
+.chip.chip-group-blue   { color: var(--group-blue);   border-color: var(--group-blue-border); }
+.chip.chip-group-purple { color: var(--group-purple); border-color: var(--group-purple-border); }
+.chip.chip-group-pink   { color: var(--group-pink);   border-color: var(--group-pink-border); }
+
+.chip.chip-group-red:hover    { background: var(--group-red-bg);    color: var(--group-red); }
+.chip.chip-group-orange:hover { background: var(--group-orange-bg); color: var(--group-orange); }
+.chip.chip-group-yellow:hover { background: var(--group-yellow-bg); color: var(--group-yellow); }
+.chip.chip-group-green:hover  { background: var(--group-green-bg);  color: var(--group-green); }
+.chip.chip-group-teal:hover   { background: var(--group-teal-bg);   color: var(--group-teal); }
+.chip.chip-group-blue:hover   { background: var(--group-blue-bg);   color: var(--group-blue); }
+.chip.chip-group-purple:hover { background: var(--group-purple-bg); color: var(--group-purple); }
+.chip.chip-group-pink:hover   { background: var(--group-pink-bg);   color: var(--group-pink); }
+
+.chip.chip-group-red.active    { background: var(--group-red-bg);    color: var(--group-red);    border-color: var(--group-red); }
+.chip.chip-group-orange.active { background: var(--group-orange-bg); color: var(--group-orange); border-color: var(--group-orange); }
+.chip.chip-group-yellow.active { background: var(--group-yellow-bg); color: var(--group-yellow); border-color: var(--group-yellow); }
+.chip.chip-group-green.active  { background: var(--group-green-bg);  color: var(--group-green);  border-color: var(--group-green); }
+.chip.chip-group-teal.active   { background: var(--group-teal-bg);   color: var(--group-teal);   border-color: var(--group-teal); }
+.chip.chip-group-blue.active   { background: var(--group-blue-bg);   color: var(--group-blue);   border-color: var(--group-blue); }
+.chip.chip-group-purple.active { background: var(--group-purple-bg); color: var(--group-purple); border-color: var(--group-purple); }
+.chip.chip-group-pink.active   { background: var(--group-pink-bg);   color: var(--group-pink);   border-color: var(--group-pink); }
+
 /* ── Tables ─────────────────────────────── */
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
