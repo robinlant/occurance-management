@@ -1,9 +1,196 @@
 package handler
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
+
+// newFormContext creates a gin.Context that simulates a POST with the given form values.
+func newFormContext(values url.Values) *gin.Context {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(values.Encode()))
+	c.Request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	return c
+}
+
+// validOccurrenceForm returns url.Values with all required fields set to valid defaults.
+func validOccurrenceForm() url.Values {
+	return url.Values{
+		"title":            {"Test Occurrence"},
+		"description":      {"A short description"},
+		"date":             {time.Now().Add(24 * time.Hour).Format("2006-01-02T15:04")},
+		"min_participants": {"1"},
+		"max_participants": {"5"},
+	}
+}
+
+// ---------- occurrenceFromForm validation tests ----------
+
+func TestOccurrenceFromForm_ValidInput(t *testing.T) {
+	h := &OccurrenceHandler{}
+	form := validOccurrenceForm()
+	c := newFormContext(form)
+
+	occ, err := h.occurrenceFromForm(c, "en")
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if occ.Title != "Test Occurrence" {
+		t.Errorf("expected title %q, got %q", "Test Occurrence", occ.Title)
+	}
+}
+
+// --- Title length limit (max 255) ---
+
+func TestOccurrenceFromForm_TitleExactly255(t *testing.T) {
+	h := &OccurrenceHandler{}
+	form := validOccurrenceForm()
+	form.Set("title", strings.Repeat("a", 255))
+	c := newFormContext(form)
+
+	_, err := h.occurrenceFromForm(c, "en")
+	if err != nil {
+		t.Fatalf("title of exactly 255 chars should be accepted, got error: %v", err)
+	}
+}
+
+func TestOccurrenceFromForm_TitleTooLong(t *testing.T) {
+	h := &OccurrenceHandler{}
+	form := validOccurrenceForm()
+	form.Set("title", strings.Repeat("a", 256))
+	c := newFormContext(form)
+
+	_, err := h.occurrenceFromForm(c, "en")
+	if err == nil {
+		t.Fatal("expected error for title longer than 255 characters, got nil")
+	}
+}
+
+// --- Description length limit (max 5000) ---
+
+func TestOccurrenceFromForm_DescriptionExactly5000(t *testing.T) {
+	h := &OccurrenceHandler{}
+	form := validOccurrenceForm()
+	form.Set("description", strings.Repeat("b", 5000))
+	c := newFormContext(form)
+
+	_, err := h.occurrenceFromForm(c, "en")
+	if err != nil {
+		t.Fatalf("description of exactly 5000 chars should be accepted, got error: %v", err)
+	}
+}
+
+func TestOccurrenceFromForm_DescriptionTooLong(t *testing.T) {
+	h := &OccurrenceHandler{}
+	form := validOccurrenceForm()
+	form.Set("description", strings.Repeat("b", 5001))
+	c := newFormContext(form)
+
+	_, err := h.occurrenceFromForm(c, "en")
+	if err == nil {
+		t.Fatal("expected error for description longer than 5000 characters, got nil")
+	}
+}
+
+func TestOccurrenceFromForm_EmptyDescriptionAllowed(t *testing.T) {
+	h := &OccurrenceHandler{}
+	form := validOccurrenceForm()
+	form.Set("description", "")
+	c := newFormContext(form)
+
+	_, err := h.occurrenceFromForm(c, "en")
+	if err != nil {
+		t.Fatalf("empty description should be accepted, got error: %v", err)
+	}
+}
+
+// --- Min/Max participants upper bound (1000) and min <= max ---
+
+func TestOccurrenceFromForm_ParticipantsAtUpperBound(t *testing.T) {
+	h := &OccurrenceHandler{}
+	form := validOccurrenceForm()
+	form.Set("min_participants", "1")
+	form.Set("max_participants", "1000")
+	c := newFormContext(form)
+
+	_, err := h.occurrenceFromForm(c, "en")
+	if err != nil {
+		t.Fatalf("max_participants of 1000 should be accepted, got error: %v", err)
+	}
+}
+
+func TestOccurrenceFromForm_MinParticipantsExceedsUpperBound(t *testing.T) {
+	h := &OccurrenceHandler{}
+	form := validOccurrenceForm()
+	form.Set("min_participants", "1001")
+	form.Set("max_participants", "1001")
+	c := newFormContext(form)
+
+	_, err := h.occurrenceFromForm(c, "en")
+	if err == nil {
+		t.Fatal("expected error for min_participants > 1000, got nil")
+	}
+}
+
+func TestOccurrenceFromForm_MaxParticipantsExceedsUpperBound(t *testing.T) {
+	h := &OccurrenceHandler{}
+	form := validOccurrenceForm()
+	form.Set("min_participants", "1")
+	form.Set("max_participants", "1001")
+	c := newFormContext(form)
+
+	_, err := h.occurrenceFromForm(c, "en")
+	if err == nil {
+		t.Fatal("expected error for max_participants > 1000, got nil")
+	}
+}
+
+func TestOccurrenceFromForm_MinExceedsMax(t *testing.T) {
+	h := &OccurrenceHandler{}
+	form := validOccurrenceForm()
+	form.Set("min_participants", "10")
+	form.Set("max_participants", "5")
+	c := newFormContext(form)
+
+	_, err := h.occurrenceFromForm(c, "en")
+	if err == nil {
+		t.Fatal("expected error when min_participants > max_participants, got nil")
+	}
+}
+
+func TestOccurrenceFromForm_MinEqualsMax(t *testing.T) {
+	h := &OccurrenceHandler{}
+	form := validOccurrenceForm()
+	form.Set("min_participants", "5")
+	form.Set("max_participants", "5")
+	c := newFormContext(form)
+
+	_, err := h.occurrenceFromForm(c, "en")
+	if err != nil {
+		t.Fatalf("min_participants == max_participants should be accepted, got error: %v", err)
+	}
+}
+
+func TestOccurrenceFromForm_BothParticipantsBoundaryMax(t *testing.T) {
+	h := &OccurrenceHandler{}
+	form := validOccurrenceForm()
+	form.Set("min_participants", "1000")
+	form.Set("max_participants", "1000")
+	c := newFormContext(form)
+
+	_, err := h.occurrenceFromForm(c, "en")
+	if err != nil {
+		t.Fatalf("both participants at 1000 should be accepted, got error: %v", err)
+	}
+}
 
 // ---------- generateRecurrenceDates ----------
 

@@ -22,11 +22,12 @@ import (
 type OccurrenceHandler struct {
 	occurrences *service.OccurrenceService
 	groups      *service.GroupService
+	users       *service.UserService
 	comments    repository.CommentRepository
 }
 
-func NewOccurrenceHandler(occ *service.OccurrenceService, grp *service.GroupService, comments repository.CommentRepository) *OccurrenceHandler {
-	return &OccurrenceHandler{occurrences: occ, groups: grp, comments: comments}
+func NewOccurrenceHandler(occ *service.OccurrenceService, grp *service.GroupService, users *service.UserService, comments repository.CommentRepository) *OccurrenceHandler {
+	return &OccurrenceHandler{occurrences: occ, groups: grp, users: users, comments: comments}
 }
 
 type OccurrenceListItem struct {
@@ -50,6 +51,9 @@ func (h *OccurrenceHandler) List(c *gin.Context) {
 		}
 	}
 	statusFilter := c.Query("status") // "under" | "good" | "over"
+	if domain.ValidateStatusFilter(statusFilter) != nil {
+		statusFilter = ""
+	}
 	hidePast := c.Query("hide_past") != "0"
 
 	var occs []domain.Occurrence
@@ -154,6 +158,11 @@ func (h *OccurrenceHandler) Create(c *gin.Context) {
 
 	// Parse recurrence fields
 	repeat := c.PostForm("repeat") // "", "daily", "weekly", "biweekly", "monthly"
+	if err := domain.ValidateRepeatType(repeat); err != nil {
+		SetFlash(c, "error", i18n.T(lang, "flash.invalidRepeatType"))
+		c.Redirect(http.StatusFound, "/occurrences/new")
+		return
+	}
 	untilStr := c.PostForm("repeat_until")
 
 	dates := []time.Time{occ.Date}
@@ -266,6 +275,13 @@ func (h *OccurrenceHandler) Update(c *gin.Context) {
 	occ.RecurrenceID = existing.RecurrenceID
 
 	editScope := c.PostForm("edit_scope") // "single", "future", "all"
+	if editScope != "" {
+		if err := domain.ValidateEditScope(editScope); err != nil {
+			SetFlash(c, "error", i18n.T(lang, "flash.invalidEditScope"))
+			c.Redirect(http.StatusFound, "/occurrences/"+strconv.FormatInt(id, 10)+"/edit")
+			return
+		}
+	}
 
 	if editScope == "future" && existing.RecurrenceID != "" {
 		count, err := h.occurrences.UpdateSeriesFromDate(c.Request.Context(), occ, existing.RecurrenceID, existing.Date)
@@ -321,6 +337,13 @@ func (h *OccurrenceHandler) Delete(c *gin.Context) {
 	user, _ := CurrentUser(c)
 
 	deleteScope := c.PostForm("delete_scope") // "single", "future", "all"
+	if deleteScope != "" {
+		if err := domain.ValidateDeleteScope(deleteScope); err != nil {
+			SetFlash(c, "error", i18n.T(lang, "flash.invalidDeleteScope"))
+			c.Redirect(http.StatusFound, "/occurrences")
+			return
+		}
+	}
 
 	occ, fetchErr := h.occurrences.GetOccurrence(c.Request.Context(), id)
 
@@ -489,6 +512,11 @@ func (h *OccurrenceHandler) Assign(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
+	if _, err := h.users.GetUser(c.Request.Context(), userID); err != nil {
+		c.Header("HX-Reswap", "none")
+		c.String(http.StatusBadRequest, i18n.T(lang, "flash.userNotFound"))
+		return
+	}
 	currentUser, _ := CurrentUser(c)
 	isOverMax, err := h.occurrences.AssignParticipant(c.Request.Context(), id, userID)
 	if err != nil {
@@ -514,6 +542,10 @@ func (h *OccurrenceHandler) RemoveParticipant(c *gin.Context) {
 	}
 	targetUserID, err := strconv.ParseInt(c.Param("uid"), 10, 64)
 	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if _, err := h.users.GetUser(c.Request.Context(), targetUserID); err != nil {
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -647,7 +679,13 @@ func (h *OccurrenceHandler) occurrenceFromForm(c *gin.Context, lang string) (dom
 	if title == "" {
 		return domain.Occurrence{}, errors.New(i18n.T(lang, "flash.titleRequired"))
 	}
+	if len([]rune(title)) > 255 {
+		return domain.Occurrence{}, errors.New(i18n.T(lang, "flash.titleTooLong"))
+	}
 	description := c.PostForm("description")
+	if len([]rune(description)) > 5000 {
+		return domain.Occurrence{}, errors.New(i18n.T(lang, "flash.descriptionTooLong"))
+	}
 	dateStr := c.PostForm("date")
 	minStr := c.PostForm("min_participants")
 	maxStr := c.PostForm("max_participants")
@@ -668,6 +706,9 @@ func (h *OccurrenceHandler) occurrenceFromForm(c *gin.Context, lang string) (dom
 	if min < 1 || max < 1 {
 		return domain.Occurrence{}, errors.New(i18n.T(lang, "flash.participantsMin"))
 	}
+	if min > 1000 || max > 1000 {
+		return domain.Occurrence{}, errors.New(i18n.T(lang, "flash.participantsMax"))
+	}
 	if min > max {
 		return domain.Occurrence{}, errors.New(i18n.T(lang, "flash.minExceedsMax"))
 	}
@@ -682,6 +723,9 @@ func (h *OccurrenceHandler) occurrenceFromForm(c *gin.Context, lang string) (dom
 	if groupIDStr := c.PostForm("group_id"); groupIDStr != "" {
 		gid, err := strconv.ParseInt(groupIDStr, 10, 64)
 		if err == nil {
+			if _, err := h.groups.GetByID(c.Request.Context(), gid); err != nil {
+				return domain.Occurrence{}, errors.New(i18n.T(lang, "flash.groupNotFound"))
+			}
 			occ.GroupID = gid
 		}
 	}

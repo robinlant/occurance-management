@@ -41,6 +41,9 @@ func (h *LeaderboardHandler) Show(c *gin.Context) {
 
 	// Role filter: "participants" (default), "organizers", "all"
 	roleFilter := c.Query("role_filter")
+	if domain.ValidateRoleFilter(roleFilter) != nil {
+		roleFilter = ""
+	}
 	if roleFilter == "" {
 		roleFilter = "participants"
 	}
@@ -161,6 +164,9 @@ func (h *LeaderboardHandler) Export(c *gin.Context) {
 	}
 
 	roleFilter := c.Query("role_filter")
+	if domain.ValidateRoleFilter(roleFilter) != nil {
+		roleFilter = ""
+	}
 	if roleFilter == "" {
 		roleFilter = "participants"
 	}

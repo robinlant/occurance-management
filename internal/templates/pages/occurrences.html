@@ -26,7 +26,7 @@
      class="chip {{if not .ActiveGroup}}active{{end}}">{{t .Lang "occ.allGroups"}}</a>
   {{range .GroupList}}
     <a href="/occurrences?group={{.ID}}{{if $.StatusFilter}}&status={{$.StatusFilter}}{{end}}{{if not $.HidePast}}&hide_past=0{{end}}"
-       class="chip {{if eq $.ActiveGroup .ID}}active{{end}}">{{.Name}}</a>
+       class="chip {{if .Color}}chip-group-{{.Color}}{{end}} {{if eq $.ActiveGroup .ID}}active{{end}}">{{.Name}}</a>
   {{end}}
 </div>
 {{end}}

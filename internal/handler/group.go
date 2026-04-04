@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/robinlant/occurance-management/internal/domain"
 	"github.com/robinlant/occurance-management/internal/i18n"
 	"github.com/robinlant/occurance-management/internal/service"
 )
@@ -41,6 +42,11 @@ func (h *GroupHandler) Create(c *gin.Context) {
 		return
 	}
 	color := c.PostForm("color")
+	if err := domain.ValidateColor(color); err != nil {
+		SetFlash(c, "error", i18n.T(lang, "flash.invalidColor"))
+		c.Redirect(http.StatusFound, "/groups")
+		return
+	}
 	actor, _ := CurrentUser(c)
 	created, err := h.groups.Create(c.Request.Context(), name, color)
 	if err != nil {
@@ -61,6 +67,11 @@ func (h *GroupHandler) UpdateColor(c *gin.Context) {
 		return
 	}
 	color := c.PostForm("color")
+	if err := domain.ValidateColor(color); err != nil {
+		SetFlash(c, "error", i18n.T(lang, "flash.invalidColor"))
+		c.Redirect(http.StatusFound, "/groups")
+		return
+	}
 	actor, _ := CurrentUser(c)
 	if err := h.groups.UpdateColor(c.Request.Context(), id, color); err != nil {
 		slog.Error("group: update color failed", "actor_user_id", actor.ID, "group_id", id, "error", err)

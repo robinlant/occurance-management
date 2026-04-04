@@ -71,8 +71,8 @@
             <span style="color:var(--text-muted)">{{t .Lang "form.none"}}</span>
           </div>
           {{range .Groups}}
-            <div class="custom-select-option" data-value="{{.ID}}" data-name="{{.Name}}"
-                 onclick="selectGroup(this)">
+            <div class="custom-select-option" data-value="{{.ID}}" data-name="{{.Name}}" data-color="{{.Color}}"
+                 onclick="selectGroup(this)"{{if .Color}} style="border-left:3px solid var(--group-{{.Color}})"{{end}}>
               <span>{{.Name}}</span>
             </div>
           {{end}}
