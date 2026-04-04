@@ -16,6 +16,7 @@ var (
 	ErrEmailTaken   = errors.New("email already taken")
 	ErrOOOConflict  = errors.New("user has participations assigned in the requested out-of-office period")
 	ErrOOONotOwner  = errors.New("out-of-office record does not belong to user")
+	ErrOOOOverlap   = errors.New("overlapping out-of-office period exists")
 	ErrPasswordTooShort = errors.New("password must be at least 8 characters")
 	ErrInvalidRole  = errors.New("invalid role")
 )
@@ -92,6 +93,18 @@ func (s *UserService) AddOutOfOffice(ctx context.Context, userID int64, from, to
 	}
 	if exists {
 		return domain.OutOfOffice{}, ErrOOOConflict
+	}
+	// Check for overlapping OOO periods.
+	existing, err := s.ooo.FindByUser(ctx, userID)
+	if err != nil {
+		return domain.OutOfOffice{}, err
+	}
+	for _, o := range existing {
+		// Two periods overlap if one starts before the other ends AND vice versa.
+		// Adjacent periods (from == o.To or to == o.From) are allowed.
+		if from.Before(o.To) && to.After(o.From) {
+			return domain.OutOfOffice{}, ErrOOOOverlap
+		}
 	}
 	return s.ooo.Save(ctx, domain.OutOfOffice{
 		UserID: userID,

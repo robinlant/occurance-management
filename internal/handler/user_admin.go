@@ -42,6 +42,12 @@ func (h *UserAdminHandler) Create(c *gin.Context) {
 	password := c.PostForm("password")
 	role := domain.Role(c.PostForm("role"))
 
+	if err := domain.ValidateEmail(email); err != nil {
+		SetFlash(c, "error", i18n.T(lang, "flash.invalidEmail"))
+		c.Redirect(http.StatusFound, "/users")
+		return
+	}
+
 	actor, _ := CurrentUser(c)
 	created, err := h.users.CreateUser(c.Request.Context(), name, email, password, role)
 	if err != nil {
@@ -93,6 +99,11 @@ func (h *UserAdminHandler) SetEmail(c *gin.Context) {
 		return
 	}
 	email := c.PostForm("email")
+	if err := domain.ValidateEmail(email); err != nil {
+		SetFlash(c, "error", i18n.T(lang, "flash.invalidEmail"))
+		c.Redirect(http.StatusFound, "/users")
+		return
+	}
 	actor, _ := CurrentUser(c)
 	if err := h.users.SetEmail(c.Request.Context(), id, email); err != nil {
 		slog.Error("user_admin: set email failed", "actor_user_id", actor.ID, "user_id", id, "error", err)

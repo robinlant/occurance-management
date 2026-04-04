@@ -165,6 +165,13 @@ func (h *ProfileHandler) AddOOO(c *gin.Context) {
 			c.String(http.StatusOK, `<div class="flash flash-error" style="margin-top:8px">&#10005; `+i18n.T(lang, "flash.oooConflictDetail")+`</div>`)
 			return
 		}
+		if errors.Is(err, service.ErrOOOOverlap) {
+			slog.Warn("ooo: overlap with existing OOO", "user_id", user.ID)
+			c.Header("HX-Retarget", "#ooo-error")
+			c.Header("HX-Reswap", "innerHTML")
+			c.String(http.StatusOK, `<div class="flash flash-error" style="margin-top:8px">&#10005; `+i18n.T(lang, "flash.oooOverlap")+`</div>`)
+			return
+		}
 		slog.Error("ooo: add failed", "user_id", user.ID, "error", err)
 		c.Status(http.StatusInternalServerError)
 		return

@@ -64,7 +64,7 @@ func main() {
 	// Handlers
 	authH := handler.NewAuthHandler(userRepo)
 	dashH := handler.NewDashboardHandler(occSvc)
-	occH := handler.NewOccurrenceHandler(occSvc, groupSvc, commentRepo)
+	occH := handler.NewOccurrenceHandler(occSvc, groupSvc, userSvc, commentRepo)
 	grpH := handler.NewGroupHandler(groupSvc)
 	usrH := handler.NewUserAdminHandler(userSvc)
 	profH := handler.NewProfileHandler(userSvc, occSvc, groupSvc)
