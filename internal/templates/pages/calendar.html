@@ -21,7 +21,7 @@
      class="chip {{if not .GroupFilter}}active{{end}}">{{t .Lang "cal.allGroups"}}</a>
   {{range .GroupList}}
     <a href="/calendar?month={{formatMonth $.Month}}&group={{.ID}}{{if $.StatusFilter}}&status={{$.StatusFilter}}{{end}}{{if $.HidePast}}&hide_past=1{{end}}"
-       class="chip {{if eq $.GroupFilter .ID}}active{{end}}">{{.Name}}</a>
+       class="chip {{if .Color}}chip-group-{{.Color}}{{end}} {{if eq $.GroupFilter .ID}}active{{end}}">{{.Name}}</a>
   {{end}}
 </div>
 {{end}}
