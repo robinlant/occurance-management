@@ -1,0 +1,54 @@
+{{define "participant_list"}}
+<div id="participant-section" class="card">
+  <div class="row-between" style="margin-bottom:12px">
+    <div class="card-title" style="margin-bottom:0">
+      {{t .Lang "occ.participants"}}
+      <span style="font-weight:400;color:var(--text-muted)">{{len .Participants}} / {{.Occurrence.MaxParticipants}}</span>
+    </div>
+  </div>
+
+  {{if not .Participants}}
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px">{{t .Lang "occ.noParticipants"}}</p>
+  {{else}}
+    <div style="margin-bottom:12px">
+      {{range .Participants}}
+        <div class="participant-row">
+          <a href="/profile/{{.ID}}" style="font-size:13px;color:inherit;text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">{{.Name}}</a>
+          {{if or (eq $.CurrentUser.Role "organizer") (eq $.CurrentUser.Role "admin")}}
+            <button class="btn btn-danger btn-sm"
+              hx-post="/duties/{{$.Occurrence.ID}}/remove/{{.ID}}"
+              hx-target="#participant-section"
+              hx-swap="outerHTML">{{t $.Lang "occ.remove"}}</button>
+          {{end}}
+        </div>
+      {{end}}
+    </div>
+  {{end}}
+
+  {{if or (eq .CurrentUser.Role "participant") (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
+    {{if .IsSignedUp}}
+      <button class="btn btn-ghost"
+        hx-post="/duties/{{.Occurrence.ID}}/withdraw"
+        hx-target="#participant-section"
+        hx-swap="outerHTML">{{t .Lang "occ.withdraw"}}</button>
+    {{else}}
+      {{if .IsFull}}
+        {{if .Occurrence.AllowOverLimit}}
+          <p style="color:var(--warning);font-size:12px;margin-bottom:8px;display:flex;align-items:center;gap:4px">{{template "icon-alert-triangle" .}} {{t .Lang "occ.overLimitWarning"}}</p>
+          <button class="btn btn-primary"
+            hx-post="/duties/{{.Occurrence.ID}}/signup"
+            hx-target="#participant-section"
+            hx-swap="outerHTML">{{t .Lang "occ.signupOverLimit"}}</button>
+        {{else}}
+          <span class="badge badge-yellow" style="font-size:12px">{{t .Lang "occ.full"}}</span>
+        {{end}}
+      {{else}}
+        <button class="btn btn-primary"
+          hx-post="/duties/{{.Occurrence.ID}}/signup"
+          hx-target="#participant-section"
+          hx-swap="outerHTML">{{t .Lang "occ.signup"}}</button>
+      {{end}}
+    {{end}}
+  {{end}}
+</div>
+{{end}}

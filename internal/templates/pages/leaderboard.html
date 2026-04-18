@@ -1,0 +1,66 @@
+{{define "content"}}
+
+{{/* Date range filter chips */}}
+<div class="filter-bar" style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+    <a href="/leaderboard?from={{.StudentYearFrom}}&to={{.StudentYearTo}}&role_filter={{.RoleFilter}}&group={{.ActiveGroup}}"
+       class="chip {{if .StudentYearActive}}active{{end}}">{{t .Lang "lb.studentYear"}}</a>
+    <a href="/leaderboard?from={{.ThisYearFrom}}&to={{.ThisYearTo}}&role_filter={{.RoleFilter}}&group={{.ActiveGroup}}"
+       class="chip {{if .ThisYearActive}}active{{end}}">{{t .Lang "lb.thisYear"}}</a>
+    <form id="lb-form" style="display:inline-flex;align-items:center;gap:6px;margin:0" action="/leaderboard" method="get">
+      <input type="hidden" name="role_filter" value="{{.RoleFilter}}">
+      <input type="hidden" name="group" value="{{.ActiveGroup}}">
+      <input type="date" name="from" id="lb-from" value="{{.From}}" onchange="validateDateRange()"
+             style="padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;font-family:inherit;outline:none">
+      <span style="color:var(--text-muted);font-size:12px">&ndash;</span>
+      <input type="date" name="to" id="lb-to" value="{{.To}}" onchange="validateDateRange()"
+             style="padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;font-family:inherit;outline:none">
+    </form>
+    <small id="lb-date-warning" style="display:none;color:var(--danger);font-size:12px">{{t .Lang "lb.dateRangeError"}}</small>
+    <script>
+    function validateDateRange() {
+      var f = document.getElementById('lb-from'), t = document.getElementById('lb-to');
+      var warn = document.getElementById('lb-date-warning');
+      var exportBtn = document.getElementById('lb-export');
+      var bad = f.value && t.value && f.value > t.value;
+      var border = bad ? 'var(--danger)' : 'var(--border)';
+      var base = 'padding:4px 10px;border-radius:20px;border:1px solid '+border+';background:var(--bg);color:var(--text);font-size:12px;font-family:inherit;outline:none';
+      f.setAttribute('style', base);
+      t.setAttribute('style', base);
+      warn.style.display = bad ? 'inline' : 'none';
+      exportBtn.style.opacity = bad ? '0.4' : '1';
+      exportBtn.style.pointerEvents = bad ? 'none' : 'auto';
+      if (!bad) document.getElementById('lb-form').submit();
+    }
+    </script>
+  </div>
+  <a id="lb-export" href="/leaderboard/export?from={{.From}}&to={{.To}}&role_filter={{.RoleFilter}}&group={{.ActiveGroup}}"
+     class="chip" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;white-space:nowrap">
+    {{template "icon-download" .}}
+    {{t .Lang "lb.export"}}
+  </a>
+</div>
+
+{{/* Role + Group filter chips on one row */}}
+<div class="filter-bar" style="margin-bottom:8px">
+  <a href="/leaderboard?from={{.From}}&to={{.To}}&role_filter=participants&group={{.ActiveGroup}}"
+     class="chip {{if eq .RoleFilter "participants"}}active{{end}}">{{t .Lang "lb.participants"}}</a>
+  <a href="/leaderboard?from={{.From}}&to={{.To}}&role_filter=organizers&group={{.ActiveGroup}}"
+     class="chip {{if eq .RoleFilter "organizers"}}active{{end}}">{{t .Lang "lb.organizers"}}</a>
+  <a href="/leaderboard?from={{.From}}&to={{.To}}&role_filter=all&group={{.ActiveGroup}}"
+     class="chip {{if eq .RoleFilter "all"}}active{{end}}">{{t .Lang "lb.all"}}</a>
+  {{if .Groups}}
+  <span style="width:1px;height:20px;background:var(--border);margin:0 4px"></span>
+  <a href="/leaderboard?from={{.From}}&to={{.To}}&role_filter={{.RoleFilter}}"
+     class="chip {{if eq .ActiveGroup 0}}active{{end}}">{{t .Lang "lb.allGroups"}}</a>
+  {{range .Groups}}
+  <a href="/leaderboard?from={{$.From}}&to={{$.To}}&role_filter={{$.RoleFilter}}&group={{.ID}}"
+     class="chip {{if .Color}}chip-group-{{.Color}}{{end}} {{if eq $.ActiveGroup .ID}}active{{end}}">{{.Name}}</a>
+  {{end}}
+  {{end}}
+</div>
+
+<div class="card" style="margin-top:16px">
+  {{template "leaderboard_table" .}}
+</div>
+{{end}}

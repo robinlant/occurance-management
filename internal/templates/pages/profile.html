@@ -1,0 +1,126 @@
+{{define "content"}}
+<div class="grid-3" style="margin-bottom:20px">
+  <div class="stat-card">
+    <div class="stat-value">{{.Stats.Total}}</div>
+    <div class="stat-label">{{t .Lang "profile.totalParticipations"}}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{.Stats.CurrentStreak}}</div>
+    <div class="stat-label">{{t .Lang "profile.currentStreak"}}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{.Stats.LongestStreak}}</div>
+    <div class="stat-label">{{t .Lang "profile.longestStreak"}}</div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:20px">
+  <div class="card-title">{{t .Lang "profile.activity"}}</div>
+  <div class="heatmap-meta">
+    <span class="heatmap-avg">{{.Stats.Average}} {{t .Lang "profile.perMonth"}}</span>
+  </div>
+  <div class="heatmap-scroll">
+    <div class="heatmap-grid" style="grid-template-columns:repeat({{.WeekCount}},14px)">
+      {{range .Heatmap}}
+        <div class="heatmap-cell level-{{.Level}}{{if .IsOOO}} ooo{{end}}" title="{{.Date}}: {{if .IsOOO}}Out of office{{else}}{{.Count}} participation{{if ne .Count 1}}s{{end}}{{end}}"></div>
+      {{end}}
+    </div>
+  </div>
+  <div class="heatmap-legend">
+    <span class="heatmap-legend-label">{{t .Lang "profile.less"}}</span>
+    <div class="heatmap-cell level-0"></div>
+    <div class="heatmap-cell level-4"></div>
+    <span class="heatmap-legend-label">{{t .Lang "profile.more"}}</span>
+    <span class="heatmap-legend-label" style="margin-left:12px">&#124;</span>
+    <div class="heatmap-cell ooo" style="margin-left:8px"></div>
+    <span class="heatmap-legend-label">{{t .Lang "profile.ooo"}}</span>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="stack">
+    <div class="card">
+      <div class="card-title">{{t .Lang "profile.account"}}</div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+        <div class="user-avatar" style="width:48px;height:48px;font-size:20px">
+          {{initial .CurrentUser.Name}}
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:600">{{.CurrentUser.Name}}</div>
+          <div style="font-size:12px;color:var(--text-muted)">{{username .CurrentUser.Email}}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+            <span class="badge {{if eq .CurrentUser.Role "admin"}}badge-red{{else if eq .CurrentUser.Role "organizer"}}badge-accent{{else}}badge-gray{{end}}">{{.CurrentUser.Role}}</span>
+            {{if .IsCurrentlyOOO}}<span class="badge badge-yellow">{{t .Lang "profile.currentlyOOO"}}</span>{{end}}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">{{t .Lang "profile.changePassword"}}</div>
+      <form method="POST" action="/profile/password" class="row">
+        <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+        <input type="password" name="current_password" id="profile-current-password" placeholder="{{t .Lang "profile.currentPassword"}}" required style="flex:1">
+        <input type="password" name="password" id="profile-password" placeholder="{{t .Lang "profile.newPassword"}}" required minlength="8" style="flex:1">
+        <button type="submit" class="btn btn-primary btn-sm">{{t .Lang "profile.save"}}</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">{{t .Lang "profile.outOfOffice"}}</div>
+
+    <div id="ooo-list" style="margin-bottom:16px">
+      {{template "ooo_list" .}}
+    </div>
+
+    <hr class="divider">
+
+    <form hx-post="/profile/ooo"
+          hx-target="#ooo-list"
+          hx-swap="outerHTML"
+          class="stack-sm">
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="ooo-from">{{t .Lang "profile.from"}}</label>
+          <input type="date" name="from" id="ooo-from" required>
+        </div>
+        <div class="form-group">
+          <label for="ooo-to">{{t .Lang "profile.to"}}</label>
+          <input type="date" name="to" id="ooo-to" required>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">{{t .Lang "profile.addPeriod"}}</button>
+      <div id="ooo-error"></div>
+    </form>
+  </div>
+</div>
+
+<div class="card" style="margin-top:20px">
+  <div class="card-title">{{t .Lang "profile.occurrences"}}</div>
+  {{if not .Occurrences}}
+    <p style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px">{{t .Lang "profile.noOccurrences"}}</p>
+  {{else}}
+    {{range .Occurrences}}
+      {{$group := index $.Groups .GroupID}}
+      <a href="/duties/{{.ID}}" style="display:block" class="{{if isPast .Date}}past{{end}}">
+        <div class="occ-item">
+          <div class="occ-info">
+            <div class="occ-title">
+              <span class="occ-status-dot {{.Status}}"></span>
+              {{.Title}}
+              {{if $group.ID}}<span class="badge {{if $group.Color}}badge-group-{{$group.Color}}{{else}}badge-accent{{end}}">{{$group.Name}}</span>{{end}}
+              {{if isPast .Date}}<span class="badge badge-gray">{{t $.Lang "occ.past"}}</span>{{end}}
+            </div>
+          </div>
+          <div class="occ-meta">
+            <div class="occ-date">{{formatDate .Date}}</div>
+            <div class="occ-slots">{{weekdayT $.Lang .Date}} &middot; {{relativeDay $.Lang .Date}}</div>
+            <div class="occ-slots">{{.ParticipantCount}}/{{.MinParticipants}}&#8211;{{.MaxParticipants}} {{t $.Lang "occ.people"}}</div>
+          </div>
+        </div>
+      </a>
+    {{end}}
+  {{end}}
+</div>
+{{end}}

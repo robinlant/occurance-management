@@ -1,0 +1,92 @@
+{{define "content"}}
+<div class="grid-3" style="margin-bottom:20px">
+  <div class="stat-card">
+    <div class="stat-value">{{.Stats.Total}}</div>
+    <div class="stat-label">{{t .Lang "profile.totalParticipations"}}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{.Stats.CurrentStreak}}</div>
+    <div class="stat-label">{{t .Lang "profile.currentStreak"}}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{.Stats.LongestStreak}}</div>
+    <div class="stat-label">{{t .Lang "profile.longestStreak"}}</div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:20px">
+  <div class="card-title">{{t .Lang "profile.activity"}}</div>
+  <div class="heatmap-meta">
+    <span class="heatmap-avg">{{.Stats.Average}} {{t .Lang "profile.perMonth"}}</span>
+  </div>
+  <div class="heatmap-scroll">
+    <div class="heatmap-grid" style="grid-template-columns:repeat({{.WeekCount}},14px)">
+      {{range .Heatmap}}
+        <div class="heatmap-cell level-{{.Level}}{{if .IsOOO}} ooo{{end}}" title="{{.Date}}: {{if .IsOOO}}Out of office{{else}}{{.Count}} participation{{if ne .Count 1}}s{{end}}{{end}}"></div>
+      {{end}}
+    </div>
+  </div>
+  <div class="heatmap-legend">
+    <span class="heatmap-legend-label">{{t .Lang "profile.less"}}</span>
+    <div class="heatmap-cell level-0"></div>
+    <div class="heatmap-cell level-4"></div>
+    <span class="heatmap-legend-label">{{t .Lang "profile.more"}}</span>
+    <span class="heatmap-legend-label" style="margin-left:12px">&#124;</span>
+    <div class="heatmap-cell ooo" style="margin-left:8px"></div>
+    <span class="heatmap-legend-label">{{t .Lang "profile.ooo"}}</span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">{{t .Lang "profile.userInfo"}}</div>
+  <div style="display:flex;align-items:center;gap:14px">
+    <div class="user-avatar" style="width:48px;height:48px;font-size:20px">
+      {{initial .ProfileUser.Name}}
+    </div>
+    <div>
+      <div style="font-size:15px;font-weight:600">{{.ProfileUser.Name}}</div>
+      <div style="font-size:12px;color:var(--text-muted)">{{username .ProfileUser.Email}}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+        <span class="badge {{if eq .ProfileUser.Role "admin"}}badge-red{{else if eq .ProfileUser.Role "organizer"}}badge-accent{{else}}badge-gray{{end}}">{{.ProfileUser.Role}}</span>
+        {{if .IsCurrentlyOOO}}<span class="badge badge-yellow">{{t .Lang "profile.currentlyOOO"}}</span>{{end}}
+      </div>
+      {{if .OOOs}}
+      <div style="margin-top:12px">
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">{{t .Lang "profile.outOfOffice"}}</div>
+        {{range .OOOs}}
+          <div style="font-size:12px;color:var(--text-muted);padding:4px 0;border-bottom:1px solid var(--border)">{{formatDate .From}} &#8212; {{formatDate .To}}</div>
+        {{end}}
+      </div>
+      {{end}}
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:20px">
+  <div class="card-title">{{t .Lang "profile.occurrencesOther"}}</div>
+  {{if not .Occurrences}}
+    <p style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px">{{t .Lang "profile.noOccurrencesOther"}}</p>
+  {{else}}
+    {{range .Occurrences}}
+      {{$group := index $.Groups .GroupID}}
+      <a href="/duties/{{.ID}}" style="display:block" class="{{if isPast .Date}}past{{end}}">
+        <div class="occ-item">
+          <div class="occ-info">
+            <div class="occ-title">
+              <span class="occ-status-dot {{.Status}}"></span>
+              {{.Title}}
+              {{if $group.ID}}<span class="badge {{if $group.Color}}badge-group-{{$group.Color}}{{else}}badge-accent{{end}}">{{$group.Name}}</span>{{end}}
+              {{if isPast .Date}}<span class="badge badge-gray">{{t $.Lang "occ.past"}}</span>{{end}}
+            </div>
+          </div>
+          <div class="occ-meta">
+            <div class="occ-date">{{formatDate .Date}}</div>
+            <div class="occ-slots">{{weekdayT $.Lang .Date}} &middot; {{relativeDay $.Lang .Date}}</div>
+            <div class="occ-slots">{{.ParticipantCount}}/{{.MinParticipants}}&#8211;{{.MaxParticipants}} {{t $.Lang "occ.people"}}</div>
+          </div>
+        </div>
+      </a>
+    {{end}}
+  {{end}}
+</div>
+{{end}}

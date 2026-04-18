@@ -1,0 +1,93 @@
+{{define "content"}}
+
+{{if or (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
+<div class="card" style="margin-bottom:20px">
+  <div class="card-title">{{t .Lang "groups.createGroup"}}</div>
+  <form method="POST" action="/groups" class="group-create-form">
+    <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+    <div class="color-pick-wrap">
+      <button type="button" class="color-pick-btn" onclick="toggleColorPicker(this)">
+        <span class="color-pick-preview" data-color="red" style="background:var(--group-red)"></span>
+        {{template "icon-palette" .}}
+      </button>
+      <div class="color-pick-dropdown">
+        {{range $c := list "red" "orange" "yellow" "green" "teal" "blue" "purple" "pink"}}
+          <label class="color-swatch" data-color="{{$c}}" onclick="pickCreateColor(this, '{{$c}}')">
+            <input type="radio" name="color" value="{{$c}}" {{if eq $c "red"}}checked{{end}}>
+          </label>
+        {{end}}
+      </div>
+    </div>
+    <input type="text" name="name" placeholder="{{t .Lang "groups.newGroupName"}}" required style="flex:1">
+    <button type="submit" class="btn btn-primary btn-sm">{{t .Lang "groups.create"}}</button>
+  </form>
+</div>
+{{end}}
+
+<div class="card">
+  {{if not .Groups}}
+    <p style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px">{{t .Lang "groups.noGroups"}}</p>
+  {{else}}
+    {{range .Groups}}
+      <div class="occ-item">
+        <div class="occ-info" style="display:flex;align-items:center;gap:10px">
+          <span class="badge {{if .Color}}badge-group-{{.Color}}{{else}}badge-accent{{end}}">{{.Name}}</span>
+          {{if or (eq $.CurrentUser.Role "organizer") (eq $.CurrentUser.Role "admin")}}
+            <div class="color-pick-wrap">
+              <button type="button" class="color-pick-btn" onclick="toggleColorPicker(this)">
+                {{template "icon-palette" .}}
+              </button>
+              <div class="color-pick-dropdown">
+                {{$currentColor := .Color}}
+                {{$groupID := .ID}}
+                {{range $c := list "red" "orange" "yellow" "green" "teal" "blue" "purple" "pink"}}
+                  <form method="POST" action="/groups/{{$groupID}}/color" style="display:contents">
+                    <input type="hidden" name="_csrf" value="{{$.CSRFToken}}">
+                    <input type="hidden" name="color" value="{{$c}}">
+                    <button type="submit" class="color-swatch{{if eq $c $currentColor}} selected{{end}}" data-color="{{$c}}"></button>
+                  </form>
+                {{end}}
+              </div>
+            </div>
+          {{end}}
+        </div>
+        {{if or (eq $.CurrentUser.Role "organizer") (eq $.CurrentUser.Role "admin")}}
+          <form method="POST" action="/groups/{{.ID}}/delete" onsubmit="return confirm('Are you sure you want to delete the group &#34;{{.Name}}&#34;? This cannot be undone.')">
+            <input type="hidden" name="_csrf" value="{{$.CSRFToken}}">
+            <button class="btn btn-danger btn-sm">{{t $.Lang "groups.delete"}}</button>
+          </form>
+        {{end}}
+      </div>
+    {{end}}
+  {{end}}
+</div>
+
+<script>
+function toggleColorPicker(btn) {
+  var dd = btn.nextElementSibling;
+  var wasOpen = dd.classList.contains('open');
+  // Close all open pickers first
+  document.querySelectorAll('.color-pick-dropdown.open').forEach(function(d) {
+    d.classList.remove('open');
+  });
+  if (!wasOpen) dd.classList.add('open');
+}
+
+function pickCreateColor(swatch, color) {
+  var wrap = swatch.closest('.color-pick-wrap');
+  var preview = wrap.querySelector('.color-pick-preview');
+  preview.style.background = 'var(--group-' + color + ')';
+  preview.setAttribute('data-color', color);
+  wrap.querySelector('.color-pick-dropdown').classList.remove('open');
+}
+
+// Close picker on outside click
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.color-pick-wrap')) {
+    document.querySelectorAll('.color-pick-dropdown.open').forEach(function(d) {
+      d.classList.remove('open');
+    });
+  }
+});
+</script>
+{{end}}

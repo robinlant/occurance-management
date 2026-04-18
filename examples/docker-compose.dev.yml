@@ -1,0 +1,13 @@
+name: dutyround
+
+services:
+  app:
+    image: ghcr.io/robinlant/dutyround:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - dutyround_data:/data
+
+volumes:
+  dutyround_data:
+    name: dutyround_data

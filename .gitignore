@@ -1,0 +1,44 @@
+# Binary
+dutyround
+occurance-management
+bin
+
+# Database
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+/vendor/
+
+# Environment
+.env
+.env.local
+
+# Claude
+**/.claude
+**/.playwright-mcp
+*.png
+test-data
+
+# Node / Playwright
+node_modules/
+package.json
+package-lock.json
+playwright.config.ts
+test-results/
+
+# Test binary
+dutyround-test-bin

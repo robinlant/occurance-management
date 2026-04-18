@@ -1,0 +1,102 @@
+{{define "content"}}
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">{{t .Lang "users.allUsers"}}</div>
+    <input type="text" id="user-search" placeholder="{{t .Lang "users.searchUsers"}}" style="margin-bottom:12px"
+           oninput="filterUsers(this.value)">
+    <div id="user-list">
+    {{range .Users}}
+      <div class="user-list-item" data-name="{{.Name}}" data-email="{{.Email}}">
+        <div class="occ-item">
+          <div class="occ-info">
+            <div class="occ-title" style="display:flex;align-items:center;gap:8px">
+              <a href="/profile/{{.ID}}" style="color:inherit;text-decoration:none;font-weight:600">{{.Name}}</a>
+              <span class="badge {{if eq .Role "admin"}}badge-red{{else if eq .Role "organizer"}}badge-accent{{else}}badge-gray{{end}}">{{.Role}}</span>
+            </div>
+            <div class="occ-desc">{{.Email}}</div>
+          </div>
+          <div class="row">
+            <a href="/profile/{{.ID}}" class="btn btn-ghost btn-sm">{{t $.Lang "users.viewProfile"}}</a>
+            <form method="POST" action="/users/{{.ID}}/delete" onsubmit="return confirm('Are you sure you want to delete this user?')">
+              <input type="hidden" name="_csrf" value="{{$.CSRFToken}}">
+              <button class="btn btn-danger btn-sm">{{t $.Lang "users.delete"}}</button>
+            </form>
+          </div>
+        </div>
+        <form method="POST" action="/users/{{.ID}}/set-email" class="row" style="margin-bottom:6px">
+          <input type="hidden" name="_csrf" value="{{$.CSRFToken}}">
+          <input type="email" name="email" placeholder="{{t $.Lang "users.setNewEmail"}}" required style="flex:1" autocomplete="off">
+          <button type="submit" class="btn btn-ghost btn-sm">{{t $.Lang "users.set"}}</button>
+        </form>
+        <form method="POST" action="/users/{{.ID}}/set-password" class="row" style="margin-bottom:12px">
+          <input type="hidden" name="_csrf" value="{{$.CSRFToken}}">
+          <input type="password" name="password" placeholder="{{t $.Lang "users.setNewPassword"}}" required minlength="8" style="flex:1" autocomplete="new-password">
+          <button type="submit" class="btn btn-ghost btn-sm">{{t $.Lang "users.set"}}</button>
+        </form>
+      </div>
+    {{end}}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">{{t .Lang "users.createUser"}}</div>
+    <form method="POST" action="/users" class="stack">
+      <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+      <div class="form-group">
+        <label for="create-name">{{t .Lang "users.name"}}</label>
+        <input type="text" name="name" id="create-name" required placeholder="{{t .Lang "users.fullName"}}">
+      </div>
+      <div class="form-group">
+        <label for="create-email">{{t .Lang "users.email"}}</label>
+        <input type="email" name="email" id="create-email" required placeholder="email@company.com" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="create-password">{{t .Lang "users.password"}}</label>
+        <input type="password" name="password" id="create-password" required placeholder="{{t .Lang "users.minPassword"}}" minlength="8" autocomplete="new-password">
+      </div>
+      <div class="form-group">
+        <label for="role-search">{{t .Lang "users.role"}}</label>
+        <input type="hidden" name="role" id="role-input" value="participant">
+        <div class="custom-select-wrap">
+          <input type="text" class="custom-select-input" id="role-search"
+                 value="{{t .Lang "users.participant"}}" readonly
+                 onfocus="document.getElementById('role-dropdown').classList.add('open')"
+                 autocomplete="off">
+          <div class="custom-select-dropdown" id="role-dropdown">
+            <div class="custom-select-option" data-value="participant" data-name="{{t .Lang "users.participant"}}"
+                 onclick="selectRole(this)"><span>{{t .Lang "users.participant"}}</span></div>
+            <div class="custom-select-option" data-value="organizer" data-name="{{t .Lang "users.organizer"}}"
+                 onclick="selectRole(this)"><span>{{t .Lang "users.organizer"}}</span></div>
+            <div class="custom-select-option" data-value="admin" data-name="{{t .Lang "users.admin"}}"
+                 onclick="selectRole(this)"><span>{{t .Lang "users.admin"}}</span></div>
+          </div>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">{{t .Lang "users.createUser"}}</button>
+    </form>
+  </div>
+</div>
+
+<script>
+function filterUsers(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('.user-list-item').forEach(function(el) {
+    var name = (el.getAttribute('data-name') || '').toLowerCase();
+    var email = (el.getAttribute('data-email') || '').toLowerCase();
+    el.style.display = (name.indexOf(q) >= 0 || email.indexOf(q) >= 0) ? '' : 'none';
+  });
+}
+function selectRole(el) {
+  document.getElementById('role-input').value = el.getAttribute('data-value');
+  document.getElementById('role-search').value = el.getAttribute('data-name');
+  document.getElementById('role-dropdown').classList.remove('open');
+}
+document.addEventListener('click', function(e) {
+  var dd = document.getElementById('role-dropdown');
+  var wrap = dd ? dd.closest('.custom-select-wrap') : null;
+  if (wrap && !wrap.contains(e.target)) {
+    dd.classList.remove('open');
+  }
+});
+</script>
+{{end}}

@@ -1,0 +1,27 @@
+{{define "day_occurrences"}}
+<div class="day-panel-title">{{formatDate .Date}}</div>
+{{if not .Occurrences}}
+  <p style="color:var(--text-muted);font-size:13px">{{t .Lang "cal.noOcc"}}</p>
+{{else}}
+  {{range .Occurrences}}
+    <a href="/duties/{{.ID}}" class="day-occ-item status-{{.Status}}{{if isPast .Date}} past{{end}}">
+      <div class="day-occ-title">{{.Title}}</div>
+      <div class="day-occ-meta">
+        <span>{{formatTime .Date}}</span>
+        <span class="day-occ-count">{{.ParticipantCount}} / {{.MaxParticipants}} {{t $.Lang "occ.people"}}</span>
+      </div>
+      {{if .Description}}<div class="day-occ-desc">{{.Description}}</div>{{end}}
+    </a>
+  {{end}}
+{{end}}
+<div class="status-legend">
+  <div class="legend-item"><span class="legend-dot under"></span>{{t .Lang "cal.needsPeople"}}</div>
+  <div class="legend-item"><span class="legend-dot good"></span>{{t .Lang "cal.filled"}}</div>
+  <div class="legend-item"><span class="legend-dot over"></span>{{t .Lang "cal.overStaffed"}}</div>
+</div>
+{{if or (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
+<a href="/duties/new?date={{formatISO .Date}}"
+   class="btn btn-primary btn-sm"
+   style="display:block;text-align:center;margin-top:12px;width:100%">{{t .Lang "occ.new"}}</a>
+{{end}}
+{{end}}

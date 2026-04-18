@@ -1,0 +1,46 @@
+version: "2"
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - ineffassign
+    - gocritic
+    - gosec
+    - misspell
+    - unconvert
+    - unparam
+    - errname
+    - bodyclose
+
+  settings:
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - performance
+      disabled-checks:
+        - hugeParam
+
+    gosec:
+      excludes:
+        - G104
+
+  exclusions:
+    paths:
+      - migrations
+      - static
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    paths:
+      - migrations
+      - static
+
+issues:
+  max-issues-per-linter: 50
+  max-same-issues: 5

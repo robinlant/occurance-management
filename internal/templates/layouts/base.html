@@ -1,0 +1,153 @@
+{{define "base"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DutyRound</title>
+  <meta name="csrf-token" content="{{.CSRFToken}}">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="/static/css/app.css">
+  <script>(function(){var t=localStorage.getItem('dr-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script>
+  document.addEventListener('htmx:configRequest', function(evt) {
+    if (evt.detail.verb !== 'get') {
+      var token = document.querySelector('meta[name="csrf-token"]');
+      if (token) { evt.detail.parameters['_csrf'] = token.getAttribute('content'); }
+    }
+  });
+  </script>
+</head>
+<body>
+<a href="#main-content" class="skip-to-content">{{t .Lang "nav.skipContent"}}</a>
+{{if .CurrentUser.ID}}
+<button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')" aria-label="Toggle navigation">{{template "icon-menu" .}}</button>
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">{{template "icon-zap" .}}</div>
+    DutyRound
+  </div>
+  <nav class="sidebar-nav" aria-label="Main navigation">
+    <a href="/"            class="nav-link {{if eq .ActivePage "dashboard"}}active{{end}}"{{if eq .ActivePage "dashboard"}} aria-current="page"{{end}}><span class="nav-icon">{{template "icon-layout-dashboard" .}}</span> {{t .Lang "nav.dashboard"}}</a>
+    <a href="/duties" class="nav-link {{if eq .ActivePage "occurrences"}}active{{end}}"{{if eq .ActivePage "occurrences"}} aria-current="page"{{end}}><span class="nav-icon">{{template "icon-clipboard-list" .}}</span> {{t .Lang "nav.occurrences"}}</a>
+    <a href="/calendar"    class="nav-link {{if eq .ActivePage "calendar"}}active{{end}}"{{if eq .ActivePage "calendar"}} aria-current="page"{{end}}><span class="nav-icon">{{template "icon-calendar" .}}</span> {{t .Lang "nav.calendar"}}</a>
+    <a href="/leaderboard" class="nav-link {{if eq .ActivePage "leaderboard"}}active{{end}}"{{if eq .ActivePage "leaderboard"}} aria-current="page"{{end}}><span class="nav-icon">{{template "icon-trophy" .}}</span> {{t .Lang "nav.leaderboard"}}</a>
+    {{if or (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
+    <a href="/groups"      class="nav-link {{if eq .ActivePage "groups"}}active{{end}}"{{if eq .ActivePage "groups"}} aria-current="page"{{end}}><span class="nav-icon">{{template "icon-users-round" .}}</span> {{t .Lang "nav.groups"}}</a>
+    {{end}}
+    {{if eq .CurrentUser.Role "admin"}}
+    <a href="/users"       class="nav-link {{if eq .ActivePage "users"}}active{{end}}"{{if eq .ActivePage "users"}} aria-current="page"{{end}}><span class="nav-icon">{{template "icon-user-cog" .}}</span> {{t .Lang "nav.users"}}</a>
+    <a href="/settings"    class="nav-link {{if eq .ActivePage "settings"}}active{{end}}"{{if eq .ActivePage "settings"}} aria-current="page"{{end}}><span class="nav-icon">{{template "icon-settings" .}}</span> {{t .Lang "nav.settings"}}</a>
+    {{end}}
+  </nav>
+  <div class="sidebar-footer">
+    <a href="https://github.com/robinlant/dutyround" target="_blank" rel="noopener" class="sidebar-github">
+      <span class="nav-icon">{{template "icon-github" .}}</span> GitHub
+    </a>
+  </div>
+</div>
+
+<script>
+function toggleTheme(){
+  var cur=document.documentElement.getAttribute('data-theme')||'dark';
+  var next=cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  localStorage.setItem('dr-theme',next);
+  updateThemeBtn();
+}
+function updateThemeBtn(){
+  var btn=document.getElementById('theme-btn');
+  if(!btn)return;
+  var t=document.documentElement.getAttribute('data-theme')||'dark';
+  var src=document.getElementById(t==='dark'?'icon-sun-src':'icon-moon-src');
+  if(src)btn.innerHTML=src.innerHTML;
+  btn.title=t==='dark'?'Switch to light':'Switch to dark';
+}
+document.addEventListener('DOMContentLoaded',updateThemeBtn);
+document.addEventListener('click',function(e){
+  var wrap=document.querySelector('.search-wrap');
+  if(wrap && !wrap.contains(e.target)){
+    var dd=document.getElementById('search-results');
+    if(dd)dd.innerHTML='';
+  }
+});
+</script>
+
+<div class="main-wrap">
+  <div class="topbar">
+    <span class="topbar-title">{{.PageTitle}}</span>
+    <div class="search-wrap">
+      <input type="search" name="q" placeholder="{{t .Lang "nav.search"}}"
+             class="search-input" aria-label="Search people and duties"
+             hx-get="/search" hx-trigger="keyup changed delay:300ms"
+             hx-target="#search-results" hx-swap="outerHTML"
+             autocomplete="off">
+      <div id="search-results"></div>
+    </div>
+    <div class="topbar-right">
+      <div style="display:flex;align-items:center;gap:6px">
+        {{block "topbar-actions" .}}{{end}}
+      </div>
+      <div class="topbar-sep"></div>
+      <form method="GET" action="/lang" class="language-form">
+        <select name="lang" class="language-select" aria-label="Switch language" onchange="this.form.submit()">
+          <option value="en"{{if eq .Lang "en"}} selected{{end}}>EN</option>
+          <option value="de"{{if eq .Lang "de"}} selected{{end}}>DE</option>
+          <option value="ua"{{if eq .Lang "ua"}} selected{{end}}>UA</option>
+        </select>
+      </form>
+      <span id="icon-sun-src" hidden>{{template "icon-sun" .}}</span>
+      <span id="icon-moon-src" hidden>{{template "icon-moon" .}}</span>
+      <button onclick="toggleTheme()" id="theme-btn" class="btn btn-ghost btn-sm" aria-label="Toggle theme" title="Toggle theme">{{template "icon-moon" .}}</button>
+      <a href="/profile" class="topbar-user">
+        <div class="user-avatar">{{initial .CurrentUser.Name}}</div>
+        <div class="topbar-user-info">
+          <div class="topbar-user-name">{{.CurrentUser.Name}}</div>
+          <div class="topbar-user-role">{{.CurrentUser.Role}}</div>
+        </div>
+      </a>
+      <form method="POST" action="/logout" style="margin:0">
+        <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+        <button class="btn btn-ghost btn-sm">{{t .Lang "nav.logout"}}</button>
+      </form>
+    </div>
+  </div>
+  <div class="content" id="main-content">
+    {{if .Flash}}
+      {{if eq .Flash.Type "success"}}<div class="flash flash-success" role="alert">{{template "icon-check-circle" .}} {{.Flash.Message}}<button class="flash-dismiss" onclick="this.parentElement.remove()" aria-label="Dismiss">{{template "icon-x" .}}</button></div>
+      {{else if eq .Flash.Type "error"}}<div class="flash flash-error" role="alert">{{template "icon-x-circle" .}} {{.Flash.Message}}<button class="flash-dismiss" onclick="this.parentElement.remove()" aria-label="Dismiss">{{template "icon-x" .}}</button></div>
+      {{else if eq .Flash.Type "warning"}}<div class="flash flash-warning" role="alert">{{template "icon-alert-triangle" .}} {{.Flash.Message}}<button class="flash-dismiss" onclick="this.parentElement.remove()" aria-label="Dismiss">{{template "icon-x" .}}</button></div>
+      {{end}}
+    {{end}}
+    <div id="htmx-flash-area"></div>
+    {{template "content" .}}
+  </div>
+</div>
+
+{{else}}
+{{template "content" .}}
+{{end}}
+<script>
+document.body.addEventListener('htmx:sendError', function() {
+  alert('{{t .Lang "error.network"}}');
+});
+document.body.addEventListener('htmx:responseError', function(evt) {
+  var msg = evt.detail.xhr.responseText;
+  if (!msg) return;
+  var area = document.getElementById('htmx-flash-area');
+  if (!area) return;
+  var div = document.createElement('div');
+  div.className = 'flash flash-error';
+  div.setAttribute('role', 'alert');
+  div.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg> ' + msg + '<button class="flash-dismiss" onclick="this.parentElement.remove()" aria-label="Dismiss"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>';
+  area.innerHTML = '';
+  area.appendChild(div);
+  setTimeout(function() { if (div.parentNode) div.remove(); }, 5000);
+});
+</script>
+</body>
+</html>
+{{end}}

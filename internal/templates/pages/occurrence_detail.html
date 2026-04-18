@@ -1,0 +1,112 @@
+{{define "content"}}
+<div class="detail-grid">
+
+  <div class="stack">
+    <div class="card">
+      <div class="row-between" style="margin-bottom:12px">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <h2 style="font-size:16px;font-weight:600">{{.Occurrence.Title}}</h2>
+            {{if .Group}}<span class="badge {{if .Group.Color}}badge-group-{{.Group.Color}}{{else}}badge-accent{{end}}">{{.Group.Name}}</span>{{end}}
+            {{if .Occurrence.RecurrenceID}}<span class="badge badge-blue">{{t .Lang "occ.recurring"}}</span>{{end}}
+            {{if isPast .Occurrence.Date}}<span class="badge badge-gray">{{t .Lang "occ.past"}}</span>{{end}}
+            {{if eq .Status "under"}}<span class="badge badge-red">{{t .Lang "occ.needsPeople"}}</span>
+            {{else if eq .Status "good"}}<span class="badge badge-green">{{t .Lang "occ.filled"}}</span>
+            {{else if eq .Status "over"}}<span class="badge badge-yellow">{{t .Lang "occ.overStaffed"}}</span>{{end}}
+          </div>
+          <div style="font-size:13px;color:var(--text-muted)">{{formatDateTime .Occurrence.Date}}</div>
+          {{if .Occurrence.Description}}
+            <p style="font-size:13px;color:var(--text-muted);margin-top:8px">{{.Occurrence.Description}}</p>
+          {{end}}
+        </div>
+        {{if or (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
+          {{if .IsRecurring}}
+          <div class="row" style="gap:8px">
+            <a href="/duties/{{.Occurrence.ID}}/edit" class="btn btn-ghost btn-sm">{{t .Lang "occ.edit"}}</a>
+            <div style="position:relative" id="delete-series-wrap">
+              <button type="button" class="btn btn-danger btn-sm" id="delete-series-toggle">
+                {{t .Lang "occ.delete"}} {{template "icon-chevron-down" .}}
+              </button>
+              <div id="delete-series-menu" class="card" style="position:absolute;right:0;top:100%;margin-top:4px;padding:16px;min-width:280px;z-index:10;display:none;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+                <div style="font-weight:500;font-size:13px;margin-bottom:12px">{{t .Lang "occ.deleteSeriesTitle"}}</div>
+
+                <form method="POST" action="/duties/{{.Occurrence.ID}}/delete" style="margin-bottom:8px"
+                      onsubmit="return confirm('{{t .Lang "occ.confirmDelete"}}')">
+                  <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+                  <input type="hidden" name="delete_scope" value="single">
+                  <button class="btn btn-ghost btn-sm" style="width:100%;text-align:left">{{t .Lang "occ.deleteOnlyThis"}}</button>
+                </form>
+
+                <form method="POST" action="/duties/{{.Occurrence.ID}}/delete" style="margin-bottom:8px"
+                      onsubmit="return confirm('{{t .Lang "occ.confirmDeleteFuture"}}')">
+                  <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+                  <input type="hidden" name="delete_scope" value="future">
+                  <button class="btn btn-danger btn-sm" style="width:100%;text-align:left">{{t .Lang "occ.deleteThisAndFuture"}} ({{.FutureCount}})</button>
+                </form>
+
+                <hr style="border:none;border-top:1px solid var(--border);margin:8px 0">
+
+                <form method="POST" action="/duties/{{.Occurrence.ID}}/delete"
+                      onsubmit="return confirm('{{t .Lang "occ.confirmDeleteAll"}}')">
+                  <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+                  <input type="hidden" name="delete_scope" value="all">
+                  <button class="btn btn-ghost btn-sm" style="width:100%;text-align:left;color:var(--danger)">
+                    {{template "icon-alert-triangle" .}} {{t .Lang "occ.deleteEntireSeries"}} ({{.SeriesCount}})
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+          {{else}}
+          <div class="row">
+            <a href="/duties/{{.Occurrence.ID}}/edit" class="btn btn-ghost btn-sm">{{t .Lang "occ.edit"}}</a>
+            <form method="POST" action="/duties/{{.Occurrence.ID}}/delete" onsubmit="return confirm('{{t .Lang "occ.confirmDelete"}}')">
+              <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+              <button class="btn btn-danger btn-sm">{{t .Lang "occ.delete"}}</button>
+            </form>
+          </div>
+          {{end}}
+        {{end}}
+      </div>
+    </div>
+
+    <div id="participant-section">
+      {{template "participant_list" .}}
+    </div>
+  </div>
+
+  {{if or (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
+    <div class="card">
+      <div class="card-title">{{t .Lang "occ.assignParticipant"}}</div>
+      <div id="available-users"
+        hx-get="/duties/{{.Occurrence.ID}}/available"
+        hx-trigger="load"
+        hx-swap="innerHTML">
+        <p style="color:var(--text-muted);font-size:12px">{{t .Lang "occ.loading"}}</p>
+      </div>
+    </div>
+  {{end}}
+
+</div>
+
+  <div style="margin-top:16px">
+    {{template "comment_list" .}}
+  </div>
+
+<script>
+(function() {
+  var toggle = document.getElementById('delete-series-toggle');
+  var menu = document.getElementById('delete-series-menu');
+  if (!toggle || !menu) return;
+  toggle.addEventListener('click', function(e) {
+    e.stopPropagation();
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+  });
+  document.addEventListener('click', function(e) {
+    if (!menu.contains(e.target) && e.target !== toggle) {
+      menu.style.display = 'none';
+    }
+  });
+})();
+</script>
+{{end}}

@@ -1,0 +1,58 @@
+{{define "available_users"}}
+{{if not .Users}}
+  <p style="color:var(--text-muted);font-size:13px">{{t .Lang "occ.noAvailableUsers"}}</p>
+{{else}}
+  <form hx-post="/duties/{{.OccurrenceID}}/assign"
+        hx-target="#participant-section"
+        hx-swap="outerHTML"
+        class="row">
+    <input type="hidden" name="user_id" id="assign-user-id">
+    <div class="custom-select-wrap" style="flex:1">
+      <input type="text" class="custom-select-input" id="assign-search"
+             placeholder="{{t .Lang "occ.searchUser"}}"
+             autocomplete="off"
+             onfocus="openAssignDropdown()"
+             oninput="filterAssignDropdown(this.value)">
+      <div class="custom-select-dropdown" id="assign-dropdown">
+        {{range .Users}}
+          <div class="custom-select-option" data-value="{{.User.ID}}" data-name="{{.User.Name}} ({{.Count}} {{t $.Lang "occ.done"}})"
+               onclick="selectAssignUser(this)">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="user-avatar" style="width:22px;height:22px;font-size:9px">{{initial .User.Name}}</div>
+              <span>{{.User.Name}}</span>
+            </div>
+            <span style="color:var(--text-muted);font-size:11px">{{.Count}} {{t $.Lang "occ.done"}}</span>
+          </div>
+        {{end}}
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">{{t .Lang "occ.assign"}}</button>
+  </form>
+
+  <script>
+  function openAssignDropdown() {
+    document.getElementById('assign-dropdown').classList.add('open');
+  }
+  function filterAssignDropdown(q) {
+    q = q.toLowerCase();
+    var dd = document.getElementById('assign-dropdown');
+    dd.classList.add('open');
+    dd.querySelectorAll('.custom-select-option').forEach(function(el) {
+      var name = (el.getAttribute('data-name') || '').toLowerCase();
+      el.style.display = name.indexOf(q) >= 0 ? '' : 'none';
+    });
+  }
+  function selectAssignUser(el) {
+    document.getElementById('assign-user-id').value = el.getAttribute('data-value');
+    document.getElementById('assign-search').value = el.getAttribute('data-name');
+    document.getElementById('assign-dropdown').classList.remove('open');
+  }
+  document.addEventListener('click', function(e) {
+    var wrap = document.querySelector('.custom-select-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+      document.getElementById('assign-dropdown').classList.remove('open');
+    }
+  });
+  </script>
+{{end}}
+{{end}}

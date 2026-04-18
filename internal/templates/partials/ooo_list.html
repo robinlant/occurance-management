@@ -1,0 +1,17 @@
+{{define "ooo_list"}}
+<div id="ooo-list" class="stack-sm">
+  {{if not .OOOs}}
+    <p style="color:var(--text-muted);font-size:13px">{{t .Lang "profile.noOOO"}}</p>
+  {{else}}
+    {{range .OOOs}}
+      <div class="row-between" style="background:var(--bg-hover);border-radius:var(--radius-sm);padding:8px 12px">
+        <span style="font-size:13px">{{formatDate .From}} &#8212; {{formatDate .To}}</span>
+        <button class="btn btn-danger btn-sm"
+          hx-post="/profile/ooo/{{.ID}}/delete"
+          hx-target="#ooo-list"
+          hx-swap="outerHTML">{{t $.Lang "profile.remove"}}</button>
+      </div>
+    {{end}}
+  {{end}}
+</div>
+{{end}}

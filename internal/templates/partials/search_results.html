@@ -1,0 +1,41 @@
+{{define "search_results"}}
+<div class="search-dropdown" id="search-results">
+  {{if and (not .OccResults) (not .UserResults)}}
+    <div class="search-empty">{{t .Lang "search.noResults"}} "{{.Query}}"</div>
+  {{else}}
+    {{if .UserResults}}
+      <div class="search-section-label">{{t .Lang "search.people"}}</div>
+      {{range .UserResults}}
+        <a href="/profile/{{.ID}}" class="search-result-item">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="user-avatar" style="width:24px;height:24px;font-size:10px">{{initial .Name}}</div>
+            <div>
+              <div class="search-result-title">{{.Name}}</div>
+              <div class="search-result-meta">{{.Email}}</div>
+            </div>
+          </div>
+        </a>
+      {{end}}
+    {{end}}
+    {{if .OccResults}}
+      <div class="search-section-label">{{t .Lang "search.occurrences"}}</div>
+      {{range .OccResults}}
+        <a href="/duties/{{.ID}}" class="search-result-item">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <div style="min-width:0;flex:1">
+              <div class="search-result-title" style="display:flex;align-items:center;gap:5px">
+                <span class="occ-status-dot {{.Status}}"></span>
+                {{.Title}}
+                {{if eq .Status "under"}}<span class="badge badge-red" style="font-size:10px">{{t $.Lang "occ.needsPeople"}}</span>
+                {{else if eq .Status "good"}}<span class="badge badge-green" style="font-size:10px">{{t $.Lang "occ.filled"}}</span>
+                {{else if eq .Status "over"}}<span class="badge badge-yellow" style="font-size:10px">{{t $.Lang "occ.overStaffed"}}</span>{{end}}
+              </div>
+              <div class="search-result-meta">{{formatDate .Date}} &middot; {{.ParticipantCount}}/{{.MinParticipants}}&#8211;{{.MaxParticipants}}</div>
+            </div>
+          </div>
+        </a>
+      {{end}}
+    {{end}}
+  {{end}}
+</div>
+{{end}}

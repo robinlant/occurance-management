@@ -1,0 +1,81 @@
+{{define "content"}}
+<div class="grid-2" style="margin-bottom:20px">
+  <div class="card">
+    <div class="card-title">{{t .Lang "dash.openSpots"}}</div>
+    {{if not .OpenOccurrences}}
+      <p style="color:var(--text-muted);font-size:13px">{{t .Lang "dash.allFilled"}}</p>
+    {{else}}
+      {{range .OpenOccurrences}}
+        <a href="/duties/{{.ID}}" class="dash-occ-item">
+          <div style="min-width:0;flex:1">
+            <div class="dash-occ-title">
+              <span class="occ-status-dot {{.Status}}"></span>
+              {{.Title}}
+              {{if eq .Status "under"}}<span class="badge badge-red" style="font-size:10px;margin-left:4px">{{t $.Lang "dash.needsMore"}} {{.Needed}} {{t $.Lang "dash.more"}}</span>{{end}}
+            </div>
+            <div class="dash-occ-sub">{{.ParticipantCount}}/{{.MinParticipants}}&#8211;{{.MaxParticipants}} {{t $.Lang "occ.people"}}</div>
+          </div>
+          <div class="dash-occ-meta">
+            <div class="dash-occ-date">{{weekdayT $.Lang .Date}}, {{formatDate .Date}}</div>
+            <div class="dash-occ-days">{{relativeDay $.Lang .Date}}</div>
+          </div>
+        </a>
+      {{end}}
+    {{end}}
+  </div>
+
+  <div class="stack" style="gap:20px">
+    {{if .UserUpcoming}}
+    <div class="card">
+      <div class="card-title">{{t .Lang "dash.yourSchedule"}}</div>
+      {{range .UserUpcoming}}
+        <a href="/duties/{{.ID}}" class="dash-occ-item">
+          <div style="min-width:0;flex:1">
+            <div class="dash-occ-title">
+              <span class="occ-status-dot {{.Status}}"></span>
+              {{.Title}}
+              {{if eq .Status "under"}}<span class="badge badge-red" style="font-size:10px;margin-left:4px">{{t $.Lang "dash.needsMore"}} {{.Needed}} {{t $.Lang "dash.more"}}</span>{{end}}
+            </div>
+            <div class="dash-occ-sub">{{.ParticipantCount}}/{{.MinParticipants}}&#8211;{{.MaxParticipants}} {{t $.Lang "occ.people"}}</div>
+          </div>
+          <div class="dash-occ-meta">
+            <div class="dash-occ-date">{{weekdayT $.Lang .Date}}, {{formatDate .Date}}</div>
+            <div class="dash-occ-days">{{relativeDay $.Lang .Date}}</div>
+          </div>
+        </a>
+      {{end}}
+    </div>
+    {{end}}
+
+    {{if .Leaderboard}}
+    <div class="card">
+      <div class="card-title">{{t .Lang "dash.topPerformers"}}</div>
+      {{range $i, $e := .Leaderboard}}
+        <a href="/profile/{{$e.User.ID}}" class="lb-row">
+          <div class="lb-rank-cell">
+            {{if eq $i 0}}<span class="lb-rank gold">1</span>
+            {{else if eq $i 1}}<span class="lb-rank silver">2</span>
+            {{else if eq $i 2}}<span class="lb-rank bronze">3</span>
+            {{else}}<span class="lb-rank">{{add $i 1}}</span>{{end}}
+          </div>
+          <div class="user-avatar lb-avatar {{if eq $i 0}}gold{{else if eq $i 1}}silver{{else if eq $i 2}}bronze{{end}}" style="width:24px;height:24px;font-size:10px">{{initial $e.User.Name}}</div>
+          <div class="lb-info">
+            <div class="lb-name">{{$e.User.Name}}</div>
+          </div>
+          <div class="lb-bar-wrap">
+            <div class="lb-bar {{if eq $i 0}}gold{{else if eq $i 1}}silver{{else if eq $i 2}}bronze{{end}}" style="width:{{percent $e.Count $.MaxCount}}%"></div>
+          </div>
+          <span class="lb-count">{{$e.Count}}</span>
+        </a>
+      {{end}}
+    </div>
+    {{end}}
+
+    {{if and (not .UserUpcoming) (not .Leaderboard)}}
+    <div class="card">
+      <p style="color:var(--text-muted);font-size:13px">{{t .Lang "dash.noUpcoming"}} <a href="/duties" style="color:var(--accent)">{{t .Lang "dash.browseSpots"}}</a>.</p>
+    </div>
+    {{end}}
+  </div>
+</div>
+{{end}}

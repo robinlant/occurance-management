@@ -1,0 +1,112 @@
+{{define "content"}}
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">{{t .Lang "settings.emailConfig"}}</div>
+    <form method="POST" action="/settings" class="stack">
+      <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" name="email_enabled" {{if eq (index .Settings "email_enabled") "true"}}checked{{end}}
+                 style="width:auto;accent-color:var(--accent);">
+          <span style="font-size:13px;font-weight:500;color:var(--text);">{{t .Lang "settings.enableNotifications"}}</span>
+        </label>
+      </div>
+
+      <hr class="divider">
+
+      <div class="card-title" style="margin-bottom:0;">{{t .Lang "settings.smtpServer"}}</div>
+
+      <div class="row" style="gap:12px;">
+        <div class="form-group" style="flex:3;">
+          <label for="smtp-host">{{t .Lang "settings.smtpHost"}}</label>
+          <input type="text" name="smtp_host" id="smtp-host" value="{{index .Settings "smtp_host"}}" placeholder="smtp.example.com">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label for="smtp-port">{{t .Lang "settings.port"}}</label>
+          <input type="number" name="smtp_port" id="smtp-port" value="{{index .Settings "smtp_port"}}" placeholder="587">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="smtp-username">{{t .Lang "settings.smtpUsername"}}</label>
+        <input type="text" name="smtp_username" id="smtp-username" value="{{index .Settings "smtp_username"}}" placeholder="user@example.com">
+      </div>
+
+      <div class="form-group">
+        <label for="smtp-password">{{t .Lang "settings.smtpPassword"}}</label>
+        <input type="password" name="smtp_password" id="smtp-password" value="{{index .Settings "smtp_password"}}" placeholder="Enter SMTP password">
+      </div>
+
+      <hr class="divider">
+
+      <div class="card-title" style="margin-bottom:0;">{{t .Lang "settings.sender"}}</div>
+
+      <div class="row" style="gap:12px;">
+        <div class="form-group" style="flex:1;">
+          <label for="sender-name">{{t .Lang "settings.senderName"}}</label>
+          <input type="text" name="sender_name" id="sender-name" value="{{index .Settings "sender_name"}}" placeholder="DutyRound">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label for="sender-email">{{t .Lang "settings.senderEmail"}}</label>
+          <input type="email" name="sender_email" id="sender-email" value="{{index .Settings "sender_email"}}" placeholder="noreply@example.com">
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="card-title" style="margin-bottom:0;">{{t .Lang "settings.notificationLimits"}}</div>
+
+      <div class="row" style="gap:12px;">
+        <div class="form-group" style="flex:1;">
+          <label for="max-emails">{{t .Lang "settings.maxEmails"}}</label>
+          <input type="number" name="max_emails_per_day" id="max-emails" value="{{index .Settings "max_emails_per_day"}}" min="1" max="10" placeholder="1">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label for="reminder-days">{{t .Lang "settings.reminderDays"}}</label>
+          <input type="number" name="upcoming_reminder_days" id="reminder-days" value="{{index .Settings "upcoming_reminder_days"}}" min="1" max="30" placeholder="3">
+        </div>
+      </div>
+
+      <div class="row" style="gap:8px;margin-top:4px;">
+        <button type="submit" class="btn btn-primary">{{t .Lang "settings.saveSettings"}}</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="stack" style="gap:20px;">
+    <div class="card">
+      <div class="card-title">{{t .Lang "settings.testEmail"}}</div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+        {{t .Lang "settings.testEmailDesc"}}
+      </p>
+      <form method="POST" action="/settings/test-email">
+        <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+        <button type="submit" class="btn btn-ghost">{{t .Lang "settings.sendTestEmail"}}</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-title">{{t .Lang "settings.howItWorks"}}</div>
+      <div class="stack-sm" style="font-size:13px;color:var(--text-muted);">
+        <p>{{t .Lang "settings.howItWorksDesc"}}</p>
+        <div style="border-left:2px solid var(--accent);padding-left:12px;margin:4px 0;">
+          <strong style="color:var(--text);font-size:12px;">{{t .Lang "settings.newOccurrence"}}</strong>
+          <p style="margin-top:2px;">{{t .Lang "settings.newOccurrenceDesc"}}</p>
+        </div>
+        <div style="border-left:2px solid var(--danger);padding-left:12px;margin:4px 0;">
+          <strong style="color:var(--text);font-size:12px;">{{t .Lang "settings.unfilledParticipants"}}</strong>
+          <p style="margin-top:2px;">{{t .Lang "settings.unfilledPartDesc"}}</p>
+        </div>
+        <div style="border-left:2px solid var(--warning);padding-left:12px;margin:4px 0;">
+          <strong style="color:var(--text);font-size:12px;">{{t .Lang "settings.unfilledOrganizers"}}</strong>
+          <p style="margin-top:2px;">{{t .Lang "settings.unfilledOrgDesc"}}</p>
+        </div>
+        <p style="margin-top:8px;">
+          <strong style="color:var(--text);">{{t .Lang "settings.note"}}</strong> {{t .Lang "settings.noteDesc"}}
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}

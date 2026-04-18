@@ -1,0 +1,156 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pr-title:
+    name: PR Title
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Lint commit messages
+        uses: wagoid/commitlint-github-action@v6
+        with:
+          configFile: commitlint.config.js
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run tests
+        run: CGO_ENABLED=1 go test -race -coverprofile=coverage.out ./...
+
+      - name: Upload coverage
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.out
+          retention-days: 7
+
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run govulncheck
+        uses: golang/govulncheck-action@v1
+        with:
+          go-version-file: go.mod
+
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build test image
+        run: docker build -t dutyround:test .
+
+      - name: Start app instances
+        run: |
+          for port in 3991 3992 3993; do
+            docker run -d \
+              --name dutyround-${port} \
+              -p ${port}:8080 \
+              -e GIN_MODE=debug \
+              dutyround:test
+          done
+
+      - name: Wait for health checks
+        run: |
+          for port in 3991 3992 3993; do
+            timeout 30 bash -c "until curl -sf http://localhost:${port}/login; do sleep 1; done"
+          done
+
+      - name: Seed test databases
+        run: |
+          docker exec dutyround-3991 ./seed \
+            -name="Admin" -email="admin@test.com" -password="password123"
+          docker exec dutyround-3992 ./seed \
+            -name="SecAdmin" -email="secadmin@test.com" -password="password123"
+          docker exec dutyround-3993 ./seed \
+            -name="BugAdmin" -email="bugadmin@test.com" -password="password123"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Playwright
+        run: |
+          npm init -y
+          npm install @playwright/test
+          npx playwright install --with-deps chromium
+
+      - name: Create Playwright config
+        run: |
+          cat > playwright.config.ts << 'EOF'
+          import { defineConfig } from '@playwright/test';
+          export default defineConfig({
+            testDir: './e2e',
+            timeout: 60000,
+            retries: 1,
+            use: {
+              baseURL: 'http://localhost:3991',
+              headless: true,
+            },
+            reporter: [['html', { open: 'never' }]],
+          });
+          EOF
+
+      - name: Run E2E tests
+        run: npx playwright test
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Stop containers
+        if: always()
+        run: docker rm -f dutyround-3991 dutyround-3992 dutyround-3993 || true

@@ -1,0 +1,26 @@
+{{define "content"}}
+<div class="login-wrap">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon">{{template "icon-zap" .}}</div>
+      <div class="login-title">DutyRound</div>
+    </div>
+
+    {{if .Flash}}
+      <div class="flash flash-{{.Flash.Type}}">{{.Flash.Message}}</div>
+    {{end}}
+
+    <form method="POST" action="/login" class="stack">
+      <div class="form-group">
+        <label for="login-email">{{t .Lang "login.email"}}</label>
+        <input type="email" name="email" id="login-email" required autofocus placeholder="you@company.com" autocomplete="email" value="{{.Email}}">
+      </div>
+      <div class="form-group">
+        <label for="login-password">{{t .Lang "login.password"}}</label>
+        <input type="password" name="password" id="login-password" required placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary" style="margin-top:4px">{{t .Lang "login.signIn"}}</button>
+    </form>
+  </div>
+</div>
+{{end}}

@@ -1,0 +1,88 @@
+{{define "content"}}
+
+{{/* Status + upcoming filter chips */}}
+<div class="cal-filter-bar">
+  <a href="/calendar?month={{formatMonth .Month}}{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}"
+     class="chip {{if and (not .StatusFilter) (not .HidePast)}}active{{end}}">{{t .Lang "cal.allEvents"}}</a>
+  <a href="/calendar?month={{formatMonth .Month}}&hide_past=1{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}"
+     class="chip {{if and .HidePast (not .StatusFilter)}}active{{end}}">{{t .Lang "occ.upcoming"}}</a>
+  <a href="/calendar?month={{formatMonth .Month}}&status=under{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
+     class="chip {{if eq .StatusFilter "under"}}active{{end}}">{{t .Lang "cal.needsPeople"}}</a>
+  <a href="/calendar?month={{formatMonth .Month}}&status=good{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
+     class="chip {{if eq .StatusFilter "good"}}active{{end}}">{{t .Lang "cal.filled"}}</a>
+  <a href="/calendar?month={{formatMonth .Month}}&status=over{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
+     class="chip {{if eq .StatusFilter "over"}}active{{end}}">{{t .Lang "cal.overStaffed"}}</a>
+</div>
+
+{{/* Group filter chips */}}
+{{if .GroupList}}
+<div class="filter-bar">
+  <a href="/calendar?month={{formatMonth .Month}}{{if .StatusFilter}}&status={{.StatusFilter}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
+     class="chip {{if not .GroupFilter}}active{{end}}">{{t .Lang "cal.allGroups"}}</a>
+  {{range .GroupList}}
+    <a href="/calendar?month={{formatMonth $.Month}}&group={{.ID}}{{if $.StatusFilter}}&status={{$.StatusFilter}}{{end}}{{if $.HidePast}}&hide_past=1{{end}}"
+       class="chip {{if .Color}}chip-group-{{.Color}}{{end}} {{if eq $.GroupFilter .ID}}active{{end}}">{{.Name}}</a>
+  {{end}}
+</div>
+{{end}}
+
+<div class="calendar-layout" style="margin-top:16px">
+  <div>
+    <div class="cal-header">
+      <a href="/calendar{{if .StatusFilter}}?status={{.StatusFilter}}{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}{{if .HidePast}}&hide_past=1{{end}}{{else}}{{if .GroupFilter}}?group={{.GroupFilter}}{{if .HidePast}}&hide_past=1{{end}}{{else}}{{if .HidePast}}?hide_past=1{{end}}{{end}}{{end}}"
+         class="btn btn-ghost btn-sm">{{t .Lang "cal.today"}}</a>
+      <a href="/calendar?month={{formatMonth .PrevMonth}}{{if .StatusFilter}}&status={{.StatusFilter}}{{end}}{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
+         class="btn btn-ghost btn-sm">{{template "icon-chevron-left" .}}</a>
+      <div class="cal-month">{{monthName .Month}}</div>
+      <a href="/calendar?month={{formatMonth .NextMonth}}{{if .StatusFilter}}&status={{.StatusFilter}}{{end}}{{if .GroupFilter}}&group={{.GroupFilter}}{{end}}{{if .HidePast}}&hide_past=1{{end}}"
+         class="btn btn-ghost btn-sm">{{template "icon-chevron-right" .}}</a>
+    </div>
+
+    <div class="cal-grid">
+      <div class="cal-day-header">{{t .Lang "cal.mon"}}</div>
+      <div class="cal-day-header">{{t .Lang "cal.tue"}}</div>
+      <div class="cal-day-header">{{t .Lang "cal.wed"}}</div>
+      <div class="cal-day-header">{{t .Lang "cal.thu"}}</div>
+      <div class="cal-day-header">{{t .Lang "cal.fri"}}</div>
+      <div class="cal-day-header">{{t .Lang "cal.sat"}}</div>
+      <div class="cal-day-header">{{t .Lang "cal.sun"}}</div>
+
+      {{range .Weeks}}
+        {{range .}}
+          <div class="cal-day {{if not .IsCurrentMonth}}other-month{{end}} {{if .IsToday}}today{{end}}"
+            hx-get="/calendar/day?date={{formatISO .Date}}"
+            hx-target="#day-panel"
+            hx-swap="innerHTML"
+            onclick="document.querySelectorAll('.cal-day').forEach(function(d){d.classList.remove('selected')});this.classList.add('selected')">
+            <div class="day-num">{{dayNum .Date}}</div>
+            {{range $i, $o := .Occurrences}}
+              {{if lt $i 3}}
+                <a href="/duties/{{$o.ID}}"
+                   class="cal-event-pill status-{{$o.Status}}{{if isPast $o.Date}} past{{end}}"
+                   title="{{$o.Title}} ({{$o.ParticipantCount}}/{{$o.MaxParticipants}} {{t $.Lang "occ.people"}})"
+                   onclick="event.stopPropagation()">
+                  <span class="cal-event-name">{{$o.Title}}</span>
+                  <span class="cal-event-time">{{formatTime $o.Date}}</span>
+                </a>
+              {{end}}
+            {{end}}
+            {{if gt (len .Occurrences) 3}}
+              <div class="cal-event-more">+{{sub (len .Occurrences) 3}} {{t $.Lang "cal.more"}}</div>
+            {{end}}
+          </div>
+        {{end}}
+      {{end}}
+    </div>
+  </div>
+
+  <div class="day-panel" id="day-panel">
+    <div class="day-panel-title">{{t .Lang "cal.selectDay"}}</div>
+    <p style="color:var(--text-muted);font-size:13px">{{t .Lang "cal.clickDay"}}</p>
+    <div class="status-legend">
+      <div class="legend-item"><span class="legend-dot under"></span>{{t .Lang "cal.needsPeople"}}</div>
+      <div class="legend-item"><span class="legend-dot good"></span>{{t .Lang "cal.filled"}}</div>
+      <div class="legend-item"><span class="legend-dot over"></span>{{t .Lang "cal.overStaffed"}}</div>
+    </div>
+  </div>
+</div>
+{{end}}

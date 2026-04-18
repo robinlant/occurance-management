@@ -1,0 +1,46 @@
+{{define "comment_list"}}
+<div id="comment-section" class="card">
+  <div class="card-title" style="margin-bottom:12px">
+    {{t .Lang "comment.title"}}
+    {{if .Comments}}<span style="font-weight:400;color:var(--text-muted)">{{len .Comments}}</span>{{end}}
+  </div>
+
+  {{if .Comments}}
+    <div style="margin-bottom:16px">
+      {{range .Comments}}
+        <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+            <span style="font-size:13px;font-weight:500">{{.UserName}}</span>
+            <span style="font-size:11px;color:var(--text-muted)">{{formatDateTime .CreatedAt}}</span>
+            {{if eq $.CurrentUser.ID .UserID}}
+              <button class="btn btn-ghost btn-sm" style="margin-left:auto"
+                hx-post="/duties/{{$.OccurrenceID}}/comments/{{.ID}}/delete"
+                hx-target="#comment-section"
+                hx-swap="outerHTML">{{t $.Lang "comment.delete"}}</button>
+            {{else if or (eq $.CurrentUser.Role "admin") (eq $.CurrentUser.Role "organizer")}}
+              <button class="btn btn-ghost btn-sm" style="margin-left:auto"
+                hx-post="/duties/{{$.OccurrenceID}}/comments/{{.ID}}/delete"
+                hx-target="#comment-section"
+                hx-swap="outerHTML"
+                hx-confirm="{{t $.Lang "comment.confirmDelete"}}">{{t $.Lang "comment.delete"}}</button>
+            {{end}}
+          </div>
+          <p style="font-size:13px;color:var(--text);white-space:pre-wrap;word-break:break-word">{{.Body}}</p>
+        </div>
+      {{end}}
+    </div>
+  {{else}}
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px">{{t .Lang "comment.none"}}</p>
+  {{end}}
+
+  <form hx-post="/duties/{{.OccurrenceID}}/comments"
+        hx-target="#comment-section"
+        hx-swap="outerHTML">
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <textarea name="body" placeholder="{{t .Lang "comment.placeholder"}}" rows="2" maxlength="1000" required
+        style="flex:1;resize:vertical;font-size:13px;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:inherit"></textarea>
+      <button type="submit" class="btn btn-primary btn-sm">{{t .Lang "comment.post"}}</button>
+    </div>
+  </form>
+</div>
+{{end}}

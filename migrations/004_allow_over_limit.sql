@@ -1,0 +1,1 @@
+ALTER TABLE occurrences ADD COLUMN allow_over_limit BOOLEAN NOT NULL DEFAULT 0;

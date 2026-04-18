@@ -1,0 +1,148 @@
+{{define "topbar-actions"}}
+  {{if or (eq .CurrentUser.Role "organizer") (eq .CurrentUser.Role "admin")}}
+    <a href="/duties/new" class="btn btn-primary btn-sm">{{t .Lang "occ.new"}}</a>
+  {{end}}
+{{end}}
+{{define "content"}}
+
+{{/* Status filter chips */}}
+<div class="filter-bar" style="margin-bottom:8px">
+  <a href="/duties?hide_past=0{{if .ActiveGroup}}&group={{.ActiveGroup}}{{end}}"
+     class="chip {{if and (not .StatusFilter) (not .HidePast)}}active{{end}}">{{t .Lang "occ.all"}}</a>
+  <a href="/duties{{if .ActiveGroup}}?group={{.ActiveGroup}}{{end}}"
+     class="chip {{if and .HidePast (not .StatusFilter)}}active{{end}}">{{t .Lang "occ.upcoming"}}</a>
+  <a href="/duties?status=under{{if .ActiveGroup}}&group={{.ActiveGroup}}{{end}}{{if not .HidePast}}&hide_past=0{{end}}"
+     class="chip {{if eq .StatusFilter "under"}}active{{end}}">{{t .Lang "occ.needsPeople"}}</a>
+  <a href="/duties?status=good{{if .ActiveGroup}}&group={{.ActiveGroup}}{{end}}{{if not .HidePast}}&hide_past=0{{end}}"
+     class="chip {{if eq .StatusFilter "good"}}active{{end}}">{{t .Lang "occ.filled"}}</a>
+  <a href="/duties?status=over{{if .ActiveGroup}}&group={{.ActiveGroup}}{{end}}{{if not .HidePast}}&hide_past=0{{end}}"
+     class="chip {{if eq .StatusFilter "over"}}active{{end}}">{{t .Lang "occ.overStaffed"}}</a>
+</div>
+
+{{/* Group filter chips */}}
+{{if .GroupList}}
+<div class="filter-bar">
+  <a href="/duties{{if .StatusFilter}}?status={{.StatusFilter}}{{if not .HidePast}}&hide_past=0{{end}}{{else}}{{if not .HidePast}}?hide_past=0{{end}}{{end}}"
+     class="chip {{if not .ActiveGroup}}active{{end}}">{{t .Lang "occ.allGroups"}}</a>
+  {{range .GroupList}}
+    <a href="/duties?group={{.ID}}{{if $.StatusFilter}}&status={{$.StatusFilter}}{{end}}{{if not $.HidePast}}&hide_past=0{{end}}"
+       class="chip {{if .Color}}chip-group-{{.Color}}{{end}} {{if eq $.ActiveGroup .ID}}active{{end}}">{{.Name}}</a>
+  {{end}}
+</div>
+{{end}}
+
+<div class="occ-view-toggle" role="group" aria-label="View mode">
+  <button type="button" class="btn btn-ghost btn-sm occ-view-btn active" data-view="list" aria-pressed="true" title="List view">
+    {{template "icon-list" .}}
+    {{t .Lang "occ.listView"}}
+  </button>
+  <button type="button" class="btn btn-ghost btn-sm occ-view-btn" data-view="card" aria-pressed="false" title="Card view">
+    {{template "icon-layout-grid" .}}
+    {{t .Lang "occ.cardView"}}
+  </button>
+</div>
+
+<!-- List view -->
+<div class="card occ-list-view">
+  {{if not .Occurrences}}
+    <p style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px">{{t .Lang "occ.none"}}{{if .ActiveGroup}} {{t .Lang "occ.noneInGroup"}}{{end}}.</p>
+  {{else}}
+    {{range .Occurrences}}
+      {{$group := index $.Groups .GroupID}}
+      <a href="/duties/{{.ID}}" style="display:block" class="{{if isPast .Date}}past{{end}}">
+        <div class="occ-item">
+          <div class="occ-info">
+            <div class="occ-title">
+              <span class="occ-status-dot {{.Status}}"></span>
+              {{.Title}}
+              {{if $group.ID}}<span class="badge {{if $group.Color}}badge-group-{{$group.Color}}{{else}}badge-accent{{end}}">{{$group.Name}}</span>{{end}}
+              {{if .RecurrenceID}}<span class="badge badge-blue">{{t $.Lang "occ.recurring"}}</span>{{end}}
+              {{if isPast .Date}}<span class="badge badge-gray">{{t $.Lang "occ.past"}}</span>{{end}}
+              {{if eq .Status "under"}}<span class="badge badge-red">{{t $.Lang "occ.needsPeople"}}</span>
+              {{else if eq .Status "good"}}<span class="badge badge-green">{{t $.Lang "occ.filled"}}</span>
+              {{else if eq .Status "over"}}<span class="badge badge-yellow">{{t $.Lang "occ.overStaffed"}}</span>{{end}}
+            </div>
+            {{if .Description}}<div class="occ-desc">{{.Description}}</div>{{end}}
+          </div>
+          <div class="occ-meta">
+            <div class="occ-date">{{formatDate .Date}}</div>
+            <div class="occ-slots">{{weekdayT $.Lang .Date}} &middot; {{relativeDay $.Lang .Date}}</div>
+            <div class="occ-slots">{{.ParticipantCount}}/{{.MinParticipants}}&#8211;{{.MaxParticipants}} {{t $.Lang "occ.people"}}</div>
+          </div>
+        </div>
+      </a>
+    {{end}}
+  {{end}}
+</div>
+
+<!-- Card view -->
+<div class="occ-card-grid" style="display:none">
+  {{if not .Occurrences}}
+    <p class="occ-card-grid-empty" style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px">{{t .Lang "occ.none"}}{{if .ActiveGroup}} {{t .Lang "occ.noneInGroup"}}{{end}}.</p>
+  {{else}}
+    {{range .Occurrences}}
+      {{$group := index $.Groups .GroupID}}
+      <a href="/duties/{{.ID}}" class="occ-card status-{{.Status}}{{if isPast .Date}} past{{end}}">
+        <div class="occ-card-header">
+          <span class="occ-card-title">{{.Title}}</span>
+        </div>
+        <div class="occ-card-badges">
+          {{if $group.ID}}<span class="badge {{if $group.Color}}badge-group-{{$group.Color}}{{else}}badge-accent{{end}}">{{$group.Name}}</span>{{end}}
+          {{if .RecurrenceID}}<span class="badge badge-blue">{{t $.Lang "occ.recurring"}}</span>{{end}}
+          {{if isPast .Date}}<span class="badge badge-gray">{{t $.Lang "occ.past"}}</span>{{end}}
+          {{if eq .Status "under"}}<span class="badge badge-red">{{t $.Lang "occ.needsPeople"}}</span>
+          {{else if eq .Status "good"}}<span class="badge badge-green">{{t $.Lang "occ.filled"}}</span>
+          {{else if eq .Status "over"}}<span class="badge badge-yellow">{{t $.Lang "occ.overStaffed"}}</span>{{end}}
+        </div>
+        {{if .Description}}<div class="occ-card-desc">{{.Description}}</div>{{end}}
+        <div class="occ-card-footer">
+          <div>
+            <div class="occ-card-date">{{formatDate .Date}}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">{{weekdayT $.Lang .Date}} &middot; {{relativeDay $.Lang .Date}}</div>
+          </div>
+          <span class="occ-card-slots">{{.ParticipantCount}}/{{.MinParticipants}}&#8211;{{.MaxParticipants}}</span>
+        </div>
+      </a>
+    {{end}}
+  {{end}}
+</div>
+
+<script>
+(function() {
+  var STORAGE_KEY = 'dr-occ-view';
+  var listView = document.querySelector('.occ-list-view');
+  var cardGrid = document.querySelector('.occ-card-grid');
+  var buttons  = document.querySelectorAll('.occ-view-btn');
+
+  if (!listView || !cardGrid || !buttons.length) return;
+
+  function setView(mode) {
+    if (mode === 'card') {
+      listView.style.display = 'none';
+      cardGrid.style.display = '';
+    } else {
+      listView.style.display = '';
+      cardGrid.style.display = 'none';
+      mode = 'list';
+    }
+    buttons.forEach(function(btn) {
+      var active = btn.getAttribute('data-view') === mode;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    try { localStorage.setItem(STORAGE_KEY, mode); } catch(e) {}
+  }
+
+  buttons.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      setView(btn.getAttribute('data-view'));
+    });
+  });
+
+  // Restore saved preference
+  var saved = 'list';
+  try { saved = localStorage.getItem(STORAGE_KEY) || 'list'; } catch(e) {}
+  setView(saved);
+})();
+</script>
+{{end}}

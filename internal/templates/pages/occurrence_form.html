@@ -1,0 +1,347 @@
+{{define "content"}}
+<div style="max-width:680px;margin:0 auto">
+
+  {{if not .Occurrence}}
+  <div class="card" style="margin-bottom:16px;padding:20px 24px">
+    <div class="card-title" style="margin-bottom:8px">{{t .Lang "form.copyFromExisting"}}</div>
+    <div class="form-group">
+      <label for="copy-search">{{t .Lang "form.copyFromExistingLabel"}}</label>
+      <div class="custom-select-wrap" style="margin-top:6px">
+        <input type="text" class="custom-select-input" id="copy-search"
+               placeholder="{{t .Lang "form.copySearchPlaceholder"}}"
+               autocomplete="off"
+               onfocus="openCopyDropdown()"
+               oninput="filterCopyDropdown(this.value)">
+        <div class="custom-select-dropdown" id="copy-dropdown">
+          <div class="custom-select-option copy-opt" data-name="" onclick="selectCopy(this)">
+            <span style="color:var(--text-muted)">&#8212; none &#8212;</span>
+          </div>
+          {{range .PastOccurrences}}
+          <div class="custom-select-option copy-opt"
+               data-name="{{.Title}}"
+               data-title="{{.Title}}"
+               data-desc="{{.Description}}"
+               data-time="{{.Date.Format "15:04"}}"
+               data-min="{{.MinParticipants}}"
+               data-max="{{.MaxParticipants}}"
+               data-group-id="{{.GroupID}}"
+               data-allow-over-limit="{{.AllowOverLimit}}"
+               onclick="selectCopy(this)">
+            <span>{{.Title}}</span>
+            <span style="color:var(--text-muted);font-size:11px">{{formatDateTime .Date}}</span>
+          </div>
+          {{end}}
+        </div>
+      </div>
+    </div>
+  </div>
+  {{end}}
+
+  <form method="POST"
+    action="{{if .Occurrence}}/duties/{{.Occurrence.ID}}{{else}}/duties{{end}}"
+    class="card stack" style="padding:28px 32px;gap:18px">
+    <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+
+    <div class="form-group">
+      <label for="occ-title">{{t .Lang "form.title"}}</label>
+      <input type="text" name="title" id="occ-title" required
+        value="{{if .Occurrence}}{{.Occurrence.Title}}{{end}}"
+        placeholder="e.g. Versandaktion M&#228;rz">
+    </div>
+
+    <div class="form-group">
+      <label for="occ-desc">{{t .Lang "form.description"}}</label>
+      <textarea name="description" id="occ-desc" placeholder="Optional details&#8230;" style="min-height:96px">{{if .Occurrence}}{{.Occurrence.Description}}{{end}}</textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="group-search">{{t .Lang "form.group"}}</label>
+      <input type="hidden" name="group_id" id="group-id-input"
+        value="{{if .Occurrence}}{{if .GroupID}}{{.GroupID}}{{end}}{{end}}">
+      <div class="custom-select-wrap">
+        <input type="text" class="custom-select-input" id="group-search"
+               placeholder="{{t .Lang "form.selectGroup"}}"
+               autocomplete="off"
+               value="{{if .Occurrence}}{{range .Groups}}{{if eq .ID $.GroupID}}{{.Name}}{{end}}{{end}}{{end}}"
+               onfocus="openGroupDropdown()"
+               oninput="filterGroupDropdown(this.value)">
+        <div class="custom-select-dropdown" id="group-dropdown">
+          <div class="custom-select-option" data-value="" data-name=""
+               onclick="selectGroup(this)">
+            <span style="color:var(--text-muted)">{{t .Lang "form.none"}}</span>
+          </div>
+          {{range .Groups}}
+            <div class="custom-select-option" data-value="{{.ID}}" data-name="{{.Name}}" data-color="{{.Color}}"
+                 onclick="selectGroup(this)"{{if .Color}} style="border-left:3px solid var(--group-{{.Color}})"{{end}}>
+              <span>{{.Name}}</span>
+            </div>
+          {{end}}
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="occ-date">{{t .Lang "form.dateTime"}}</label>
+      <input type="datetime-local" name="date" id="occ-date" required
+        value="{{if .Occurrence}}{{.Occurrence.Date.Format "2006-01-02T15:04"}}{{else}}{{.DefaultDate}}{{end}}"
+        {{if not .Occurrence}}data-warn-past="1"{{end}}>
+      <small id="past-date-warning" style="display:none;color:var(--warning);margin-top:4px;align-items:center;gap:4px">{{template "icon-alert-triangle" .}} {{t .Lang "form.pastDateWarning"}}</small>
+    </div>
+
+    <div class="grid-2">
+      <div class="form-group">
+        <label for="occ-min">{{t .Lang "form.minParticipants"}}</label>
+        <input type="number" name="min_participants" id="occ-min" min="1" required
+          value="{{if .Occurrence}}{{.Occurrence.MinParticipants}}{{else}}1{{end}}"
+          oninput="syncMinMax()">
+      </div>
+      <div class="form-group">
+        <label for="occ-max">{{t .Lang "form.maxParticipants"}}</label>
+        <input type="number" name="max_participants" id="occ-max" min="1" required
+          value="{{if .Occurrence}}{{.Occurrence.MaxParticipants}}{{else}}1{{end}}"
+          oninput="syncMinMax()">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" name="allow_over_limit" id="occ-over-limit"
+          {{if .Occurrence}}{{if .Occurrence.AllowOverLimit}}checked{{end}}{{end}}
+          style="width:auto;accent-color:var(--accent);">
+        <span style="font-size:13px;font-weight:500;color:var(--text);">{{t .Lang "form.allowOverLimit"}}</span>
+      </label>
+    </div>
+
+    {{if not .Occurrence}}
+    <hr style="border:none;border-top:1px solid var(--border);margin:4px 0">
+    <div class="form-group">
+      <label for="occ-repeat">{{t .Lang "form.repeat"}}</label>
+      <select name="repeat" id="occ-repeat" onchange="toggleRepeatUntil()">
+        <option value="">{{t .Lang "form.repeatNone"}}</option>
+        <option value="daily">{{t .Lang "form.repeatDaily"}}</option>
+        <option value="weekly">{{t .Lang "form.repeatWeekly"}}</option>
+        <option value="biweekly">{{t .Lang "form.repeatBiweekly"}}</option>
+        <option value="monthly">{{t .Lang "form.repeatMonthly"}}</option>
+      </select>
+    </div>
+    <div class="form-group" id="repeat-until-group" style="display:none">
+      <label for="occ-repeat-until">{{t .Lang "form.repeatUntil"}}</label>
+      <input type="date" name="repeat_until" id="occ-repeat-until">
+    </div>
+    {{end}}
+
+    {{if and .Occurrence .IsRecurring}}
+    <hr style="border:none;border-top:1px solid var(--border);margin:4px 0">
+    <div class="form-group">
+      <label style="font-weight:500;margin-bottom:8px;display:block">{{t .Lang "form.editScope"}}</label>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+          <input type="radio" name="edit_scope" value="single" checked style="width:auto;accent-color:var(--accent)">
+          {{t .Lang "form.editScopeSingle"}}
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+          <input type="radio" name="edit_scope" value="future" style="width:auto;accent-color:var(--accent)">
+          {{t .Lang "form.editScopeFuture"}}
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+          <input type="radio" name="edit_scope" value="all" style="width:auto;accent-color:var(--accent)">
+          {{t .Lang "form.editScopeAll"}}
+        </label>
+      </div>
+      <small style="color:var(--text-muted);margin-top:4px;display:block">
+        {{t .Lang "form.editScopeHint"}} ({{.SeriesCount}} {{t .Lang "form.inSeries"}})
+      </small>
+    </div>
+    {{end}}
+
+    <div class="row" style="margin-top:4px">
+      <button type="submit" class="btn btn-primary">{{if .Occurrence}}{{t .Lang "form.saveChanges"}}{{else}}{{t .Lang "form.create"}}{{end}}</button>
+      <a href="/duties" class="btn btn-ghost">{{t .Lang "form.cancel"}}</a>
+    </div>
+  </form>
+</div>
+
+<script>
+// ── Group dropdown ──────────────────────────────────────────
+function openGroupDropdown() {
+  document.getElementById('group-dropdown').classList.add('open');
+}
+function filterGroupDropdown(q) {
+  q = q.toLowerCase();
+  var dd = document.getElementById('group-dropdown');
+  dd.classList.add('open');
+  dd.querySelectorAll('.custom-select-option').forEach(function(el) {
+    var name = (el.getAttribute('data-name') || '').toLowerCase();
+    if (!el.getAttribute('data-value')) { el.style.display = ''; return; }
+    el.style.display = name.indexOf(q) >= 0 ? '' : 'none';
+  });
+}
+function selectGroup(el) {
+  document.getElementById('group-id-input').value = el.getAttribute('data-value');
+  document.getElementById('group-search').value = el.getAttribute('data-name');
+  document.getElementById('group-dropdown').classList.remove('open');
+}
+
+// ── Copy-from dropdown ───────────────────────────────────────
+function openCopyDropdown() {
+  var dd = document.getElementById('copy-dropdown');
+  if (dd) dd.classList.add('open');
+}
+function filterCopyDropdown(q) {
+  q = q.toLowerCase();
+  var dd = document.getElementById('copy-dropdown');
+  if (!dd) return;
+  dd.classList.add('open');
+  dd.querySelectorAll('.copy-opt').forEach(function(el) {
+    var name = (el.getAttribute('data-name') || '').toLowerCase();
+    if (!el.getAttribute('data-name')) { el.style.display = ''; return; }
+    el.style.display = name.indexOf(q) >= 0 ? '' : 'none';
+  });
+}
+function selectCopy(el) {
+  var title   = el.getAttribute('data-title')    || '';
+  var desc    = el.getAttribute('data-desc')     || '';
+  var time    = el.getAttribute('data-time')     || '';
+  var min     = el.getAttribute('data-min')      || '';
+  var max     = el.getAttribute('data-max')      || '';
+  var groupId = el.getAttribute('data-group-id') || '';
+  var allowOverLimit = el.getAttribute('data-allow-over-limit') || '';
+
+  if (title) document.getElementById('occ-title').value = title;
+  if (desc !== null) document.getElementById('occ-desc').value = desc;
+  if (min)   document.getElementById('occ-min').value = min;
+  if (max)   document.getElementById('occ-max').value = max;
+  if (min || max) syncMinMax();
+
+  // Populate group field
+  var groupOpt = document.querySelector('#group-dropdown .custom-select-option[data-value="' + groupId + '"]');
+  if (groupOpt) {
+    selectGroup(groupOpt);
+  } else {
+    // No matching group (or none) — clear the group selection
+    document.getElementById('group-id-input').value = '';
+    document.getElementById('group-search').value = '';
+  }
+
+  // Replace just the time portion of the current date value
+  if (time) {
+    var dateEl = document.getElementById('occ-date');
+    var current = dateEl.value; // "2006-01-02T15:04"
+    var datePart = current ? current.split('T')[0] : '';
+    if (datePart) {
+      dateEl.value = datePart + 'T' + time;
+    }
+  }
+
+  var overLimitEl = document.getElementById('occ-over-limit');
+  if (overLimitEl) overLimitEl.checked = (allowOverLimit === 'true');
+
+  document.getElementById('copy-search').value = title;
+  document.getElementById('copy-dropdown').classList.remove('open');
+}
+
+// ── Repeat / Until toggle ────────────────────────────────────
+function toggleRepeatUntil() {
+  var sel = document.getElementById('occ-repeat');
+  var grp = document.getElementById('repeat-until-group');
+  if (!sel || !grp) return;
+  grp.style.display = sel.value ? '' : 'none';
+  if (sel.value) {
+    var untilEl = document.getElementById('occ-repeat-until');
+    if (untilEl && !untilEl.value) {
+      // Default to 3 months from date
+      var dateEl = document.getElementById('occ-date');
+      if (dateEl && dateEl.value) {
+        var d = new Date(dateEl.value);
+        d.setMonth(d.getMonth() + 3);
+        untilEl.value = d.toISOString().split('T')[0];
+      }
+    }
+  }
+}
+
+// ── Min/Max cross-validation ─────────────────────────────────
+function syncMinMax() {
+  var minEl = document.getElementById('occ-min');
+  var maxEl = document.getElementById('occ-max');
+  var minVal = parseInt(minEl.value) || 1;
+  var maxVal = parseInt(maxEl.value) || 1;
+  // Keep max >= min
+  maxEl.min = minVal;
+  if (maxVal < minVal) { maxEl.value = minVal; }
+  // Keep min <= max
+  minEl.max = parseInt(maxEl.value) || 1;
+}
+// Initialise constraints on load
+document.addEventListener('DOMContentLoaded', function() {
+  syncMinMax();
+  // Warn when a past date is selected on create form
+  var dateEl = document.getElementById('occ-date');
+  if (dateEl && dateEl.dataset.warnPast) {
+    var warning = document.getElementById('past-date-warning');
+    function checkPastDate() {
+      if (!dateEl.value) { warning.style.display = 'none'; return; }
+      var selected = new Date(dateEl.value);
+      warning.style.display = selected < new Date() ? 'block' : 'none';
+    }
+    dateEl.addEventListener('change', checkPastDate);
+    checkPastDate();
+  }
+});
+
+// ── Keyboard navigation for dropdowns ────────────────────────
+function setupKeyboardNav(inputId, dropdownId, selectFn) {
+  var input = document.getElementById(inputId);
+  if (!input) return;
+  input.addEventListener('keydown', function(e) {
+    var dd = document.getElementById(dropdownId);
+    if (!dd || !dd.classList.contains('open')) return;
+    var items = Array.from(dd.querySelectorAll('.custom-select-option')).filter(function(el) {
+      return el.style.display !== 'none';
+    });
+    if (!items.length) return;
+    var active = dd.querySelector('.custom-select-option.kb-active');
+    var idx = active ? items.indexOf(active) : -1;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (active) active.classList.remove('kb-active');
+      idx = (idx + 1) % items.length;
+      items[idx].classList.add('kb-active');
+      items[idx].scrollIntoView({block:'nearest'});
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (active) active.classList.remove('kb-active');
+      idx = idx <= 0 ? items.length - 1 : idx - 1;
+      items[idx].classList.add('kb-active');
+      items[idx].scrollIntoView({block:'nearest'});
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (active) { selectFn(active); }
+      else if (items.length) { selectFn(items[0]); }
+    } else if (e.key === 'Escape') {
+      dd.classList.remove('open');
+    }
+  });
+}
+document.addEventListener('DOMContentLoaded', function() {
+  setupKeyboardNav('copy-search', 'copy-dropdown', selectCopy);
+  setupKeyboardNav('group-search', 'group-dropdown', selectGroup);
+});
+
+// ── Close dropdowns on outside click ────────────────────────
+document.addEventListener('click', function(e) {
+  var groupSearch = document.getElementById('group-search');
+  var groupDD = document.getElementById('group-dropdown');
+  if (groupSearch && groupDD &&
+      !groupSearch.contains(e.target) && !groupDD.contains(e.target)) {
+    groupDD.classList.remove('open');
+  }
+  var copySearch = document.getElementById('copy-search');
+  var copyDD = document.getElementById('copy-dropdown');
+  if (copySearch && copyDD &&
+      !copySearch.contains(e.target) && !copyDD.contains(e.target)) {
+    copyDD.classList.remove('open');
+  }
+});
+</script>
+{{end}}
